@@ -9,7 +9,7 @@ data:
   config.toml: |
     [tailscale]
     hostname = "anthropic-oauth-proxy"
-    state_dir = "/var/lib/anthropic-oauth-proxy/tailscale"
+    state_dir = "/var/lib/tailscale"
 
     [proxy]
     listen_addr = "0.0.0.0:8080"
