@@ -108,14 +108,20 @@ spec:
               value: /var/run/tailscale/tailscaled.sock
             - name: TS_KUBE_SECRET
               value: ""
+            - name: TS_HEALTHCHECK_ADDR_PORT
+              value: "127.0.0.1:9002"
           livenessProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - test -S /var/run/tailscale/tailscaled.sock
+            httpGet:
+              path: /healthz
+              port: 9002
             initialDelaySeconds: 10
             periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9002
+            periodSeconds: 5
             failureThreshold: 3
           volumeMounts:
             - name: tailscale-state

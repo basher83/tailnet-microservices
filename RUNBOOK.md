@@ -209,7 +209,7 @@ If latency correlates with high concurrency, check if `max_connections` (default
 
 ### Tailscaled Sidecar Issues
 
-The tailscaled container runs in userspace mode (`TS_USERSPACE=true`) to avoid requiring `NET_ADMIN` capabilities. A liveness probe checks that the Unix socket at `/var/run/tailscale/tailscaled.sock` exists as a socket file every 30 seconds (with 10-second initial delay). If the socket disappears (tailscaled crash), Kubernetes restarts the sidecar after 3 consecutive failures (90 seconds total tolerance). Common issues:
+The tailscaled container runs in userspace mode (`TS_USERSPACE=true`) to avoid requiring `NET_ADMIN` capabilities. Containerboot's built-in `/healthz` HTTP endpoint is enabled via `TS_HEALTHCHECK_ADDR_PORT=127.0.0.1:9002`. A liveness probe queries this endpoint every 30 seconds (with 10-second initial delay), returning 200 when the node has tailnet IPs and 503 otherwise. A readiness probe queries the same endpoint every 5 seconds, preventing the pod from receiving traffic until tailscaled has fully authenticated and received its tailnet IP assignment. If the liveness probe fails 3 consecutive times (90 seconds total tolerance), Kubernetes restarts the sidecar. Common issues:
 
 `TS_AUTHKEY` expired or revoked: the sidecar will fail to authenticate. Rotate the secret.
 
