@@ -2,13 +2,7 @@
 
 Phases 1-5 complete. All 82 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
-Fourteenth spec audit (v0.0.28): Fix spec inaccuracy — body size limit is enforced by `axum::body::to_bytes()` limit parameter, not `DefaultBodyLimit` middleware. Add test verifying `proxy_request_duration_seconds` histogram specifically carries the `status` label (not just globally present). Add test verifying `Stopped { exit_code: 1 }` (failure exit) is terminal and preserves exit code. No implementation bugs found; 15 spec requirements confirmed correct.
-
-Fifteenth spec audit (v0.0.29): Fix duration metric rendering — `proxy_request_duration_seconds` was rendered as a Prometheus summary (quantiles) instead of the spec-mandated histogram (buckets). Configured `set_buckets_for_metric()` with standard latency buckets [5ms..60s] so `histogram_quantile()` queries in the RUNBOOK work correctly. Add 4 new test gaps: verify `error_type="connection"` label value in Prometheus output, verify `method="POST"` label for POST requests, verify histogram `_bucket` lines with `status` label, verify mixed-case `Authorization` injection is blocked. Consolidate test metrics recording to shared `global_prometheus_handle()`. 1 bug fixed (summary→histogram), 4 test gaps closed.
-
-Sixteenth spec audit (v0.0.30): Comprehensive cross-file audit of all 8 source files against both specs. 0 bugs found, 0 spec deviations, 82 tests all passing.
-
-Seventeenth spec audit (v0.0.31): Infrastructure documentation audit. Fixed RUNBOOK.md referencing a `response_read` error_type that the code never emits (code emits `timeout`, `connection`, `invalid_request`, `internal` only). Fixed k8s/deployment.yaml: removed `TS_AUTHKEY` env from the proxy container (only the tailscaled sidecar needs it; the proxy reads tailnet state via the Unix socket). Added explicit `terminationGracePeriodSeconds: 10` to the pod spec so the 5s drain timeout has headroom. 2 doc/infra bugs fixed, 82 tests still passing.
+Eighteenth spec audit (v0.0.32): Fixed stale spec — `specs/oauth-proxy.md` listed reqwest features as `["rustls-tls", "http2"]` but the actual Cargo.toml includes `"stream"` (required for response streaming per the spec's own Response Streaming section). Comprehensive audit confirmed 0 code deviations: all 8 core spec areas verified (ServiceMetrics fields, hop-by-hop headers, body size limit, upstream retry strategy, tailnet retry strategy, drain timeout, health endpoint fields, error response format). Test coverage verified across all 17 spec requirement categories — 16 fully tested, 1 partially tested (graceful shutdown is component-tested but lacks an end-to-end integration test). 1 spec doc bug fixed, 82 tests still passing.
 
 ## Remaining Work (requires live infrastructure)
 
@@ -51,6 +45,7 @@ Seventeenth spec audit (v0.0.31): Infrastructure documentation audit. Fixed RUNB
 - Config validation at system boundaries catches misconfigurations early: `upstream_url` must have an http(s) scheme, `timeout_secs` and `max_connections` must be non-zero. Without URL scheme validation, reqwest fails at request time with a confusing error instead of at startup.
 - `metrics-exporter-prometheus` renders `metrics::histogram!()` as a Prometheus summary (quantiles) by default. To get a true histogram (with `_bucket` lines needed by `histogram_quantile()` queries), you must configure explicit bucket boundaries via `set_buckets_for_metric()`. Without this, RUNBOOK PromQL queries referencing `_bucket` will fail silently.
 - In a sidecar pattern, secrets should only be mounted in the container that consumes them. `TS_AUTHKEY` belongs on the tailscaled sidecar, not the proxy container — the proxy queries tailnet state via the Unix socket and never authenticates directly.
+- Spec dependency lists can drift from the actual Cargo.toml when features are added during implementation. The `"stream"` feature on reqwest was added for response streaming but the spec's Build & Distribution section was not updated. Always update the spec when adding dependency features.
 
 ## Environment Notes
 
