@@ -168,6 +168,8 @@ Set log verbosity via the `LOG_LEVEL` environment variable in the deployment. Ac
 
 ### Pod CrashLoopBackOff
 
+The proxy container has a startup probe that allows up to 60 seconds (30 failures × 2-second period) for the initial tailnet connection. During this window, Kubernetes suppresses liveness and readiness probes entirely. If the proxy reaches the `Running` state within 60 seconds, the startup probe succeeds and liveness/readiness probes take over. If the startup probe exhausts its budget, Kubernetes restarts the container — this typically means tailscaled failed to authenticate or the coordination server is unreachable.
+
 Check proxy container logs first. The four lifecycle errors that cause crashes:
 
 `TailnetAuth` ("Tailnet authentication failed") means the `TS_AUTHKEY` secret is invalid or expired. Generate a new auth key from the Tailscale admin console and rotate the secret (see Rotating the Tailscale Auth Key above).
