@@ -207,7 +207,7 @@ If latency correlates with high concurrency, check if `max_connections` (default
 
 ### Tailscaled Sidecar Issues
 
-The tailscaled container runs in userspace mode (`TS_USERSPACE=true`) to avoid requiring `NET_ADMIN` capabilities. Common issues:
+The tailscaled container runs in userspace mode (`TS_USERSPACE=true`) to avoid requiring `NET_ADMIN` capabilities. A liveness probe checks that the Unix socket at `/var/run/tailscale/tailscaled.sock` exists as a socket file every 30 seconds (with 10-second initial delay). If the socket disappears (tailscaled crash), Kubernetes restarts the sidecar after 3 consecutive failures (90 seconds total tolerance). Common issues:
 
 `TS_AUTHKEY` expired or revoked: the sidecar will fail to authenticate. Rotate the secret.
 
