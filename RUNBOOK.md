@@ -126,7 +126,7 @@ Scrape `GET /metrics` on port 8080. Four metrics are emitted:
 
 `proxy_requests_total` (counter) with labels `status` and `method` tracks completed proxy requests. Use this for request rate and error rate calculations.
 
-`proxy_request_duration_seconds` (histogram) with label `status` provides latency percentiles. The histogram automatically computes p50, p90, p99, and p999 quantiles.
+`proxy_request_duration_seconds` (histogram) with label `status` and bucket boundaries from 5ms to 60s. Use `histogram_quantile()` in PromQL to compute latency percentiles (p50, p90, p99) from the histogram buckets at query time.
 
 `proxy_upstream_errors_total` (counter) with label `error_type` tracks upstream failures. Error types include `timeout` (upstream did not respond within `timeout_secs`), `connection` (TCP connection to upstream failed), `invalid_request` (request body exceeded 10MB limit or malformed request), and `internal` (unexpected proxy error).
 
@@ -199,6 +199,8 @@ The tailscaled container runs in userspace mode (`TS_USERSPACE=true`) to avoid r
 `TS_AUTHKEY` expired or revoked: the sidecar will fail to authenticate. Rotate the secret.
 
 State directory corruption: the sidecar stores state in `/var/lib/tailscale` (an `emptyDir` volume). Deleting the pod clears this state and forces re-authentication.
+
+Socket path override: the proxy reads the tailscaled Unix socket from the `TAILSCALE_SOCKET` environment variable, defaulting to `/var/run/tailscale/tailscaled.sock`. If the sidecar writes the socket to a non-standard path, set `TAILSCALE_SOCKET` in the proxy container's env to match.
 
 ## Graceful Shutdown
 
