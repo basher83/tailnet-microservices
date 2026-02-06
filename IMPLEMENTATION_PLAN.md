@@ -14,11 +14,18 @@ Fifty-third audit (v0.0.73): Full audit with parallel subagents across source co
 
 Fifty-fourth audit (v0.0.74): Full audit across all source files, K8s manifests, RUNBOOK, CI, Dockerfile, and both specs. Code is 100% spec-compliant; all dependencies current; no source changes needed. Found 1 RUNBOOK documentation gap: the startup probe (30 failures × 2s = 60-second budget for initial tailnet connection) was referenced in the Endpoints table but not explained in the Troubleshooting section — operators seeing CrashLoopBackOff during slow tailnet connections had no documentation explaining the 60-second startup window or that liveness/readiness probes are suppressed during it. Added startup probe explanation to the "Pod CrashLoopBackOff" troubleshooting section. Also verified: RUNBOOK tailscaled liveness tolerance math is correct (3 × 30s = 90s), tailscaled does not need a readiness probe (proxy's own startup probe already gates pod readiness on tailscaled availability), all probe configurations match documented values. All 106 tests pass, clippy clean, fmt clean.
 
+Fifty-fifth audit (v0.0.74): Comprehensive deep audit across every source file, K8s manifest, CI workflow, Dockerfile, RUNBOOK, README, and both specs. Zero critical, major, or minor issues found. Code is 100% spec-compliant across all modules (proxy.rs, main.rs, service.rs, config.rs, metrics.rs, error.rs, tailnet.rs). All 106 tests pass, clippy clean, fmt clean. All dependencies current — one transitive dependency (matchit 0.8.4 → 0.8.6) has a newer version available but cannot be updated because axum v0.8.8 pins `matchit = "=0.8.4"` exactly. No unwrap() calls in production code paths (all 4 are initialization-time expects that fail-fast before the server starts). No race conditions, no logic bugs, no off-by-one errors, no TODO/FIXME comments. K8s manifests fully correct (probes, security contexts, resource limits, labels, annotations). CI workflow complete and secure (least-privilege permissions). Dockerfile follows all best practices. RUNBOOK fully accurate (PromQL, env vars, troubleshooting, resource limits table). README accurate and minimal. Second consecutive clean audit with no code changes needed.
+
 ## Remaining Work
 
-- [ ] Aperture config update — route `http://ai/` to the proxy (requires Aperture configuration)
-- [ ] Production monitoring — observe live traffic
-- [ ] Verify ACL connectivity from Aperture (requires Aperture configured to route through proxy)
+All implementation items complete. Aperture integration verified with live E2E traffic on 2026-02-06:
+
+- [x] Aperture config updated with `anthropic-oauth` provider, `tailnet: true` routing
+- [x] ACL connectivity from Aperture verified (Metric ID: 235 in Aperture dashboard)
+- [x] Production traffic flowing — Claude API responses confirmed with header injection
+- [ ] Long-term production monitoring — observe traffic patterns, error rates, and resource usage over time
+- [ ] Load testing — verify 100+ req/s sustained (spec success criterion)
+- [ ] Memory soak testing — verify zero memory growth over 24h (spec success criterion)
 
 ## Known Limitations
 
@@ -95,6 +102,7 @@ Fifty-fourth audit (v0.0.74): Full audit across all source files, K8s manifests,
 - PromQL `histogram_quantile()` requires a single time series per `le` bucket. When a histogram has additional labels (e.g. `status`), the query must use `sum by (le)` to aggregate across label values before passing to `histogram_quantile()`. Without this, the function receives multiple series per bucket and produces incorrect results or "not a valid histogram" errors. Easy to miss in runbooks because the query works fine with a single status code but breaks as soon as a second status appears.
 - Tailscaled sidecar containers need liveness probes even though they don't expose HTTP health endpoints. The Unix socket at the shared `emptyDir` volume serves as a health signal — if tailscaled crashes, the socket file disappears. Use `exec` probe with `test -S <socket-path>` to detect this. Set `initialDelaySeconds` to give tailscaled time to create the socket on startup, and use a generous `failureThreshold × periodSeconds` window (e.g. 90s) to tolerate transient issues without unnecessary restarts.
 - K8s probe fields that default to reasonable values (like `failureThreshold: 3`) should still be set explicitly when the value represents a deliberate operational decision. Implicit defaults work but don't communicate intent — future operators may not know whether the omission was deliberate or accidental.
+- Transitive dependency updates may be blocked by exact version pins in upstream crates. axum v0.8.8 pins `matchit = "=0.8.4"` (exact), so `cargo update matchit --precise 0.8.6` fails. The only fix is waiting for axum to release with the updated pin. `cargo update --dry-run --verbose` reveals these blocked updates.
 
 ## Environment Notes
 
