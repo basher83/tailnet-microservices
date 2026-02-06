@@ -86,3 +86,17 @@ git commit -m "your message"
 ```
 
 Unsigned commits are acceptable for this development phase.
+
+## GHCR Package Now Public
+
+**2026-02-06 14:09 EST**: The container package has been made public. Anonymous pull now works:
+
+```bash
+# Verify:
+curl -s "https://ghcr.io/token?scope=repository:basher83/tailnet-microservices/anthropic-oauth-proxy:pull" | jq -r .token
+
+# K8s should now pull successfully. Delete failing pod to trigger re-pull:
+kubectl delete pod -n anthropic-oauth-proxy -l app=anthropic-oauth-proxy
+```
+
+ImagePullBackOff blocker is cleared.
