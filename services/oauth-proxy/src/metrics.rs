@@ -11,10 +11,24 @@ use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 
 /// Install the Prometheus recorder and return a handle for rendering metrics.
 ///
+/// Configures `proxy_request_duration_seconds` with histogram buckets so it
+/// renders as a Prometheus histogram (with `_bucket` lines for `histogram_quantile()`
+/// queries) rather than the default summary. Bucket boundaries cover the range
+/// from 5ms to 60s, matching the proxy's configurable timeout range.
+///
 /// The handle's `render()` method produces the Prometheus text exposition format
 /// suitable for serving on a `/metrics` endpoint.
 pub fn install_recorder() -> PrometheusHandle {
     PrometheusBuilder::new()
+        .set_buckets_for_metric(
+            metrics_exporter_prometheus::Matcher::Full(
+                "proxy_request_duration_seconds".to_string(),
+            ),
+            &[
+                0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0,
+            ],
+        )
+        .expect("failed to set histogram buckets")
         .install_recorder()
         .expect("failed to install Prometheus recorder")
 }
