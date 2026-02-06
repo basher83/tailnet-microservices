@@ -252,15 +252,7 @@ pub async fn proxy_request(
         }
     }
 
-    // Should be unreachable, but handle defensively
-    let err_status = StatusCode::INTERNAL_SERVER_ERROR;
-    crate::metrics::record_request(
-        err_status.as_u16(),
-        &method_str,
-        start.elapsed().as_secs_f64(),
-    );
-    crate::metrics::record_upstream_error("internal");
-    error_response(err_status, "unexpected retry exhaustion", &request_id)
+    unreachable!("retry loop must return on every code path")
 }
 
 /// Check if a header is hop-by-hop (should be stripped before forwarding)
