@@ -373,6 +373,7 @@ mod tests {
     use std::sync::Arc;
     use std::sync::OnceLock;
     use std::sync::atomic::AtomicU64;
+    use std::time::Instant;
     use tower::ServiceExt;
 
     /// Global Prometheus handle shared by tests that need to verify metric output.
@@ -2384,6 +2385,135 @@ mod tests {
                 "attempt {i} should receive the original request body, got: {body}"
             );
         }
+    }
+
+    /// Load test: verify the proxy sustains 100+ req/s throughput.
+    ///
+    /// This is a spec success criterion (specs/oauth-proxy.md "Success Criteria"):
+    /// "Handles 100+ req/s sustained". The test fires 1000 requests across 50
+    /// concurrent tasks through a real TCP listener to measure actual HTTP
+    /// throughput including connection overhead, header injection, and response
+    /// streaming. Marked `#[ignore]` because load tests are timing-sensitive and
+    /// should not gate CI — run explicitly with:
+    ///
+    ///   cargo test -p oauth-proxy -- --ignored load_test_sustains_100_rps
+    #[tokio::test]
+    #[ignore]
+    async fn load_test_sustains_100_rps() {
+        // Start a mock upstream echo server
+        let upstream_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let upstream_addr = upstream_listener.local_addr().unwrap();
+        let upstream_url = format!("http://{upstream_addr}");
+
+        tokio::spawn(async move {
+            let app =
+                axum::Router::new().fallback(|request: axum::http::Request<Body>| async move {
+                    let body_bytes =
+                        axum::body::to_bytes(request.into_body(), crate::proxy::MAX_BODY_SIZE)
+                            .await
+                            .unwrap();
+                    (StatusCode::OK, body_bytes)
+                });
+            axum::serve(upstream_listener, app).await.unwrap();
+        });
+
+        // Start the proxy on a real TCP listener so we measure actual HTTP throughput
+        let metrics = ServiceMetrics::new();
+        let state = AppState {
+            proxy: ProxyState {
+                client: reqwest::Client::builder()
+                    .pool_max_idle_per_host(100)
+                    .build()
+                    .unwrap(),
+                upstream_url,
+                headers_to_inject: vec![config::HeaderInjection {
+                    name: "anthropic-beta".into(),
+                    value: "oauth-2025-04-20".into(),
+                }],
+                timeout: Duration::from_secs(5),
+                requests_total: metrics.requests_total.clone(),
+                errors_total: metrics.errors_total.clone(),
+                in_flight: metrics.in_flight.clone(),
+            },
+            metrics: metrics.clone(),
+            tailnet: Some(TailnetHandle {
+                hostname: "load-test-proxy".into(),
+                ip: "100.64.0.1".parse().unwrap(),
+            }),
+            prometheus: test_prometheus_handle(),
+        };
+
+        let app = build_router(state, 1000);
+        let proxy_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let proxy_addr = proxy_listener.local_addr().unwrap();
+        let proxy_url = format!("http://{proxy_addr}");
+
+        tokio::spawn(async move {
+            axum::serve(proxy_listener, app).await.unwrap();
+        });
+        tokio::time::sleep(Duration::from_millis(50)).await;
+
+        // Fire 1000 requests across 50 concurrent tasks (20 sequential per task)
+        let total_requests: u64 = 1000;
+        let concurrency: u64 = 50;
+        let per_task = total_requests / concurrency;
+        let client = reqwest::Client::builder()
+            .pool_max_idle_per_host(100)
+            .build()
+            .unwrap();
+
+        let start = Instant::now();
+        let mut handles = Vec::new();
+
+        for _ in 0..concurrency {
+            let client = client.clone();
+            let url = format!("{proxy_url}/v1/messages");
+            handles.push(tokio::spawn(async move {
+                let mut ok_count = 0u64;
+                for _ in 0..per_task {
+                    let resp = client
+                        .post(&url)
+                        .header("content-type", "application/json")
+                        .header("authorization", "Bearer sk-test")
+                        .body(r#"{"model":"claude-3"}"#)
+                        .send()
+                        .await
+                        .unwrap();
+                    if resp.status().is_success() {
+                        // Consume the body to complete the request cycle
+                        let _ = resp.bytes().await;
+                        ok_count += 1;
+                    }
+                }
+                ok_count
+            }));
+        }
+
+        let mut total_ok = 0u64;
+        for handle in handles {
+            total_ok += handle.await.unwrap();
+        }
+        let elapsed = start.elapsed();
+        let rps = total_ok as f64 / elapsed.as_secs_f64();
+
+        assert_eq!(
+            total_ok, total_requests,
+            "all {total_requests} requests must succeed, got {total_ok}"
+        );
+        assert!(
+            rps >= 100.0,
+            "spec requires 100+ req/s sustained throughput, measured {rps:.1} req/s over {:.2}s",
+            elapsed.as_secs_f64()
+        );
+
+        // Also verify the proxy's internal request counter matches
+        let counted = metrics
+            .requests_total
+            .load(std::sync::atomic::Ordering::Relaxed);
+        assert_eq!(
+            counted, total_requests,
+            "proxy request counter must match total requests sent"
+        );
     }
 
     #[tokio::test]
