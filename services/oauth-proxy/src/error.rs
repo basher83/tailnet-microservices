@@ -8,10 +8,14 @@ use thiserror::Error;
 /// handled directly by the proxy handler as HTTP responses — they never
 /// need to propagate as Rust errors.
 #[derive(Error, Debug)]
+#[allow(clippy::enum_variant_names)]
 pub enum Error {
     #[error("Tailnet authentication failed")]
     TailnetAuth,
 
     #[error("Tailnet connection failed: {0}")]
     TailnetConnect(String),
+
+    #[error("Tailnet daemon not running: {0}")]
+    TailnetNotRunning(String),
 }

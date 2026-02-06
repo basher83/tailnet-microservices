@@ -81,7 +81,7 @@ Already defined in `services/oauth-proxy/src/config.rs` as `TailscaleConfig`.
 |-------|-------------|-----------|
 | `TailnetAuthError` | Invalid or expired auth key | No |
 | `TailnetConnectError` | Cannot reach coordination server | Yes (5 retries, exponential backoff) |
-| `TailnetNotRunning` | tailscaled not available (Option B only) | No |
+| `TailnetNotRunning` | Daemon not available or not configured; distinct from `TailnetConnectError` which is a transient network issue | No |
 
 ---
 

@@ -39,7 +39,7 @@ pub async fn connect(expected_hostname: &str) -> Result<TailnetHandle, Error> {
             ));
         }
         BackendState::Stopped => {
-            return Err(Error::TailnetConnect(
+            return Err(Error::TailnetNotRunning(
                 "tailscaled is stopped — run `tailscale up`".into(),
             ));
         }
@@ -49,7 +49,7 @@ pub async fn connect(expected_hostname: &str) -> Result<TailnetHandle, Error> {
             ));
         }
         BackendState::NoState => {
-            return Err(Error::TailnetConnect(
+            return Err(Error::TailnetNotRunning(
                 "tailscaled has no state — is it configured?".into(),
             ));
         }
@@ -111,7 +111,7 @@ async fn fetch_status_unix() -> Result<tailscale_localapi::types::Status, Error>
         std::env::var("TAILSCALE_SOCKET").unwrap_or_else(|_| DEFAULT_SOCKET_PATH.to_string());
 
     if !Path::new(&socket_path).exists() {
-        return Err(Error::TailnetConnect(format!(
+        return Err(Error::TailnetNotRunning(format!(
             "tailscaled socket not found at {socket_path} — is tailscaled running?"
         )));
     }
@@ -158,7 +158,7 @@ async fn fetch_status_macos() -> Result<tailscale_localapi::types::Status, Error
         .output()
         .await
         .map_err(|e| {
-            Error::TailnetConnect(format!(
+            Error::TailnetNotRunning(format!(
                 "failed to run `tailscale status --json`: {e} — is tailscale CLI installed?"
             ))
         })?;
@@ -203,7 +203,8 @@ mod tests {
                 assert!(!handle.hostname.is_empty());
                 assert!(!handle.ip.is_unspecified());
             }
-            Err(Error::TailnetConnect(_)) => { /* expected in CI */ }
+            Err(Error::TailnetConnect(_)) => { /* transient failure */ }
+            Err(Error::TailnetNotRunning(_)) => { /* expected in CI — no tailscaled */ }
             Err(Error::TailnetAuth) => { /* also acceptable */ }
         }
     }
