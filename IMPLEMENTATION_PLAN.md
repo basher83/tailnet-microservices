@@ -1,6 +1,6 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 90 tests pass (87 oauth-proxy + 3 common). Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 92 tests pass (87 oauth-proxy + 5 common). Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
 Audits 1-33: Found and fixed 55+ issues across 33 audits including 5 bugs, spec documentation gaps, K8s security context issues, state machine correctness, metrics configuration, RUNBOOK accuracy, and dependency upgrades (reqwest 0.12→0.13, toml 0.8→0.9, metrics-exporter-prometheus 0.16→0.18). Recent audits (29-33) found increasingly fewer issues as the codebase stabilized: startup probe gap (32nd), RUNBOOK inaccuracies (33rd), and clean results (29th, 30th, 31st).
 
@@ -18,10 +18,12 @@ GHCR access investigation: `gh auth` token lacks `read:packages`/`write:packages
 
 Thirty-ninth audit (v0.0.58): Updated CI workflow — actions/checkout v4→v6, added explicit least-privilege permissions blocks to all CI jobs (CI run confirmed successful). Dependencies audit: all 16 workspace dependencies match spec exactly, Cargo.lock at latest compatible versions. Comprehensive source file review found 0 bugs or spec discrepancies. Added 2 error Display/Debug formatting tests. K8s deployment confirmed stuck in ImagePullBackOff due to GHCR 403 (known blocker). ts-authkey secret missing from cluster — must be created imperatively after GHCR fix. All 90 tests pass, clippy clean, fmt clean.
 
+Fortieth audit (v0.0.59): Opus-level audit across all source files, specs, K8s manifests, RUNBOOK. Found 4 issues: (1) IMPLEMENTATION_PLAN.md referenced `ts-authkey` but K8s manifests and RUNBOOK use `tailscale-authkey` — fixed documentation inconsistency. (2) Retry delay in proxy.rs was a magic number `Duration::from_millis(100)` — extracted to named constants `MAX_UPSTREAM_ATTEMPTS` and `UPSTREAM_RETRY_DELAY` matching service.rs pattern. (3) `common::Error` had no Display/Debug formatting tests — added 2 tests. (4) RUNBOOK used "10MB" instead of "10 MiB" for body size limit — fixed 3 occurrences. All 92 tests pass (87 oauth-proxy + 5 common), clippy clean, fmt clean.
+
 ## Remaining Work
 
 - [ ] **GHCR package visibility (BLOCKING)** — The GHCR package is private and K8s nodes get 403 Forbidden when pulling. **Fix options**: (1) GitHub web UI: Profile → Packages → `tailnet-microservices/anthropic-oauth-proxy` → Package settings → Danger Zone → Change visibility → Public. (2) Run `gh auth refresh -h github.com -s read:packages,write:packages` in a terminal with browser access, then `gh api --method PATCH /user/packages/container/tailnet-microservices%2Fanthropic-oauth-proxy -f visibility=public`.
-- [ ] Create ts-authkey K8s secret — `kubectl create secret generic ts-authkey -n anthropic-oauth-proxy --from-literal=TS_AUTHKEY=<reusable-ephemeral-key>` (key must be reusable + ephemeral per Learnings)
+- [ ] Create tailscale-authkey K8s secret — `kubectl create secret generic tailscale-authkey -n anthropic-oauth-proxy --from-literal=TS_AUTHKEY=<reusable-ephemeral-key>` (key must be reusable + ephemeral per Learnings)
 - [ ] Verify deployment after GHCR fix — tailscaled `CAP_FOWNER` fix applied, `TS_KUBE_SECRET=""` set, need to confirm both containers start successfully
 - [ ] Aperture config update — route `http://ai/` to the proxy (requires live tailnet)
 - [ ] Production monitoring — observe live traffic
