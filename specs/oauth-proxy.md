@@ -105,7 +105,7 @@ The service uses an explicit state machine for lifecycle management.
 | `Initializing` | Loading config, setting up resources | (no data) |
 | `ConnectingTailnet` | Joining the tailnet | `retries: u32`, `listen_addr: SocketAddr` |
 | `Starting` | Starting HTTP listener | `tailnet: TailnetHandle`, `listen_addr: SocketAddr` |
-| `Running` | Accepting and proxying requests | `tailnet: TailnetHandle`, `listen_addr: SocketAddr`, `metrics: ServiceMetrics` |
+| `Running` | Accepting and proxying requests | `tailnet: TailnetHandle`, `listen_addr: SocketAddr` |
 | `Draining` | Graceful shutdown, finishing in-flight | `deadline: Instant` (drain coordination handled by axum's graceful shutdown and the `in_flight` atomic counter) |
 | `Stopped` | Terminal state | `exit_code: i32` |
 | `Error` | Recoverable error with retry | `error: String`, `origin: ErrorOrigin`, `retries: u32`, `listen_addr: SocketAddr` |
