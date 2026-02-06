@@ -1291,6 +1291,15 @@ mod tests {
             rendered.contains(r#"error_type=""#),
             "/metrics proxy_upstream_errors_total must include 'error_type' label.\nRendered:\n{rendered}"
         );
+        // proxy_request_duration_seconds must have status label (not just globally).
+        // Verify a rendered line contains both the histogram name and the status label.
+        let has_duration_status = rendered.lines().any(|line| {
+            line.contains("proxy_request_duration_seconds") && line.contains(r#"status=""#)
+        });
+        assert!(
+            has_duration_status,
+            "/metrics proxy_request_duration_seconds must include 'status' label on its own lines.\nRendered:\n{rendered}"
+        );
     }
 
     #[tokio::test]
