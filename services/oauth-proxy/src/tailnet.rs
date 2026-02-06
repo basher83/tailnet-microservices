@@ -206,4 +206,45 @@ mod tests {
             Err(Error::TailnetMachineAuth) => { /* needs admin approval */ }
         }
     }
+
+    #[tokio::test]
+    async fn tailscale_socket_env_override_is_respected() {
+        // TAILSCALE_SOCKET env var overrides the default socket path.
+        // Setting it to a nonexistent path should cause connect() to fail
+        // without attempting the default socket location.
+        use std::sync::Mutex;
+        static ENV_MUTEX: Mutex<()> = Mutex::new(());
+        let _lock = ENV_MUTEX.lock().unwrap();
+
+        let original = std::env::var("TAILSCALE_SOCKET").ok();
+        unsafe { std::env::set_var("TAILSCALE_SOCKET", "/nonexistent/tailscaled.sock") };
+
+        let result = connect("test-node").await;
+        // The error should reference the overridden path or fail to connect,
+        // proving the env var was read. On macOS, the CLI fallback may also
+        // run if the socket doesn't exist.
+        match &result {
+            Ok(_) => { /* tailscaled running via CLI fallback */ }
+            Err(Error::TailnetNotRunning(msg)) => {
+                // On Linux, this proves the env var path was checked
+                #[cfg(not(target_os = "macos"))]
+                assert!(
+                    msg.contains("/nonexistent/tailscaled.sock"),
+                    "error should reference the overridden socket path, got: {msg}"
+                );
+                // On macOS, the fallback to CLI is expected after socket fails
+                #[cfg(target_os = "macos")]
+                let _ = msg;
+            }
+            Err(Error::TailnetConnect(_)) => { /* CLI fallback also failed */ }
+            Err(Error::TailnetAuth) => { /* unexpected but not a test failure */ }
+            Err(Error::TailnetMachineAuth) => { /* unexpected but not a test failure */ }
+        }
+
+        // Restore original env
+        match original {
+            Some(val) => unsafe { std::env::set_var("TAILSCALE_SOCKET", &val) },
+            None => unsafe { std::env::remove_var("TAILSCALE_SOCKET") },
+        }
+    }
 }

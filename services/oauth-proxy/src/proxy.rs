@@ -275,14 +275,31 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_hop_by_hop_detection() {
+    fn test_hop_by_hop_detection_all_eight_headers() {
+        // All 8 spec-defined hop-by-hop headers (RFC 2616 Section 13.5.1)
+        assert!(is_hop_by_hop("connection"));
+        assert!(is_hop_by_hop("keep-alive"));
+        assert!(is_hop_by_hop("proxy-authenticate"));
+        assert!(is_hop_by_hop("proxy-authorization"));
+        assert!(is_hop_by_hop("te"));
+        assert!(is_hop_by_hop("trailer"));
+        assert!(is_hop_by_hop("transfer-encoding"));
+        assert!(is_hop_by_hop("upgrade"));
+
+        // Case-insensitive detection
         assert!(is_hop_by_hop("Connection"));
         assert!(is_hop_by_hop("TRANSFER-ENCODING"));
-        assert!(is_hop_by_hop("keep-alive"));
+        assert!(is_hop_by_hop("Keep-Alive"));
         assert!(is_hop_by_hop("Proxy-Authorization"));
+        assert!(is_hop_by_hop("TE"));
+        assert!(is_hop_by_hop("Trailer"));
+        assert!(is_hop_by_hop("Upgrade"));
+
+        // Non-hop-by-hop headers must not match
         assert!(!is_hop_by_hop("Content-Type"));
         assert!(!is_hop_by_hop("Authorization"));
         assert!(!is_hop_by_hop("X-Custom-Header"));
+        assert!(!is_hop_by_hop("Accept-Encoding"));
     }
 
     #[tokio::test]
