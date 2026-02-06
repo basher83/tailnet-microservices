@@ -22,9 +22,12 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -u 1000 -r -s /sbin/nologin proxy
 
 COPY --from=builder /anthropic-oauth-proxy /usr/local/bin/anthropic-oauth-proxy
+
+USER 1000
 
 ENV CONFIG_PATH=/etc/anthropic-oauth-proxy/config.toml
 

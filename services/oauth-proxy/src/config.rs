@@ -312,6 +312,19 @@ upstream_url = "https://api.anthropic.com"
     }
 
     #[test]
+    fn test_resolve_path_cli_overrides_env() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        unsafe { set_env("CONFIG_PATH", "/env/should-lose.toml") };
+        let path = Config::resolve_path(Some("/cli/wins.toml"));
+        assert_eq!(
+            path,
+            PathBuf::from("/cli/wins.toml"),
+            "CLI arg must take precedence over CONFIG_PATH env var"
+        );
+        unsafe { remove_env("CONFIG_PATH") };
+    }
+
+    #[test]
     fn test_max_connections_custom() {
         let _lock = ENV_MUTEX.lock().unwrap();
         let toml_content = r#"

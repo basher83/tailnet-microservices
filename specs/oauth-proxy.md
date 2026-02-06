@@ -368,7 +368,6 @@ Package name is `oauth-proxy` with binary name `anthropic-oauth-proxy` (via `[[b
 tokio = { version = "1", features = ["full"] }
 axum = "0.8"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "http2", "stream"] }
-hyper = "1"
 tailscale-localapi = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

@@ -68,11 +68,11 @@ pub enum ServiceState {
         tailnet: TailnetHandle,
         listen_addr: SocketAddr,
     },
-    /// Accepting and proxying requests
+    /// Accepting and proxying requests.
+    /// Metrics are owned by `ProxyState` in main.rs, not the state machine.
     Running {
         tailnet: TailnetHandle,
         listen_addr: SocketAddr,
-        metrics: ServiceMetrics,
     },
     /// Graceful shutdown, finishing in-flight requests.
     /// Actual drain coordination is handled by axum's `with_graceful_shutdown`
@@ -222,7 +222,6 @@ pub fn handle_event(state: ServiceState, event: ServiceEvent) -> (ServiceState, 
             ServiceState::Running {
                 tailnet,
                 listen_addr,
-                metrics: ServiceMetrics::new(),
             },
             ServiceAction::None,
         ),
@@ -388,7 +387,6 @@ mod tests {
             ServiceState::Running {
                 tailnet: dummy_tailnet_handle(),
                 listen_addr: localhost_addr(),
-                metrics: ServiceMetrics::new(),
             },
             ServiceEvent::ShutdownSignal,
         );
