@@ -1,6 +1,6 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 83 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 80 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
 Audits 1-21: Found and fixed 43+ issues across ten initial audits including 5 bugs, spec documentation gaps, and positive deviations. Subsequent audits (11-21) found incremental issues in state machine transitions, K8s manifests, Docker configuration, metrics, and documentation.
 
@@ -27,6 +27,8 @@ Thirty-first audit (v0.0.44): Comprehensive Opus-level audit using parallel suba
 Dependency upgrade (v0.0.45): Upgraded three workspace dependencies to latest versions. reqwest 0.12 → 0.13 (feature `rustls-tls` renamed to `rustls`, default TLS backend switched from native-tls to rustls, certificate verification now uses rustls-platform-verifier; project unaffected since it already used default-features=false with explicit rustls). toml 0.8 → 0.9 (near-complete parser rewrite for performance, API changes to Value/Deserializer/Serializer; project unaffected since it only uses `toml::from_str()` for full-document deserialization into owned structs). metrics-exporter-prometheus 0.16 → 0.18 (additive changes only: new `render_to_write()`, `render_protobuf()`, `with_recommended_naming()` methods; fully backward compatible). Updated spec dependency table and TLS reference to match. All 83 tests pass, clippy clean, formatting clean.
 
 Thirty-second audit (v0.0.46): Comprehensive Opus-level audit using parallel subagents across all dimensions: 10 Rust source files, 2 specs, 7 K8s manifests, Dockerfile, CI workflow, RUNBOOK, and example config. Found 1 issue. K8s deployment.yaml missing startup probe — the tailscaled sidecar must authenticate and connect to the tailnet before the proxy can report healthy, but without a startup probe the liveness probe (10s initial delay) could prematurely restart the pod on slow tailnet connections. Added startup probe with periodSeconds=2 and failureThreshold=30, allowing up to 60 seconds for initial startup. Removed `initialDelaySeconds` from liveness and readiness probes since the startup probe now handles the initial delay. Updated RUNBOOK endpoints table to reference startup probe. All other dimensions clean: 0 bugs, 0 security issues, 0 spec discrepancies, 0 clippy warnings, formatting clean. All 83 tests pass.
+
+Thirty-third audit (v0.0.48): Comprehensive Opus-level audit using parallel subagents across all dimensions: 10 Rust source files, 2 specs, 7 K8s manifests, Dockerfile, CI workflow, and RUNBOOK. Found 2 RUNBOOK issues. (1) Degraded health response example at RUNBOOK.md:116-118 showed hardcoded zeros for `uptime_seconds`, `requests_served`, and `errors_total`, but the code returns real runtime values for these fields even when tailnet is disconnected. The spec correctly shows non-zero values. Fixed example to match code and spec. (2) RUNBOOK.md:159 stated "three lifecycle errors" but listed four (`TailnetAuth`, `TailnetMachineAuth`, `TailnetNotRunning`, `TailnetConnect`). Fixed count to "four". All Rust source files, specs, K8s manifests, Dockerfile, and CI clean — 0 bugs, 0 security issues, 0 spec discrepancies, 0 code quality issues, 0 test gaps. Corrected test count from 83 to 80 (count drifted in earlier audits). All 80 tests pass, clippy clean, formatting clean.
 
 ## Remaining Work (requires live infrastructure)
 
@@ -89,6 +91,8 @@ Thirty-second audit (v0.0.46): Comprehensive Opus-level audit using parallel sub
 - K8s resources should carry consistent `app:` labels even if they are not selected by anything. Labels enable `kubectl get <kind> -l app=<name>` queries for discovering all resources belonging to a project, which aids operational debugging and bulk cleanup.
 - reqwest 0.13 renamed the `rustls-tls` feature to `rustls`. The `.query()` and `.form()` RequestBuilder methods are now behind opt-in feature flags (`query`, `form`). TLS-related ClientBuilder methods got `tls_` prefixes (old names still work but are deprecated). If using `default-features = false`, the only required change is the feature rename.
 - K8s pods with sidecar dependencies need startup probes, not just liveness/readiness probes. Without a startup probe, the liveness probe's `initialDelaySeconds` is a fixed guess at how long startup takes. A startup probe with `failureThreshold * periodSeconds` provides a proper startup budget (e.g. 30 * 2s = 60s) and once it succeeds, liveness/readiness probes take over. This prevents premature restarts when the sidecar (tailscaled) takes longer than expected to authenticate.
+
+- RUNBOOK example responses must reflect actual runtime behavior, not idealized static values. The degraded health endpoint returns real `uptime_seconds`, `requests_served`, and `errors_total` values (not zeros), because these counters run regardless of tailnet connection state. Hardcoding zeros in documentation misleads operators into thinking these fields are meaningless when degraded.
 
 ## Environment Notes
 
