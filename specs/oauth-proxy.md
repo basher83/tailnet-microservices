@@ -194,7 +194,8 @@ Client Request
 |-----------|--------|
 | Header not present | Add header |
 | Header present | Replace value |
-| `authorization` header | Pass through unchanged |
+| `authorization` header | Pass through unchanged (protected from injection) |
+| `host` header | Strip before forwarding (reqwest derives correct host from upstream URL) |
 | Hop-by-hop headers | Strip before forwarding |
 
 ### Hop-by-hop Headers (strip from both request and response)
