@@ -567,6 +567,35 @@ mod tests {
     }
 
     #[test]
+    fn stopped_with_failure_exit_code_is_terminal() {
+        // Stopped { exit_code: 1 } (failure) must also be terminal and preserve
+        // its exit_code. This complements stopped_state_is_terminal which tests
+        // exit_code: 0.
+        let events = vec![
+            ServiceEvent::ConfigLoaded {
+                listen_addr: localhost_addr(),
+            },
+            ServiceEvent::TailnetConnected(dummy_tailnet_handle()),
+            ServiceEvent::TailnetError("test".into()),
+            ServiceEvent::ListenerReady,
+            ServiceEvent::RetryTimer,
+            ServiceEvent::DrainTimeout,
+            ServiceEvent::ShutdownSignal,
+        ];
+        for event in events {
+            let (state, action) = handle_event(ServiceState::Stopped { exit_code: 1 }, event);
+            assert!(
+                matches!(state, ServiceState::Stopped { exit_code: 1 }),
+                "Stopped{{exit_code: 1}} must remain terminal and preserve exit_code"
+            );
+            assert!(
+                matches!(action, ServiceAction::None),
+                "Stopped must produce no action"
+            );
+        }
+    }
+
+    #[test]
     fn initializing_ignores_unexpected_events() {
         // Initializing should only respond to ConfigLoaded. All other events
         // (except ShutdownSignal) should be silently ignored via the catch-all.

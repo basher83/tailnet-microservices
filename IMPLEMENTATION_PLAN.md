@@ -1,8 +1,8 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 77 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 78 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
-Thirteenth spec audit (v0.0.28): Close test gaps from twelfth audit — verify request_id and errors_total on timeout path, verify Prometheus metric label names in rendered output. Update spec error handling section to document the implementation's error handling split (state machine errors vs inline HTTP errors vs startup errors). Clarify shutdown state transitions: second SIGTERM during drain forces immediate exit, Stopped is terminal/inert. 7 positive deviations confirmed (InFlightGuard RAII, Secret extras, ConcurrencyLimitLayer, multi-value headers, config validation, macOS fallback, stream feature).
+Fourteenth spec audit (v0.0.28): Fix spec inaccuracy — body size limit is enforced by `axum::body::to_bytes()` limit parameter, not `DefaultBodyLimit` middleware. Add test verifying `proxy_request_duration_seconds` histogram specifically carries the `status` label (not just globally present). Add test verifying `Stopped { exit_code: 1 }` (failure exit) is terminal and preserves exit code. No implementation bugs found; 15 spec requirements confirmed correct.
 
 ## Remaining Work (requires live infrastructure)
 

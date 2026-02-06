@@ -241,7 +241,7 @@ These errors are handled directly at the call site rather than through the `Erro
 | `UpstreamTimeout` | `proxy.rs` retry loop, returns HTTP response directly | 504 Gateway Timeout |
 | `UpstreamError` (non-2xx) | `proxy.rs` passes upstream response through unchanged | Upstream status code |
 | `UpstreamError` (connection failure) | `proxy.rs` returns error response directly | 502 Bad Gateway |
-| `InvalidRequest` (body too large) | axum `DefaultBodyLimit` middleware | 400 Bad Request |
+| `InvalidRequest` (body too large) | `axum::body::to_bytes()` limit in `proxy.rs` | 400 Bad Request |
 
 ### Retry Strategy
 
