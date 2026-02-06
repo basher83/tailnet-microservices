@@ -16,7 +16,7 @@ spec:
         app: anthropic-oauth-proxy
     spec:
       serviceAccountName: anthropic-oauth-proxy
-      terminationGracePeriodSeconds: 10
+      terminationGracePeriodSeconds: 6
       containers:
         # --- oauth-proxy ---
         - name: proxy

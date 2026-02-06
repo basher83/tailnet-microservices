@@ -2,7 +2,7 @@
 
 Phases 1-5 complete. All 83 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
-Nineteenth audit (v0.0.33): Comprehensive production-readiness audit found 1 deployment blocker, 2 unused dependencies, 4 hardening gaps, 1 dead code allocation, and 1 test coverage gap. All resolved: Dockerfile now creates non-root user (UID 1000) for K8s `runAsNonRoot`; removed unused `hyper` (workspace + oauth-proxy) and `serde` (common crate) dependencies; hardened K8s securityContext with `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`, `capabilities.drop: [ALL]`; pinned tailscaled sidecar to v1.94.1 (was `:latest`); configured `reqwest::Client` with `connect_timeout(5s)` and `pool_max_idle_per_host(100)`; removed dead `ServiceMetrics` from state machine `Running` variant (metrics are owned by `ProxyState`); added CLI arg precedence test; spec updated to remove `hyper` from dependency list. 83 tests passing.
+Twentieth audit (v0.0.34): Full cross-file verification of all specs, K8s manifests, CI workflow, Dockerfile, proxy logic, state machine, config loading, and dependencies. Found 2 K8s issues, 0 code bugs. Resolved: `terminationGracePeriodSeconds` reduced from 10s to 6s (DRAIN_TIMEOUT is 5s, extra 5s was wasted delay during rolling updates); added `secret.yaml` to `kustomization.yaml` (deployment references `tailscale-authkey` secret but kustomize wasn't creating it). All other areas verified clean: proxy logic, state machine transitions, metrics, health endpoint, error handling, retry strategy, Dockerfile, CI workflow, dependency list. 83 tests passing.
 
 ## Remaining Work (requires live infrastructure)
 
@@ -51,6 +51,8 @@ Nineteenth audit (v0.0.33): Comprehensive production-readiness audit found 1 dep
 - K8s Pod Security Standards (restricted profile) require `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`, and `capabilities: { drop: ["ALL"] }` on every container. Missing these can block deployment to hardened clusters.
 - Using `:latest` for sidecar images in K8s deployments breaks reproducibility and rollbacks. Pin to specific versions (e.g. `tailscale:v1.94.1`) so that `kubectl rollout undo` works predictably.
 - State machine variants should only carry data they own and use. The `Running` state had a `ServiceMetrics` that was never read because `main.rs` creates its own metrics instance wired to `ProxyState`. Dead allocations in state variants waste memory and confuse readers.
+- K8s `terminationGracePeriodSeconds` should be DRAIN_TIMEOUT + small buffer (e.g. 1s), not significantly larger. The application force-exits after DRAIN_TIMEOUT regardless, so the extra Kubernetes wait is wasted delay during rolling updates and node drains.
+- Kustomize only deploys resources listed in `kustomization.yaml`. A Secret file existing in the directory but not referenced means `kubectl apply -k` won't create it, causing pod failures when deployments reference the missing Secret via `secretKeyRef`.
 
 ## Environment Notes
 
