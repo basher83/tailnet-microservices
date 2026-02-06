@@ -121,6 +121,11 @@ async fn main() -> Result<()> {
                 let _ = handle_event(state, ServiceEvent::TailnetError("auth failed".into()));
                 anyhow::bail!("tailnet authentication failed — check TS_AUTHKEY or auth_key_file");
             }
+            Err(crate::error::Error::TailnetNotRunning(msg)) => {
+                // tailscaled not running/installed is not retryable — bail immediately
+                let _ = handle_event(state, ServiceEvent::TailnetError(msg.clone()));
+                anyhow::bail!("tailscaled not running: {msg}");
+            }
             Err(crate::error::Error::TailnetConnect(msg)) => {
                 let (new_state, action) =
                     handle_event(state, ServiceEvent::TailnetError(msg.clone()));
@@ -358,6 +363,7 @@ mod tests {
                     }
                     let method = request.method().to_string();
                     let path = request.uri().path().to_string();
+                    let query = request.uri().query().unwrap_or("").to_string();
                     let body_bytes = axum::body::to_bytes(request.into_body(), 10 * 1024 * 1024)
                         .await
                         .unwrap();
@@ -366,9 +372,14 @@ mod tests {
                         "echoed_headers": headers_map,
                         "method": method,
                         "path": path,
+                        "query": query,
                         "body": body_str,
                     });
-                    (StatusCode::OK, axum::Json(body))
+                    (
+                        StatusCode::OK,
+                        [("x-upstream-echo", "true")],
+                        axum::Json(body),
+                    )
                 });
             axum::serve(listener, app).await.unwrap();
         });
@@ -865,9 +876,11 @@ mod tests {
             .unwrap();
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
-        // The echo server only returns the path portion, but the full URL with query string
-        // is sent to the upstream via reqwest. Verify the path at minimum.
         assert_eq!(json["path"], "/v1/messages");
+        assert_eq!(
+            json["query"], "beta=true&version=2",
+            "query string must be forwarded to upstream"
+        );
     }
 
     #[tokio::test]
@@ -927,6 +940,125 @@ mod tests {
             errors_total.load(Ordering::Relaxed),
             1,
             "errors_total should be incremented on upstream failure"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_injects_multiple_headers() {
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(
+            &upstream_url,
+            vec![
+                config::HeaderInjection {
+                    name: "anthropic-beta".into(),
+                    value: "oauth-2025-04-20".into(),
+                },
+                config::HeaderInjection {
+                    name: "x-custom-tracking".into(),
+                    value: "proxy-injected".into(),
+                },
+            ],
+        );
+
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .method("POST")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(
+            json["echoed_headers"]["anthropic-beta"], "oauth-2025-04-20",
+            "first injected header must reach upstream"
+        );
+        assert_eq!(
+            json["echoed_headers"]["x-custom-tracking"], "proxy-injected",
+            "second injected header must reach upstream"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_forwards_upstream_response_headers() {
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(&upstream_url, vec![]);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/test")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        // The echo server sets x-upstream-echo: true — verify it passes through
+        assert_eq!(
+            response.headers().get("x-upstream-echo").unwrap(),
+            "true",
+            "upstream response headers must be forwarded to client"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_strips_hop_by_hop_from_response() {
+        // Start a mock upstream that returns a hop-by-hop header in the response.
+        // We use "proxy-authenticate" (a hop-by-hop header per RFC 2616) rather
+        // than "transfer-encoding" which is handled at the HTTP transport layer
+        // and causes connection errors when set manually.
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream_url = format!("http://{addr}");
+
+        let _server = tokio::spawn(async move {
+            let app = axum::Router::new().fallback(|| async {
+                (
+                    StatusCode::OK,
+                    [
+                        ("x-legit-header", "keep-me"),
+                        ("proxy-authenticate", "Basic realm=test"),
+                    ],
+                    "ok",
+                )
+            });
+            axum::serve(listener, app).await.unwrap();
+        });
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(&upstream_url, vec![]);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(Request::builder().uri("/test").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get("x-legit-header").unwrap(),
+            "keep-me",
+            "non-hop-by-hop response headers must pass through"
+        );
+        assert!(
+            response.headers().get("proxy-authenticate").is_none(),
+            "hop-by-hop 'proxy-authenticate' header must be stripped from response"
         );
     }
 }

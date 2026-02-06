@@ -74,11 +74,11 @@ pub enum ServiceState {
         listen_addr: SocketAddr,
         metrics: ServiceMetrics,
     },
-    /// Graceful shutdown, finishing in-flight requests
-    Draining {
-        pending_requests: u32,
-        deadline: Instant,
-    },
+    /// Graceful shutdown, finishing in-flight requests.
+    /// Actual drain coordination is handled by axum's `with_graceful_shutdown`
+    /// and the `in_flight` atomic counter in `ProxyState`. The state machine
+    /// only tracks the deadline for timeout purposes.
+    Draining { deadline: Instant },
     /// Terminal state
     Stopped { exit_code: i32 },
     /// Recoverable error with retry
@@ -245,27 +245,10 @@ pub fn handle_event(state: ServiceState, event: ServiceEvent) -> (ServiceState, 
 
         (ServiceState::Running { .. }, ServiceEvent::ShutdownSignal) => {
             let deadline = Instant::now() + DRAIN_TIMEOUT;
-            (
-                ServiceState::Draining {
-                    pending_requests: 0,
-                    deadline,
-                },
-                ServiceAction::None,
-            )
+            (ServiceState::Draining { deadline }, ServiceAction::None)
         }
 
         // --- Draining ---
-        (
-            ServiceState::Draining {
-                pending_requests: 0,
-                ..
-            },
-            ServiceEvent::RequestCompleted { .. },
-        ) => (
-            ServiceState::Stopped { exit_code: 0 },
-            ServiceAction::Shutdown { exit_code: 0 },
-        ),
-
         (ServiceState::Draining { .. }, ServiceEvent::DrainTimeout) => (
             ServiceState::Stopped { exit_code: 0 },
             ServiceAction::Shutdown { exit_code: 0 },
@@ -410,27 +393,9 @@ mod tests {
     fn draining_stops_on_drain_timeout() {
         let (state, action) = handle_event(
             ServiceState::Draining {
-                pending_requests: 3,
                 deadline: Instant::now(),
             },
             ServiceEvent::DrainTimeout,
-        );
-        assert!(matches!(state, ServiceState::Stopped { exit_code: 0 }));
-        assert!(matches!(action, ServiceAction::Shutdown { exit_code: 0 }));
-    }
-
-    #[test]
-    fn draining_stops_when_no_pending_requests() {
-        let (state, action) = handle_event(
-            ServiceState::Draining {
-                pending_requests: 0,
-                deadline: Instant::now() + Duration::from_secs(5),
-            },
-            ServiceEvent::RequestCompleted {
-                request_id: "req_test".into(),
-                duration: Duration::from_millis(50),
-                error: None,
-            },
         );
         assert!(matches!(state, ServiceState::Stopped { exit_code: 0 }));
         assert!(matches!(action, ServiceAction::Shutdown { exit_code: 0 }));
@@ -477,6 +442,45 @@ mod tests {
                 _ => panic!("unexpected action at retry {retry}: {action:?}"),
             }
         }
+    }
+
+    #[test]
+    fn error_state_ignores_irrelevant_events() {
+        // An Error state receiving ListenerReady (which makes no sense) should
+        // stay in Error with no action — not panic or corrupt state.
+        let (state, action) = handle_event(
+            ServiceState::Error {
+                error: "timeout".into(),
+                origin: ErrorOrigin::Tailnet,
+                retries: 1,
+                listen_addr: localhost_addr(),
+            },
+            ServiceEvent::ListenerReady,
+        );
+        assert!(matches!(
+            state,
+            ServiceState::Error {
+                retries: 1,
+                origin: ErrorOrigin::Tailnet,
+                ..
+            }
+        ));
+        assert!(matches!(action, ServiceAction::None));
+    }
+
+    #[test]
+    fn draining_ignores_irrelevant_events() {
+        // Draining state receiving ConfigLoaded should stay in Draining.
+        let (state, action) = handle_event(
+            ServiceState::Draining {
+                deadline: Instant::now() + Duration::from_secs(5),
+            },
+            ServiceEvent::ConfigLoaded {
+                listen_addr: localhost_addr(),
+            },
+        );
+        assert!(matches!(state, ServiceState::Draining { .. }));
+        assert!(matches!(action, ServiceAction::None));
     }
 
     #[test]

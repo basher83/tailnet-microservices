@@ -46,16 +46,17 @@ Rust binary that joins tailnet, injects required headers, proxies to Anthropic A
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Tailnet                              │
-│                                                             │
-│  ┌─────────┐      ┌─────────────────────┐      ┌─────────┐ │
-│  │ Aperture│ ───► │ anthropic-oauth-proxy│ ───► │External │ │
-│  │ (http://ai/)   │ (Rust + tsnet)      │      │Anthropic│ │
-│  └─────────┘      └─────────────────────┘      │   API   │ │
-│                           │                     └─────────┘ │
-│                    MagicDNS: anthropic-oauth-proxy          │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                           Tailnet                                │
+│                                                                  │
+│  ┌─────────┐      ┌──────────────────────────┐      ┌─────────┐ │
+│  │ Aperture│ ───► │  anthropic-oauth-proxy    │ ───► │External │ │
+│  │ (http://ai/)   │  (Rust + tailscaled       │      │Anthropic│ │
+│  └─────────┘      │   sidecar)                │      │   API   │ │
+│                    └──────────────────────────┘      └─────────┘ │
+│                           │                                      │
+│                    MagicDNS: anthropic-oauth-proxy                │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -68,9 +69,9 @@ Rust binary that joins tailnet, injects required headers, proxies to Anthropic A
 |------|-------------|--------|
 | `Config` | Service configuration | `tailscale: TailscaleConfig`, `proxy: ProxyConfig`, `headers: Vec<HeaderInjection>` |
 | `TailscaleConfig` | Tailnet connection settings | `hostname: String`, `auth_key: Option<Secret<String>>`, `state_dir: PathBuf` |
-| `ProxyConfig` | HTTP proxy settings | `listen_addr: SocketAddr`, `upstream_url: Url`, `timeout: Duration` |
-| `HeaderInjection` | Header to inject | `name: String`, `value: Secret<String>` |
-| `ServiceMetrics` | Runtime metrics | `requests_total: u64`, `errors_total: u64`, `latency_p99: Duration` |
+| `ProxyConfig` | HTTP proxy settings | `listen_addr: SocketAddr`, `upstream_url: String`, `timeout: Duration` |
+| `HeaderInjection` | Header to inject | `name: String`, `value: String` (not sensitive; e.g. `anthropic-beta` value) |
+| `ServiceMetrics` | Runtime metrics | `requests_total: u64`, `errors_total: u64` |
 
 ### Secret Wrapper
 
@@ -101,11 +102,11 @@ The service uses an explicit state machine for lifecycle management.
 
 | State | Description | Fields |
 |-------|-------------|--------|
-| `Initializing` | Loading config, setting up resources | `config: Config` |
+| `Initializing` | Loading config, setting up resources | (no data) |
 | `ConnectingTailnet` | Joining the tailnet | `config: Config`, `retries: u32` |
 | `Starting` | Starting HTTP listener | `config: Config`, `tailnet: TailnetHandle` |
 | `Running` | Accepting and proxying requests | `config: Config`, `tailnet: TailnetHandle`, `listener: HttpListener`, `metrics: ServiceMetrics` |
-| `Draining` | Graceful shutdown, finishing in-flight | `pending_requests: u32`, `deadline: Instant` |
+| `Draining` | Graceful shutdown, finishing in-flight | `deadline: Instant` (drain coordination handled by axum's graceful shutdown and the `in_flight` atomic counter) |
 | `Stopped` | Terminal state | `exit_code: i32` |
 | `Error` | Recoverable error with retry | `error: ServiceError`, `origin: ErrorOrigin`, `retries: u32` |
 
@@ -113,7 +114,7 @@ The service uses an explicit state machine for lifecycle management.
 
 | Event | Description | Payload |
 |-------|-------------|---------|
-| `ConfigLoaded` | Configuration parsed successfully | `Config` |
+| `ConfigLoaded` | Configuration parsed successfully | `listen_addr: SocketAddr` |
 | `TailnetConnected` | Joined tailnet, got identity | `TailnetHandle` |
 | `TailnetError` | Failed to connect to tailnet | `TailnetError` |
 | `ListenerReady` | HTTP listener bound | `HttpListener` |
@@ -127,14 +128,16 @@ The service uses an explicit state machine for lifecycle management.
 
 | Action | Description | Payload |
 |--------|-------------|---------|
-| `LoadConfig` | Read and parse config file | `PathBuf` |
+| `LoadConfig` | Read and parse config file (not in state machine) | `PathBuf` |
 | `ConnectTailnet` | Initiate tailnet connection | `TailscaleConfig` |
 | `StartListener` | Bind HTTP listener | `SocketAddr` |
-| `ProxyRequest` | Forward request to upstream | `RequestId`, `Request`, `Vec<HeaderInjection>` |
-| `SendResponse` | Return response to client | `RequestId`, `Response` |
+| `ProxyRequest` | Forward request to upstream (not in state machine) | `RequestId`, `Request`, `Vec<HeaderInjection>` |
+| `SendResponse` | Return response to client (not in state machine) | `RequestId`, `Response` |
 | `ScheduleRetry` | Set retry timer | `Duration` |
-| `EmitMetric` | Record metric | `MetricEvent` |
+| `EmitMetric` | Record metric (not in state machine) | `MetricEvent` |
 | `Shutdown` | Exit process | `i32` |
+
+`LoadConfig`, `ProxyRequest`, `SendResponse`, and `EmitMetric` are not implemented as state machine actions. Config loading happens before the state machine starts, per-request actions are handled directly by the proxy handler, and metrics are emitted inline.
 
 ---
 
@@ -151,7 +154,6 @@ The service uses an explicit state machine for lifecycle management.
 | `Running` | `RequestReceived(id, req)` | `Running` | `ProxyRequest(id, req)` |
 | `Running` | `RequestCompleted(id, dur, err)` | `Running` | `EmitMetric(...)` |
 | `Running` | `ShutdownSignal` | `Draining` | — |
-| `Draining` | `RequestCompleted` (pending=0) | `Stopped` | `Shutdown(0)` |
 | `Draining` | `DrainTimeout` | `Stopped` | `Shutdown(0)` |
 | *any* | `ShutdownSignal` (if urgent) | `Stopped` | `Shutdown(0)` |
 
@@ -213,6 +215,7 @@ te, trailer, transfer-encoding, upgrade
 | `ConfigError` | Failed to load/parse config | No |
 | `TailnetAuthError` | Invalid auth key | No |
 | `TailnetConnectError` | Network/coordination failure | Yes (backoff) |
+| `TailnetNotRunning` | Daemon not available or not configured | No |
 | `ListenerBindError` | Port in use | No |
 | `UpstreamTimeout` | Request to Anthropic timed out | Yes (per-request) |
 | `UpstreamError` | Non-2xx from upstream | No (pass through) |
