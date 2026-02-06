@@ -278,14 +278,23 @@ mod tests {
         assert!(!is_hop_by_hop("X-Custom-Header"));
     }
 
-    #[test]
-    fn test_error_response_format() {
+    #[tokio::test]
+    async fn test_error_response_format() {
         let resp = error_response(
             StatusCode::GATEWAY_TIMEOUT,
             "upstream timeout after 60s",
             "req_abc123",
         );
         assert_eq!(resp.status(), StatusCode::GATEWAY_TIMEOUT);
+
+        // Verify the response body matches the spec JSON format:
+        // {"error":{"type":"proxy_error","message":"...","request_id":"..."}}
+        let body = resp.into_body();
+        let bytes = axum::body::to_bytes(body, 1024 * 1024).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(json["error"]["type"], "proxy_error");
+        assert_eq!(json["error"]["message"], "upstream timeout after 60s");
+        assert_eq!(json["error"]["request_id"], "req_abc123");
     }
 
     #[test]

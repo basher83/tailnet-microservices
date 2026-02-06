@@ -38,7 +38,6 @@ pub struct ProxyConfig {
     pub upstream_url: String,
     #[serde(default = "default_timeout")]
     pub timeout_secs: u64,
-    #[allow(dead_code)]
     #[serde(default = "default_max_connections")]
     pub max_connections: usize,
 }
