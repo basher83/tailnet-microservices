@@ -286,10 +286,11 @@ mod tests {
         assert!(is_hop_by_hop("transfer-encoding"));
         assert!(is_hop_by_hop("upgrade"));
 
-        // Case-insensitive detection
+        // Case-insensitive detection (all 8 headers)
         assert!(is_hop_by_hop("Connection"));
         assert!(is_hop_by_hop("TRANSFER-ENCODING"));
         assert!(is_hop_by_hop("Keep-Alive"));
+        assert!(is_hop_by_hop("Proxy-Authenticate"));
         assert!(is_hop_by_hop("Proxy-Authorization"));
         assert!(is_hop_by_hop("TE"));
         assert!(is_hop_by_hop("Trailer"));

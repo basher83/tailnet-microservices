@@ -1,12 +1,14 @@
 # Implementation Plan
 
-All phases complete. All 108 tests pass (99 oauth-proxy + 9 common, including 2 ignored soak/load tests). Binary sizes well under 15MB target. Spec status updated to Complete.
+All phases complete. All 109 tests pass (100 oauth-proxy + 9 common, including 2 ignored soak/load tests). Binary sizes well under 15MB target. Both specs marked Complete.
 
 Audits 1-48: Found and fixed 70+ issues across 48 audits including 5 bugs, spec documentation gaps, K8s security context issues, state machine correctness, metrics configuration, RUNBOOK accuracy, dependency upgrades, CI/CD blockers, live cluster deployment fixes, and test coverage gaps. Key milestones: 34th audit (v0.0.48) first clean audit; 44th audit (v0.0.63) deployment went live; 46th-49th audits found only test coverage gaps and dependency updates as the codebase stabilized.
 
 Audits 50-55: Deep cross-cutting audits found and fixed PromQL aggregation, K8s probe gaps, CI vulnerability scanning, RUNBOOK documentation, and test coverage. Two consecutive clean audits (54th, 55th) with no code changes needed. See git history for details.
 
 56th audit (v0.0.78): Updated spec status from Draft to Complete. Marked all success criteria and implementation phases as complete to match production reality (Aperture E2E traffic verified 2026-02-06). Documented `rustls-pemfile` unmaintained advisory.
+
+57th audit (v0.0.79): Clean audit. Fixed tailnet.md spec status (Draft → Complete). Added test for non-default listen_addr preservation through state transitions. Added missing Proxy-Authenticate case-insensitive hop-by-hop test. No bugs found. 109 tests pass.
 
 ## Remaining Work
 

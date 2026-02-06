@@ -324,6 +324,41 @@ mod tests {
     }
 
     #[test]
+    fn non_default_listen_addr_preserved_through_transitions() {
+        // Verify a non-default address flows through ConfigLoaded -> TailnetConnected -> StartListener
+        let custom_addr: SocketAddr = "0.0.0.0:9090".parse().unwrap();
+        let (state, _) = handle_event(
+            ServiceState::Initializing,
+            ServiceEvent::ConfigLoaded {
+                listen_addr: custom_addr,
+            },
+        );
+        assert!(matches!(
+            state,
+            ServiceState::ConnectingTailnet { listen_addr, .. } if listen_addr == custom_addr
+        ));
+
+        let (state, action) = handle_event(
+            state,
+            ServiceEvent::TailnetConnected(dummy_tailnet_handle()),
+        );
+        assert!(matches!(
+            state,
+            ServiceState::Starting { listen_addr, .. } if listen_addr == custom_addr
+        ));
+        assert!(matches!(
+            action,
+            ServiceAction::StartListener { addr } if addr == custom_addr
+        ));
+
+        let (state, _) = handle_event(state, ServiceEvent::ListenerReady);
+        assert!(matches!(
+            state,
+            ServiceState::Running { listen_addr, .. } if listen_addr == custom_addr
+        ));
+    }
+
+    #[test]
     fn connecting_error_triggers_retry_with_backoff() {
         let (state, action) = handle_event(
             ServiceState::ConnectingTailnet {
