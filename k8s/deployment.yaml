@@ -112,6 +112,7 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+              add: ["FOWNER"]
           resources:
             requests:
               cpu: 50m
