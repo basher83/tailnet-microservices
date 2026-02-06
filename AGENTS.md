@@ -70,3 +70,7 @@ Before implementing any feature, consult `specs/`. Specs describe intent; code d
 - **Assume NOT implemented** — many specs describe planned features
 - **Check code first** — search before concluding something exists/doesn't exist
 - **Use specs as guidance** — follow types, states, transitions defined there
+
+## Live Infrastructure Status
+
+**2026-02-06 11:30 EST**: Cluster access restored. Talos Omni back online, kubectl authenticated, ArgoCD healthy. Remaining work items requiring live tailnet are now deployable. Suggest verifying deployment with `kubectl apply -k k8s/` when ready.
