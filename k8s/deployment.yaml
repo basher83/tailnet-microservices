@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: anthropic-oauth-proxy
+  namespace: anthropic-oauth-proxy
+  labels:
+    app: anthropic-oauth-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: anthropic-oauth-proxy
+  template:
+    metadata:
+      labels:
+        app: anthropic-oauth-proxy
+    spec:
+      serviceAccountName: anthropic-oauth-proxy
+      containers:
+        # --- oauth-proxy ---
+        - name: proxy
+          image: ghcr.io/basher83/tailnet-microservices/anthropic-oauth-proxy:main
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: tailscale-authkey
+                  key: TS_AUTHKEY
+            - name: CONFIG_PATH
+              value: /etc/anthropic-oauth-proxy/config.toml
+            - name: LOG_LEVEL
+              value: info
+          volumeMounts:
+            - name: config
+              mountPath: /etc/anthropic-oauth-proxy
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+
+        # --- tailscaled sidecar ---
+        # The proxy queries tailscaled via the Unix socket at
+        # /var/run/tailscale/tailscaled.sock for tailnet identity.
+        - name: tailscaled
+          image: ghcr.io/tailscale/tailscale:latest
+          env:
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: tailscale-authkey
+                  key: TS_AUTHKEY
+            - name: TS_HOSTNAME
+              value: anthropic-oauth-proxy
+            - name: TS_STATE_DIR
+              value: /var/lib/tailscale
+            - name: TS_USERSPACE
+              value: "true"
+            - name: TS_SOCKET
+              value: /var/run/tailscale/tailscaled.sock
+          volumeMounts:
+            - name: tailscale-state
+              mountPath: /var/lib/tailscale
+            - name: tailscale-socket
+              mountPath: /var/run/tailscale
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+
+      volumes:
+        - name: config
+          configMap:
+            name: anthropic-oauth-proxy
+        - name: tailscale-state
+          emptyDir: {}
+        - name: tailscale-socket
+          emptyDir: {}
