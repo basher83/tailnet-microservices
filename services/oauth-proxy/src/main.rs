@@ -204,6 +204,9 @@ async fn main() -> Result<()> {
         .await
         .context("server error")?;
 
+    // Mark tailnet as disconnected in Prometheus before shutting down
+    metrics::set_tailnet_connected(false);
+
     // axum's graceful shutdown has stopped accepting new connections and waited
     // for existing connections to close. Log the drain outcome.
     let remaining = in_flight.load(Ordering::Relaxed);
@@ -648,6 +651,93 @@ mod tests {
             request_id.starts_with("req_"),
             "request_id must start with 'req_' prefix, got: {request_id}"
         );
+    }
+
+    #[tokio::test]
+    async fn proxy_replaces_existing_header_with_injected_value() {
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(
+            &upstream_url,
+            vec![config::HeaderInjection {
+                name: "anthropic-beta".into(),
+                value: "oauth-2025-04-20".into(),
+            }],
+        );
+
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .method("POST")
+                    // Send a request that already has the header with a different value
+                    .header("anthropic-beta", "old-value-should-be-replaced")
+                    .header("authorization", "Bearer sk-test")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // The injected value must replace the original, not append
+        assert_eq!(
+            json["echoed_headers"]["anthropic-beta"], "oauth-2025-04-20",
+            "injected header must replace existing value"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_passes_through_upstream_non_2xx_responses() {
+        // Start a mock upstream that returns 429 Too Many Requests
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream_url = format!("http://{addr}");
+
+        let _server = tokio::spawn(async move {
+            let app = axum::Router::new().fallback(|| async {
+                (
+                    StatusCode::TOO_MANY_REQUESTS,
+                    [(axum::http::header::CONTENT_TYPE, "application/json")],
+                    r#"{"error":{"type":"rate_limit_error","message":"rate limited"}}"#,
+                )
+            });
+            axum::serve(listener, app).await.unwrap();
+        });
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(&upstream_url, vec![]);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        // The proxy must pass through the upstream's 429 status, not wrap it
+        assert_eq!(
+            response.status(),
+            StatusCode::TOO_MANY_REQUESTS,
+            "non-2xx upstream status must pass through unchanged"
+        );
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        // The upstream's error body must pass through verbatim
+        assert_eq!(json["error"]["type"], "rate_limit_error");
     }
 
     #[tokio::test]
