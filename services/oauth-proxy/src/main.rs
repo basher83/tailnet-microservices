@@ -2283,6 +2283,110 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn proxy_resends_body_on_timeout_retry() {
+        // The proxy clones body_bytes for each retry attempt. This test verifies
+        // that the upstream receives the correct body on the successful retry,
+        // not an empty or corrupted body.
+        let received_bodies = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let bodies_clone = received_bodies.clone();
+        let attempt_count = Arc::new(AtomicU64::new(0));
+        let attempt_clone = attempt_count.clone();
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream_url = format!("http://{addr}");
+
+        // Upstream that times out on first attempt, succeeds on second
+        let _server = tokio::spawn(async move {
+            let app = axum::Router::new().fallback(move |request: axum::http::Request<Body>| {
+                let bc = bodies_clone.clone();
+                let ac = attempt_clone.clone();
+                async move {
+                    let attempt = ac.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                    let body_bytes =
+                        axum::body::to_bytes(request.into_body(), crate::proxy::MAX_BODY_SIZE)
+                            .await
+                            .unwrap();
+                    let body_str = String::from_utf8_lossy(&body_bytes).to_string();
+                    bc.lock().unwrap().push(body_str.clone());
+
+                    if attempt == 0 {
+                        // First attempt: hang to trigger timeout
+                        tokio::time::sleep(Duration::from_secs(30)).await;
+                        (StatusCode::OK, body_str).into_response()
+                    } else {
+                        // Subsequent attempts: respond immediately with echoed body
+                        (StatusCode::OK, body_str).into_response()
+                    }
+                }
+            });
+            axum::serve(listener, app).await.unwrap();
+        });
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let metrics = ServiceMetrics::new();
+        let state = AppState {
+            proxy: ProxyState {
+                client: reqwest::Client::new(),
+                upstream_url,
+                headers_to_inject: vec![],
+                timeout: Duration::from_millis(50), // Short timeout to trigger retry
+                requests_total: metrics.requests_total.clone(),
+                errors_total: metrics.errors_total.clone(),
+                in_flight: metrics.in_flight.clone(),
+            },
+            metrics,
+            tailnet: None,
+            prometheus: test_prometheus_handle(),
+        };
+
+        let app = build_router(state, 1000);
+        let request_body = r#"{"model":"claude-3","messages":[{"role":"user","content":"test"}]}"#;
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .method("POST")
+                    .header("content-type", "application/json")
+                    .body(Body::from(request_body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(
+            response.status(),
+            StatusCode::OK,
+            "retry attempt should succeed"
+        );
+
+        // Verify the response body is the echoed request body from the successful retry
+        let resp_body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let resp_str = String::from_utf8(resp_body.to_vec()).unwrap();
+        assert_eq!(
+            resp_str, request_body,
+            "successful retry must receive and echo the original request body"
+        );
+
+        // Verify the body was sent on the retry attempt (at least 2 attempts made)
+        let bodies = received_bodies.lock().unwrap();
+        assert!(
+            bodies.len() >= 2,
+            "upstream must receive body on retry attempts, got {} attempts",
+            bodies.len()
+        );
+        // All attempts should receive the same body
+        for (i, body) in bodies.iter().enumerate() {
+            assert_eq!(
+                body, request_body,
+                "attempt {i} should receive the original request body, got: {body}"
+            );
+        }
+    }
+
+    #[tokio::test]
     async fn listener_bind_fails_when_port_in_use() {
         // Per spec: ListenerBindError when port is already in use.
         // The bind path in main() uses TcpListener::bind with anyhow context.

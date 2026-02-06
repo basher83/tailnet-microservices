@@ -500,6 +500,85 @@ upstream_url = "https://api.anthropic.com"
     }
 
     #[test]
+    fn test_missing_required_fields_returns_deserialization_error() {
+        // Valid TOML syntax but missing required fields should produce a clear
+        // deserialization error. This catches the boundary between "invalid TOML
+        // syntax" (parser error) and "valid TOML but wrong shape" (serde error).
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-missing-fields");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        // Missing [proxy] section entirely
+        let toml_no_proxy = r#"
+[tailscale]
+hostname = "test"
+state_dir = "/tmp"
+"#;
+        let config_path = dir.join("no_proxy.toml");
+        std::fs::write(&config_path, toml_no_proxy).unwrap();
+        unsafe { remove_env("TS_AUTHKEY") };
+
+        let result = Config::load(&config_path);
+        assert!(
+            result.is_err(),
+            "config missing [proxy] section must fail deserialization"
+        );
+        let err = format!("{}", result.unwrap_err());
+        assert!(
+            err.contains("proxy"),
+            "error should mention the missing 'proxy' field, got: {err}"
+        );
+
+        // Has [proxy] but missing listen_addr
+        let toml_no_addr = r#"
+[tailscale]
+hostname = "test"
+state_dir = "/tmp"
+
+[proxy]
+upstream_url = "https://api.anthropic.com"
+"#;
+        let config_path2 = dir.join("no_addr.toml");
+        std::fs::write(&config_path2, toml_no_addr).unwrap();
+
+        let result2 = Config::load(&config_path2);
+        assert!(
+            result2.is_err(),
+            "config missing listen_addr must fail deserialization"
+        );
+        let err2 = format!("{}", result2.unwrap_err());
+        assert!(
+            err2.contains("listen_addr"),
+            "error should mention the missing 'listen_addr' field, got: {err2}"
+        );
+
+        // Has [proxy] but missing hostname in [tailscale]
+        let toml_no_hostname = r#"
+[tailscale]
+state_dir = "/tmp"
+
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+"#;
+        let config_path3 = dir.join("no_hostname.toml");
+        std::fs::write(&config_path3, toml_no_hostname).unwrap();
+
+        let result3 = Config::load(&config_path3);
+        assert!(
+            result3.is_err(),
+            "config missing hostname must fail deserialization"
+        );
+        let err3 = format!("{}", result3.unwrap_err());
+        assert!(
+            err3.contains("hostname"),
+            "error should mention the missing 'hostname' field, got: {err3}"
+        );
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
     fn test_auth_key_file_nonexistent_returns_error() {
         let _lock = ENV_MUTEX.lock().unwrap();
         let dir = std::env::temp_dir().join("oauth-proxy-test-missing-keyfile");
