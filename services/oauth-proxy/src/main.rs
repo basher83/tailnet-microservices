@@ -10,6 +10,7 @@ mod config;
 mod error;
 mod proxy;
 mod service;
+mod tailnet;
 
 use anyhow::{Context, Result};
 use axum::Router;
@@ -19,7 +20,7 @@ use axum::routing::get;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use tokio::net::TcpListener;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -86,23 +87,47 @@ async fn main() -> Result<()> {
     state = new_state;
     info!(?action, "state: ConnectingTailnet");
 
-    // Execute ConnectTailnet action.
-    // Tailnet integration is not yet implemented (Priority 6). For now, emit a
-    // synthetic TailnetConnected with a placeholder handle so the state machine
-    // proceeds through its lifecycle. When tailnet.rs is implemented, this block
-    // will perform the actual connection.
-    let tailnet_handle = match action {
-        ServiceAction::ConnectTailnet => {
-            info!(
-                hostname = %config.tailscale.hostname,
-                "tailnet not yet implemented — using loopback placeholder"
-            );
-            TailnetHandle {
-                hostname: config.tailscale.hostname.clone(),
-                ip: "127.0.0.1".parse().unwrap(),
-            }
-        }
+    // Execute ConnectTailnet action with retry loop per state machine spec
+    match action {
+        ServiceAction::ConnectTailnet => {}
         _ => anyhow::bail!("unexpected action after ConfigLoaded: {action:?}"),
+    };
+
+    let tailnet_handle = loop {
+        match tailnet::connect(&config.tailscale.hostname).await {
+            Ok(handle) => break handle,
+            Err(crate::error::Error::TailnetAuth) => {
+                // Auth errors are not retryable — bail immediately
+                let _ = handle_event(state, ServiceEvent::TailnetError("auth failed".into()));
+                anyhow::bail!("tailnet authentication failed — check TS_AUTHKEY or auth_key_file");
+            }
+            Err(crate::error::Error::TailnetConnect(msg)) => {
+                let (new_state, action) =
+                    handle_event(state, ServiceEvent::TailnetError(msg.clone()));
+                state = new_state;
+
+                match action {
+                    ServiceAction::ScheduleRetry { delay } => {
+                        warn!(
+                            error = %msg,
+                            retry_in_secs = delay.as_secs(),
+                            "tailnet connection failed, retrying"
+                        );
+                        tokio::time::sleep(delay).await;
+
+                        // RetryTimer transitions Error -> ConnectingTailnet
+                        let (new_state, _) = handle_event(state, ServiceEvent::RetryTimer);
+                        state = new_state;
+                    }
+                    ServiceAction::Shutdown { exit_code } => {
+                        error!(error = %msg, "tailnet connection failed after max retries");
+                        std::process::exit(exit_code);
+                    }
+                    _ => anyhow::bail!("tailnet connection failed: {msg}"),
+                }
+            }
+            Err(e) => anyhow::bail!("unexpected tailnet error: {e}"),
+        }
     };
 
     // Transition: ConnectingTailnet -> Starting
@@ -180,19 +205,24 @@ async fn health_handler(State(state): State<AppState>) -> impl IntoResponse {
     let requests = state.metrics.requests_total.load(Ordering::Relaxed);
     let errors = state.metrics.errors_total.load(Ordering::Relaxed);
 
-    let tailnet_status = if state.tailnet.is_some() {
-        "connected"
-    } else {
-        "not_connected"
+    let body = match &state.tailnet {
+        Some(handle) => serde_json::json!({
+            "status": "healthy",
+            "tailnet": "connected",
+            "tailnet_hostname": handle.hostname,
+            "tailnet_ip": handle.ip.to_string(),
+            "uptime_seconds": uptime,
+            "requests_served": requests,
+            "errors_total": errors,
+        }),
+        None => serde_json::json!({
+            "status": "healthy",
+            "tailnet": "not_connected",
+            "uptime_seconds": uptime,
+            "requests_served": requests,
+            "errors_total": errors,
+        }),
     };
-
-    let body = serde_json::json!({
-        "status": "healthy",
-        "tailnet": tailnet_status,
-        "uptime_seconds": uptime,
-        "requests_served": requests,
-        "errors_total": errors,
-    });
 
     (
         axum::http::StatusCode::OK,

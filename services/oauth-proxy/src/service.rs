@@ -22,9 +22,7 @@ pub enum ErrorOrigin {
 }
 
 /// Opaque handle representing an active tailnet connection.
-/// Fields read when tailnet integration is implemented (Priority 6).
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct TailnetHandle {
     pub hostname: String,
     pub ip: std::net::IpAddr,
