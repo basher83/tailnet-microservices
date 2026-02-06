@@ -368,15 +368,15 @@ Package name is `oauth-proxy` with binary name `anthropic-oauth-proxy` (via `[[b
 # Key workspace dependencies
 tokio = { version = "1", features = ["full"] }
 axum = "0.8"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "http2", "stream"] }
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "http2", "stream"] }
 tailscale-localapi = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-toml = "0.8"
+toml = "0.9"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 metrics = "0.24"
-metrics-exporter-prometheus = "0.16"
+metrics-exporter-prometheus = "0.18"
 tower = { version = "0.5", features = ["limit"] }
 zeroize = "1"
 uuid = { version = "1", features = ["v4"] }
@@ -458,7 +458,7 @@ panic = "abort"
 ## Resolved Questions
 
 1. **tsnet-rs maturity** — Chose Option B (`tailscaled` sidecar + `tailscale-localapi` v0.4.2) over libtailscale FFI. The sidecar pattern avoids Go build dependencies and uses a production-grade crate. See `IMPLEMENTATION_PLAN.md` for details.
-2. **TLS termination** — Inbound TLS is handled by Aperture / tailnet WireGuard encryption. The proxy listens on plain TCP. Outbound to upstream uses `reqwest` with `rustls-tls`.
+2. **TLS termination** — Inbound TLS is handled by Aperture / tailnet WireGuard encryption. The proxy listens on plain TCP. Outbound to upstream uses `reqwest` with `rustls`.
 3. **Multi-tenant** — Single-tenant: one proxy instance injects a fixed set of headers from `[[headers]]` config. Deploy separate instances for different header sets.
 4. **State persistence** — Since Option B was chosen, `state_dir` is deserialized from TOML for schema compliance but the Rust service does not use it. `tailscaled` manages its own state externally.
 5. **Auth key usage** — Since Option B was chosen, `auth_key` and `auth_key_file` are loaded from config/env for schema compliance but are not passed to the tailnet module. The Rust service queries an already-authenticated `tailscaled`; authentication is the sidecar's responsibility.

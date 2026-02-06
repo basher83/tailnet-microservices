@@ -24,6 +24,8 @@ Thirtieth audit (v0.0.43): Comprehensive Opus-level audit using parallel subagen
 
 Thirty-first audit (v0.0.44): Comprehensive Opus-level audit using parallel subagents across all dimensions: 10 Rust source files, 2 specs, 7 K8s manifests, Dockerfile, CI workflow, RUNBOOK, and example config. 0 issues found. Cross-referenced every PromQL query, metric name/label, error type value, retry parameter, health endpoint JSON field, and config schema entry between RUNBOOK, specs, and implementation — all consistent. Verified K8s security contexts (pod-level and container-level), resource limits, probe configuration, label consistency, and kustomization exclusions. Dependency check: reqwest 0.13, toml 0.9, and metrics-exporter-prometheus 0.18 are available as major upgrades but current versions are functional and correct. All 83 tests pass, clippy clean, formatting clean. Codebase fully production-ready. All remaining work requires live infrastructure.
 
+Dependency upgrade (v0.0.45): Upgraded three workspace dependencies to latest versions. reqwest 0.12 → 0.13 (feature `rustls-tls` renamed to `rustls`, default TLS backend switched from native-tls to rustls, certificate verification now uses rustls-platform-verifier; project unaffected since it already used default-features=false with explicit rustls). toml 0.8 → 0.9 (near-complete parser rewrite for performance, API changes to Value/Deserializer/Serializer; project unaffected since it only uses `toml::from_str()` for full-document deserialization into owned structs). metrics-exporter-prometheus 0.16 → 0.18 (additive changes only: new `render_to_write()`, `render_protobuf()`, `with_recommended_naming()` methods; fully backward compatible). Updated spec dependency table and TLS reference to match. All 83 tests pass, clippy clean, formatting clean.
+
 ## Remaining Work (requires live infrastructure)
 
 - [ ] Aperture config update — route `http://ai/` to the proxy (requires live tailnet)
@@ -83,6 +85,7 @@ Thirty-first audit (v0.0.44): Comprehensive Opus-level audit using parallel suba
 - K8s restricted pod security profile requires pod-level `securityContext` with `seccompProfile.type: RuntimeDefault`. Container-level security contexts alone are insufficient — admission controllers check the pod-level seccomp profile separately. Also set `fsGroup` at the pod level so emptyDir volumes are writable by the non-root group.
 - `unreachable!()` in non-test code paths is a latent process abort, especially with `panic = "abort"` in the release profile. Even if the current caller never triggers the arm, future code changes might. Replace `unreachable!()` with defensive no-op returns in state machines where the arm is theoretically reachable but practically unused.
 - K8s resources should carry consistent `app:` labels even if they are not selected by anything. Labels enable `kubectl get <kind> -l app=<name>` queries for discovering all resources belonging to a project, which aids operational debugging and bulk cleanup.
+- reqwest 0.13 renamed the `rustls-tls` feature to `rustls`. The `.query()` and `.form()` RequestBuilder methods are now behind opt-in feature flags (`query`, `form`). TLS-related ClientBuilder methods got `tls_` prefixes (old names still work but are deprecated). If using `default-features = false`, the only required change is the feature rename.
 
 ## Environment Notes
 

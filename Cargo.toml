@@ -17,11 +17,11 @@ tokio = { version = "1", features = ["full"] }
 
 # HTTP
 axum = "0.8"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "http2", "stream"] }
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "http2", "stream"] }
 
 # Config
 serde = { version = "1", features = ["derive"] }
-toml = "0.8"
+toml = "0.9"
 
 # Observability
 tracing = "0.1"
@@ -41,7 +41,7 @@ tailscale-localapi = "0.4"
 
 # Metrics
 metrics = "0.24"
-metrics-exporter-prometheus = "0.16"
+metrics-exporter-prometheus = "0.18"
 
 # Middleware
 tower = { version = "0.5", features = ["limit"] }
