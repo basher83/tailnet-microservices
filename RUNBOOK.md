@@ -52,7 +52,7 @@ kubectl create secret docker-registry ghcr-pull-secret \
   --docker-password=<pat-with-read-packages>
 ```
 
-If the GHCR package is public, this secret is still referenced by the deployment but unused — Kubernetes tolerates a missing `imagePullSecret` when anonymous pulls succeed.
+If the GHCR package is public, anonymous pulls succeed without this secret. Kubernetes tolerates a missing `imagePullSecret` reference — it emits a warning event on the pod but proceeds with the pull. These warnings are harmless and can be ignored.
 
 ### Verify Deployment
 
@@ -94,6 +94,17 @@ kubectl create secret generic tailscale-authkey \
 
 kubectl -n anthropic-oauth-proxy rollout restart deployment/anthropic-oauth-proxy
 ```
+
+### Rollback
+
+If a deployment introduces issues, roll back to the previous revision:
+
+```bash
+kubectl -n anthropic-oauth-proxy rollout undo deployment/anthropic-oauth-proxy
+kubectl -n anthropic-oauth-proxy rollout status deployment/anthropic-oauth-proxy
+```
+
+Kubernetes retains the previous ReplicaSet by default, so `rollout undo` restores both the container image and the ConfigMap hash from the prior revision. For rollbacks beyond one revision, use `rollout undo --to-revision=<N>` where `N` is from `rollout history`.
 
 ## Endpoints
 
