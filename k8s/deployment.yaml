@@ -110,11 +110,16 @@ spec:
               value: ""
             - name: TS_HEALTHCHECK_ADDR_PORT
               value: "127.0.0.1:9002"
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 9002
+            periodSeconds: 2
+            failureThreshold: 30
           livenessProbe:
             httpGet:
               path: /healthz
               port: 9002
-            initialDelaySeconds: 10
             periodSeconds: 30
             failureThreshold: 3
           readinessProbe:
