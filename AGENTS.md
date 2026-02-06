@@ -100,3 +100,30 @@ kubectl delete pod -n anthropic-oauth-proxy -l app=anthropic-oauth-proxy
 ```
 
 ImagePullBackOff blocker is cleared.
+
+## Aperture Integration COMPLETE
+
+**2026-02-06 16:20 EST**: Aperture has been configured to route through the oauth-proxy. E2E traffic confirmed working.
+
+**Verification performed:**
+```bash
+curl -s https://ai.tailfb3ea.ts.net/v1/messages \
+  -H "Content-Type: application/json" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{"model": "claude-haiku-4-5", "max_tokens": 50, "messages": [{"role": "user", "content": "Say hello"}]}'
+
+# Response: {"model":"claude-haiku-4-5-20251001","content":[{"text":"Hello, world friend."}]...}
+```
+
+**Status:**
+- ✅ Aperture config updated with `anthropic-oauth` provider
+- ✅ `tailnet: true` routing confirmed working
+- ✅ Request visible in Aperture dashboard (Metric ID: 235)
+- ✅ anthropic-beta header injection verified (OAuth tokens now work)
+
+**Remaining items from IMPLEMENTATION_PLAN.md can now be marked complete:**
+- Aperture routes to proxy: DONE
+- ACL connectivity from Aperture: VERIFIED
+- Production traffic: FLOWING
+
+The proxy is live and serving requests. Update IMPLEMENTATION_PLAN.md accordingly.
