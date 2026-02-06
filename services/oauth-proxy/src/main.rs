@@ -1160,6 +1160,32 @@ mod tests {
             .unwrap();
         assert_eq!(response.status(), StatusCode::OK);
 
+        // Trigger an upstream error to record proxy_upstream_errors_total
+        let handle_err = GLOBAL_HANDLE.get().unwrap().clone();
+        let metrics_err = ServiceMetrics::new();
+        let state_err = AppState {
+            proxy: ProxyState {
+                client: reqwest::Client::new(),
+                upstream_url: "http://127.0.0.1:1".into(),
+                headers_to_inject: vec![],
+                timeout: Duration::from_secs(5),
+                requests_total: metrics_err.requests_total.clone(),
+                errors_total: metrics_err.errors_total.clone(),
+                in_flight: metrics_err.in_flight.clone(),
+            },
+            metrics: metrics_err,
+            tailnet: None,
+            prometheus: handle_err,
+        };
+        let app_err = build_router(state_err, 1000);
+        let _ = app_err
+            .oneshot(Request::builder().uri("/fail").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        // Set tailnet_connected gauge so it appears in output
+        crate::metrics::set_tailnet_connected(true);
+
         // Now check the /metrics endpoint output contains spec-defined metric names.
         // Rebuild the router to hit /metrics (oneshot consumes the service).
         let metrics2 = ServiceMetrics::new();
@@ -1197,11 +1223,19 @@ mod tests {
         // Verify all four spec-defined metric names appear in the Prometheus output
         assert!(
             rendered.contains("proxy_requests_total"),
-            "/metrics must contain proxy_requests_total after a proxied request.\nRendered:\n{rendered}"
+            "/metrics must contain proxy_requests_total.\nRendered:\n{rendered}"
         );
         assert!(
             rendered.contains("proxy_request_duration_seconds"),
-            "/metrics must contain proxy_request_duration_seconds after a proxied request.\nRendered:\n{rendered}"
+            "/metrics must contain proxy_request_duration_seconds.\nRendered:\n{rendered}"
+        );
+        assert!(
+            rendered.contains("proxy_upstream_errors_total"),
+            "/metrics must contain proxy_upstream_errors_total.\nRendered:\n{rendered}"
+        );
+        assert!(
+            rendered.contains("tailnet_connected"),
+            "/metrics must contain tailnet_connected.\nRendered:\n{rendered}"
         );
     }
 
@@ -1543,5 +1577,66 @@ mod tests {
             json["echoed_headers"]["anthropic-beta"], "oauth-2025-04-20",
             "non-authorization injections must still be applied"
         );
+    }
+
+    #[tokio::test]
+    async fn proxy_preserves_multi_value_request_headers() {
+        // HTTP allows multiple values for the same header name (e.g. multiple
+        // Cookie or Accept-Encoding values). The proxy must preserve all values
+        // using append() rather than insert() when copying headers.
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream_url = format!("http://{addr}");
+
+        let _server = tokio::spawn(async move {
+            let app =
+                axum::Router::new().fallback(|request: axum::http::Request<Body>| async move {
+                    // Collect all values for each header name into arrays
+                    let mut headers_map: std::collections::HashMap<String, Vec<String>> =
+                        std::collections::HashMap::new();
+                    for (name, value) in request.headers() {
+                        headers_map
+                            .entry(name.to_string())
+                            .or_default()
+                            .push(value.to_str().unwrap_or("").to_string());
+                    }
+                    let body = serde_json::json!({ "headers": headers_map });
+                    (StatusCode::OK, axum::Json(body))
+                });
+            axum::serve(listener, app).await.unwrap();
+        });
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(&upstream_url, vec![]);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/test")
+                    .header("x-multi", "value1")
+                    .header("x-multi", "value2")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        let values = json["headers"]["x-multi"]
+            .as_array()
+            .expect("x-multi should be an array of values");
+        assert_eq!(
+            values.len(),
+            2,
+            "both multi-value header values must be preserved, got: {values:?}"
+        );
+        assert!(values.contains(&serde_json::json!("value1")));
+        assert!(values.contains(&serde_json::json!("value2")));
     }
 }

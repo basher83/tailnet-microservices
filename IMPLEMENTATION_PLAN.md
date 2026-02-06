@@ -1,8 +1,8 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 68 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 69 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
-Fourth spec audit (v0.0.21): Found 0 bugs, 1 spec gap, and 12 missing test assertions. All addressed: 12 new tests added (68 total), spec precedence table fixed.
+Fifth spec audit (v0.0.22): Found 1 bug, 3 spec gaps, and 3 missing test assertions. All addressed: 1 bug fixed, 3 spec gaps resolved, 1 new test added (69 total).
 
 ## Remaining Work (requires live infrastructure)
 
@@ -11,43 +11,27 @@ Fourth spec audit (v0.0.21): Found 0 bugs, 1 spec gap, and 12 missing test asser
 - [ ] Test MagicDNS hostname resolution (requires live tailnet)
 - [ ] Verify ACL connectivity from Aperture (requires live tailnet + Aperture)
 
-## Test Coverage Added (v0.0.21)
+## Bug Fixed & Improvements (v0.0.22)
 
-Fourth spec audit found 0 bugs but 12 missing test assertions and 1 spec gap:
+Fifth spec audit found 1 bug, 3 spec gaps, and 3 missing test assertions:
 
-- Secret Display trait redaction (common crate)
-- ShutdownSignal from all states: Initializing, Starting, Error, Draining (service.rs)
-- Stopped state is terminal: events don't escape terminal state (service.rs)
-- Stopped + ShutdownSignal stays stopped (service.rs)
-- Health endpoint Content-Type is application/json (main.rs)
-- Error response Content-Type is application/json (proxy.rs)
-- Authorization injection blocked even when client sends no auth header (main.rs)
-- auth_key_file with empty/whitespace content yields no auth key (config.rs)
-- auth_key_file pointing to nonexistent path returns error (config.rs)
-- Spec gap: env var table "Overrides" column renamed to "Fallback for" to match stated precedence (specs/oauth-proxy.md)
-
-## Bugs Fixed (v0.0.20)
-
-- `host` header from client was forwarded verbatim to upstream, sending the proxy's tailnet hostname (e.g. `anthropic-oauth-proxy`) instead of letting reqwest derive the correct host from the upstream URL. This would cause 400/421 errors from upstream servers that validate the Host header.
-- `authorization` header was not protected from injection overwrite. If someone misconfigured `[[headers]]` with `name = "authorization"`, the client's Bearer token would be silently replaced. The spec explicitly states authorization must pass through unchanged.
-- Oversized body error test was missing `request_id` format verification (now asserts `req_` prefix).
+- BUG: Multi-value request headers were collapsed by `insert()` — if a client sent multiple values for the same header name (e.g. multiple Cookie values), only the last survived. Fixed by using `append()` which preserves all values. The response path already used append-style correctly.
+- Added per-request completion log with latency (`info!(status, latency_ms, "request completed")`) per the spec's observability example. Previously only errors/retries were logged; successful requests were silent.
+- Spec: Environment variable precedence table column renamed from "Fallback for" to "Precedence" with per-entry descriptions that accurately match both the stated precedence rule and the implementation.
+- Spec: Added note clarifying that the state machine drives startup lifecycle only; graceful shutdown is handled by axum's `with_graceful_shutdown` mechanism rather than by firing events through the state machine.
+- Test: Prometheus metrics test now verifies all 4 spec-defined metrics (`proxy_requests_total`, `proxy_request_duration_seconds`, `proxy_upstream_errors_total`, `tailnet_connected`). Previously only checked 2 of 4.
+- Test: Added multi-value request header preservation test to verify the `insert()` -> `append()` fix.
 
 ## Known Limitations
 
 - Health endpoint `tailnet` state is set once at startup and never updated during operation. If tailscaled drops during runtime, health still reports `"connected"`. Fixing this requires tailnet health monitoring (periodic polling of tailscaled), which is infrastructure work beyond the current spec. The `tailnet_connected` Prometheus gauge does get set to `false` during graceful shutdown.
 - `ConfigError` and `ListenerBindError` from the spec's `ServiceError` enum are not in the service's Rust error enum. Config errors use `common::Error` and listener bind errors use `anyhow`. These paths work correctly; the gap is only in enum structure.
 
-## Bugs Fixed (v0.0.18)
-
-- `NeedsMachineAuth` backend state was mapped to `TailnetConnect` (retryable), wasting 31 seconds retrying when manual admin approval is needed. Now maps to non-retryable `TailnetMachineAuth` which bails immediately with a clear message.
-- Health endpoint returned 200/healthy even when tailnet was not connected. A proxy without tailnet is degraded, not healthy. Now returns 503 with `"status": "degraded"` when tailnet is not connected.
-- Concurrency limit test was named `concurrency_limit_rejects_excess_requests` but Tower's `ConcurrencyLimitLayer` queues (not rejects). Renamed to `concurrency_limit_queues_excess_requests`.
-
 ## Learnings
 
 - Reverse proxies must strip the client's `host` header before forwarding. The client sends `Host: <proxy-address>` but the upstream expects `Host: <upstream-address>`. HTTP client libraries like reqwest automatically set the correct Host from the URL, but only if the incoming Host isn't manually set in the header map.
 - Config-driven header injection must protect safety-critical headers. The `authorization` header should never be overwritable via config, even if someone misconfigures it. This is a system boundary validation.
-
+- When copying HTTP headers in a proxy, use `append()` not `insert()` to preserve multi-value headers. `insert()` replaces, `append()` accumulates. This matters for headers like Cookie, Accept-Encoding, and custom multi-value headers.
 - Rust 2024 edition requires `unsafe {}` blocks inside `unsafe fn` bodies. Tests that call `std::env::set_var`/`remove_var` (unsafe since Rust 1.83) need both the `unsafe fn` wrapper and inner `unsafe {}` blocks.
 - Tests that mutate environment variables must be serialized with a `Mutex` to prevent data races when `cargo test` runs in parallel (default behavior). Without this, env-var-dependent tests fail nondeterministically.
 - `tracing-subscriber` requires the `env-filter` feature for `EnvFilter` support. The `json` feature alone is not sufficient.
@@ -65,7 +49,7 @@ Fourth spec audit found 0 bugs but 12 missing test assertions and 1 spec gap:
 - K8s manifests use `TS_USERSPACE=true` for the tailscaled sidecar to avoid requiring `NET_ADMIN` capabilities. The proxy and tailscaled share the Unix socket via an `emptyDir` volume.
 - GitHub Actions CI uses `dtolnay/rust-toolchain@stable` and `Swatinem/rust-cache@v2`. Docker job uses `docker/build-push-action@v6` with GHA cache. Images push to GHCR using the built-in `GITHUB_TOKEN`.
 - `BackendState::NeedsMachineAuth` requires manual admin approval in the Tailscale console. Mapping it to a retryable error wastes 31 seconds of exponential backoff before giving up. It must be non-retryable.
-- A spec-vs-implementation audit is valuable after completing major phases. Found 39 discrepancies in this project including 3 bugs, spec documentation gaps, and positive deviations.
+- A spec-vs-implementation audit is valuable after completing major phases. Found 39+ discrepancies across five audits including 4 bugs, spec documentation gaps, and positive deviations.
 
 ## Environment Notes
 

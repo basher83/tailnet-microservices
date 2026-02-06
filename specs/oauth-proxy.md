@@ -139,6 +139,8 @@ The service uses an explicit state machine for lifecycle management.
 
 `LoadConfig`, `ProxyRequest`, `SendResponse`, and `EmitMetric` are not implemented as state machine actions. Config loading happens before the state machine starts, per-request actions are handled directly by the proxy handler, and metrics are emitted inline.
 
+The state machine drives the startup lifecycle (`Initializing` through `Running`). Once `Running`, graceful shutdown is handled by axum's `with_graceful_shutdown` mechanism with a `DRAIN_TIMEOUT` enforcement, rather than by firing `ShutdownSignal`/`DrainTimeout` events through the state machine. The `Draining` and `Stopped` transitions are implemented and tested for correctness but are not exercised at runtime.
+
 ---
 
 ## State Transitions
@@ -275,11 +277,11 @@ value = "oauth-2025-04-20"
 
 ### Environment Variables
 
-| Variable | Description | Fallback for |
-|----------|-------------|--------------|
-| `TS_AUTHKEY` | Tailscale auth key | `tailscale.auth_key_file` |
-| `CONFIG_PATH` | Config file path | CLI `--config` |
-| `LOG_LEVEL` | Logging verbosity | `RUST_LOG` |
+| Variable | Description | Precedence |
+|----------|-------------|------------|
+| `TS_AUTHKEY` | Tailscale auth key | Overrides `tailscale.auth_key_file` from config |
+| `CONFIG_PATH` | Config file path | Fallback when CLI `--config` is not provided |
+| `LOG_LEVEL` | Logging verbosity | Checked first; falls back to `RUST_LOG` |
 
 ### Precedence
 
