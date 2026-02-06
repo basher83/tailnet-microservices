@@ -44,6 +44,8 @@ spec:
               value: /etc/anthropic-oauth-proxy/config.toml
             - name: LOG_LEVEL
               value: info
+            - name: TAILSCALE_SOCKET
+              value: /var/run/tailscale/tailscaled.sock
           volumeMounts:
             - name: config
               mountPath: /etc/anthropic-oauth-proxy
@@ -62,6 +64,7 @@ spec:
               path: /health
               port: http
             periodSeconds: 15
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /health
