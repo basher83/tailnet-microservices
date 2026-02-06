@@ -113,8 +113,8 @@ When tailnet is not connected (returns 503 Service Unavailable, should not happe
 {
   "status": "degraded",
   "tailnet": "not_connected",
-  "uptime_seconds": 0,
-  "requests_served": 0,
+  "uptime_seconds": 3600,
+  "requests_served": 12345,
   "errors_total": 0
 }
 ```
@@ -156,7 +156,7 @@ Set log verbosity via the `LOG_LEVEL` environment variable in the deployment. Ac
 
 ### Pod CrashLoopBackOff
 
-Check proxy container logs first. The three lifecycle errors that cause crashes:
+Check proxy container logs first. The four lifecycle errors that cause crashes:
 
 `TailnetAuth` ("Tailnet authentication failed") means the `TS_AUTHKEY` secret is invalid or expired. Generate a new auth key from the Tailscale admin console and rotate the secret (see Rotating the Tailscale Auth Key above).
 
