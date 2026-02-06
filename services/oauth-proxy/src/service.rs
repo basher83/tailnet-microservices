@@ -782,21 +782,66 @@ mod tests {
     }
 
     #[test]
-    fn connecting_ignores_listener_ready() {
-        // ConnectingTailnet receiving ListenerReady (before the listener is started)
-        // must remain in ConnectingTailnet and produce no action.
-        let (state, action) = handle_event(
-            ServiceState::ConnectingTailnet {
-                retries: 0,
+    fn connecting_ignores_unexpected_events() {
+        // ConnectingTailnet should only respond to TailnetConnected, TailnetError,
+        // and ShutdownSignal. All other events must be ignored via the catch-all.
+        let unexpected_events = vec![
+            ServiceEvent::ListenerReady,
+            ServiceEvent::ConfigLoaded {
+                listen_addr: "0.0.0.0:9090".parse().unwrap(),
+            },
+            ServiceEvent::RetryTimer,
+            ServiceEvent::DrainTimeout,
+            ServiceEvent::RequestReceived {
+                request_id: "req_test".into(),
+            },
+        ];
+        for event in unexpected_events {
+            let (state, action) = handle_event(
+                ServiceState::ConnectingTailnet {
+                    retries: 0,
+                    listen_addr: localhost_addr(),
+                },
+                event,
+            );
+            assert!(
+                matches!(state, ServiceState::ConnectingTailnet { retries: 0, .. }),
+                "ConnectingTailnet must ignore unexpected events"
+            );
+            assert!(matches!(action, ServiceAction::None));
+        }
+    }
+
+    #[test]
+    fn running_ignores_lifecycle_events() {
+        // Running should only respond to RequestReceived/RequestCompleted (no-op)
+        // and ShutdownSignal. Events from earlier lifecycle stages (ConfigLoaded,
+        // TailnetConnected, TailnetError, ListenerReady, RetryTimer, DrainTimeout)
+        // must be silently ignored via the catch-all.
+        let lifecycle_events = vec![
+            ServiceEvent::ConfigLoaded {
                 listen_addr: localhost_addr(),
             },
+            ServiceEvent::TailnetConnected(dummy_tailnet_handle()),
+            ServiceEvent::TailnetError("late error".into()),
             ServiceEvent::ListenerReady,
-        );
-        assert!(
-            matches!(state, ServiceState::ConnectingTailnet { retries: 0, .. }),
-            "ConnectingTailnet must ignore ListenerReady"
-        );
-        assert!(matches!(action, ServiceAction::None));
+            ServiceEvent::RetryTimer,
+            ServiceEvent::DrainTimeout,
+        ];
+        for event in lifecycle_events {
+            let (state, action) = handle_event(
+                ServiceState::Running {
+                    tailnet: dummy_tailnet_handle(),
+                    listen_addr: localhost_addr(),
+                },
+                event,
+            );
+            assert!(
+                matches!(state, ServiceState::Running { .. }),
+                "Running must ignore lifecycle events from earlier states"
+            );
+            assert!(matches!(action, ServiceAction::None));
+        }
     }
 
     #[test]
