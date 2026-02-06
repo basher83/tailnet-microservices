@@ -258,6 +258,12 @@ pub fn handle_event(state: ServiceState, event: ServiceEvent) -> (ServiceState, 
             ServiceAction::Shutdown { exit_code: 0 },
         ),
 
+        // Draining + ShutdownSignal: redundant signal during drain, stop immediately
+        (ServiceState::Draining { .. }, ServiceEvent::ShutdownSignal) => (
+            ServiceState::Stopped { exit_code: 0 },
+            ServiceAction::Shutdown { exit_code: 0 },
+        ),
+
         // --- Stopped is terminal: all events are no-ops ---
         (ServiceState::Stopped { exit_code }, _) => {
             (ServiceState::Stopped { exit_code }, ServiceAction::None)
