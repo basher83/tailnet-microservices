@@ -355,8 +355,22 @@ mod tests {
     use axum::body::Body;
     use axum::http::{Request, StatusCode};
     use std::sync::Arc;
+    use std::sync::OnceLock;
     use std::sync::atomic::AtomicU64;
     use tower::ServiceExt;
+
+    /// Global Prometheus handle shared by tests that need to verify metric output.
+    /// Only one global recorder can exist per process, so tests that need to read
+    /// Prometheus-rendered output after exercising `metrics::counter!()` etc. must
+    /// share this handle. Tests that don't inspect rendered output use
+    /// `test_prometheus_handle()` instead (isolated, non-global).
+    static GLOBAL_PROMETHEUS: OnceLock<PrometheusHandle> = OnceLock::new();
+
+    fn global_prometheus_handle() -> PrometheusHandle {
+        GLOBAL_PROMETHEUS
+            .get_or_init(|| crate::metrics::install_recorder())
+            .clone()
+    }
 
     /// Create a PrometheusHandle for tests without installing a global recorder.
     /// Using build_recorder() avoids the "recorder already installed" panic when
@@ -1150,20 +1164,9 @@ mod tests {
 
     #[tokio::test]
     async fn metrics_endpoint_contains_spec_metric_names_after_request() {
-        // The Prometheus recorder must be installed globally for metrics::counter!()
-        // calls to actually record. Use a Once guard since only one global recorder
-        // can exist per process. Other tests that don't need the global recorder
-        // use test_prometheus_handle() which creates an isolated (non-global) instance.
-        use std::sync::OnceLock;
-        static GLOBAL_HANDLE: OnceLock<PrometheusHandle> = OnceLock::new();
-
-        let handle = GLOBAL_HANDLE
-            .get_or_init(|| {
-                metrics_exporter_prometheus::PrometheusBuilder::new()
-                    .install_recorder()
-                    .expect("failed to install test Prometheus recorder")
-            })
-            .clone();
+        // Uses the shared global recorder so that metrics::counter!() calls
+        // are captured and visible in the rendered Prometheus output.
+        let handle = global_prometheus_handle();
 
         let (upstream_url, _server) = start_echo_server().await;
         tokio::time::sleep(Duration::from_millis(10)).await;
@@ -1199,7 +1202,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         // Trigger an upstream error to record proxy_upstream_errors_total
-        let handle_err = GLOBAL_HANDLE.get().unwrap().clone();
+        let handle_err = global_prometheus_handle();
         let metrics_err = ServiceMetrics::new();
         let state_err = AppState {
             proxy: ProxyState {
@@ -1227,7 +1230,7 @@ mod tests {
         // Now check the /metrics endpoint output contains spec-defined metric names.
         // Rebuild the router to hit /metrics (oneshot consumes the service).
         let metrics2 = ServiceMetrics::new();
-        let handle2 = GLOBAL_HANDLE.get().unwrap().clone();
+        let handle2 = global_prometheus_handle();
         let state2 = AppState {
             proxy: ProxyState {
                 client: reqwest::Client::new(),
@@ -1888,6 +1891,201 @@ mod tests {
         assert!(
             body_str.contains("data: chunk2"),
             "streamed body must contain second chunk"
+        );
+    }
+
+    #[tokio::test]
+    async fn metrics_error_type_label_records_connection_value() {
+        // The spec requires proxy_upstream_errors_total to carry an error_type
+        // label with specific values ("timeout", "connection", "invalid_request").
+        // This test verifies the actual label VALUE appears in Prometheus output,
+        // not just that the label name exists.
+        let handle = global_prometheus_handle();
+
+        // Trigger a connection error (502) to record error_type="connection"
+        let metrics = ServiceMetrics::new();
+        let state = AppState {
+            proxy: ProxyState {
+                client: reqwest::Client::new(),
+                upstream_url: "http://127.0.0.1:1".into(),
+                headers_to_inject: vec![],
+                timeout: Duration::from_secs(5),
+                requests_total: metrics.requests_total.clone(),
+                errors_total: metrics.errors_total.clone(),
+                in_flight: metrics.in_flight.clone(),
+            },
+            metrics,
+            tailnet: None,
+            prometheus: handle.clone(),
+        };
+        let app = build_router(state, 1000);
+        let _ = app
+            .oneshot(Request::builder().uri("/fail").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        let rendered = handle.render();
+        // Verify the specific error_type label value "connection" appears
+        assert!(
+            rendered.contains(r#"error_type="connection""#),
+            "proxy_upstream_errors_total must record error_type=\"connection\" for connection failures.\nRendered:\n{rendered}"
+        );
+    }
+
+    #[tokio::test]
+    async fn metrics_records_method_label_for_post_requests() {
+        // Verify that the method label in proxy_requests_total correctly reflects
+        // the HTTP method used (POST in this case, not just GET).
+        let handle = global_prometheus_handle();
+
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let metrics = ServiceMetrics::new();
+        let state = AppState {
+            proxy: ProxyState {
+                client: reqwest::Client::new(),
+                upstream_url,
+                headers_to_inject: vec![],
+                timeout: Duration::from_secs(5),
+                requests_total: metrics.requests_total.clone(),
+                errors_total: metrics.errors_total.clone(),
+                in_flight: metrics.in_flight.clone(),
+            },
+            metrics,
+            tailnet: None,
+            prometheus: handle.clone(),
+        };
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .method("POST")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let rendered = handle.render();
+        assert!(
+            rendered.contains(r#"method="POST""#),
+            "proxy_requests_total must record method=\"POST\" for POST requests.\nRendered:\n{rendered}"
+        );
+    }
+
+    #[tokio::test]
+    async fn metrics_histogram_records_buckets() {
+        // Verify that proxy_request_duration_seconds produces histogram bucket
+        // lines in Prometheus output, confirming it is a real histogram (not just
+        // a counter or gauge).
+        let handle = global_prometheus_handle();
+
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let metrics = ServiceMetrics::new();
+        let state = AppState {
+            proxy: ProxyState {
+                client: reqwest::Client::new(),
+                upstream_url,
+                headers_to_inject: vec![],
+                timeout: Duration::from_secs(5),
+                requests_total: metrics.requests_total.clone(),
+                errors_total: metrics.errors_total.clone(),
+                in_flight: metrics.in_flight.clone(),
+            },
+            metrics,
+            tailnet: None,
+            prometheus: handle.clone(),
+        };
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/test")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let rendered = handle.render();
+        // With histogram buckets configured, the metric renders as a Prometheus
+        // histogram with _bucket, _sum, and _count lines
+        assert!(
+            rendered.contains("proxy_request_duration_seconds_bucket"),
+            "histogram must produce _bucket lines.\nRendered:\n{rendered}"
+        );
+        assert!(
+            rendered.contains("proxy_request_duration_seconds_sum"),
+            "histogram must produce _sum lines.\nRendered:\n{rendered}"
+        );
+        assert!(
+            rendered.contains("proxy_request_duration_seconds_count"),
+            "histogram must produce _count lines.\nRendered:\n{rendered}"
+        );
+        // Verify bucket lines carry the status label
+        let has_bucket_with_status = rendered.lines().any(|line| {
+            line.contains("proxy_request_duration_seconds_bucket{") && line.contains("status=")
+        });
+        assert!(
+            has_bucket_with_status,
+            "histogram bucket lines must include status label.\nRendered:\n{rendered}"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_protects_authorization_case_insensitively() {
+        // HTTP headers are case-insensitive. The authorization protection must
+        // work regardless of the casing used in the injection config. This test
+        // verifies that "Authorization" (mixed case) in config is also blocked.
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(
+            &upstream_url,
+            vec![
+                config::HeaderInjection {
+                    name: "anthropic-beta".into(),
+                    value: "oauth-2025-04-20".into(),
+                },
+                config::HeaderInjection {
+                    name: "Authorization".into(),
+                    value: "Bearer INJECTED-MIXED-CASE".into(),
+                },
+            ],
+        );
+
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .method("POST")
+                    .header("authorization", "Bearer sk-real-token")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(
+            json["echoed_headers"]["authorization"], "Bearer sk-real-token",
+            "mixed-case Authorization injection must be blocked; client token must pass through"
+        );
+        assert_eq!(
+            json["echoed_headers"]["anthropic-beta"], "oauth-2025-04-20",
+            "non-authorization injections must still be applied"
         );
     }
 

@@ -1,8 +1,10 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 78 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 82 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
 Fourteenth spec audit (v0.0.28): Fix spec inaccuracy — body size limit is enforced by `axum::body::to_bytes()` limit parameter, not `DefaultBodyLimit` middleware. Add test verifying `proxy_request_duration_seconds` histogram specifically carries the `status` label (not just globally present). Add test verifying `Stopped { exit_code: 1 }` (failure exit) is terminal and preserves exit code. No implementation bugs found; 15 spec requirements confirmed correct.
+
+Fifteenth spec audit (v0.0.29): Fix duration metric rendering — `proxy_request_duration_seconds` was rendered as a Prometheus summary (quantiles) instead of the spec-mandated histogram (buckets). Configured `set_buckets_for_metric()` with standard latency buckets [5ms..60s] so `histogram_quantile()` queries in the RUNBOOK work correctly. Add 4 new test gaps: verify `error_type="connection"` label value in Prometheus output, verify `method="POST"` label for POST requests, verify histogram `_bucket` lines with `status` label, verify mixed-case `Authorization` injection is blocked. Consolidate test metrics recording to shared `global_prometheus_handle()`. 1 bug fixed (summary→histogram), 4 test gaps closed.
 
 ## Remaining Work (requires live infrastructure)
 
@@ -43,6 +45,7 @@ Fourteenth spec audit (v0.0.28): Fix spec inaccuracy — body size limit is enfo
 - K8s sidecar pattern requires both containers to mount the shared volume. The volume definition in `spec.volumes` is not enough — each container that needs the socket must have a `volumeMount` entry. Easy to miss because the tailscaled container (which creates the socket) works fine; only the consumer (proxy) fails.
 - Response bodies must be streamed, not buffered, in a proxy targeting the Claude API. The Anthropic API uses SSE (Server-Sent Events) for streaming responses. Buffering breaks real-time delivery and uses unbounded memory. Use `reqwest::Response::bytes_stream()` with `axum::body::Body::from_stream()`. Metrics (status, duration) must be collected before consuming the stream since headers are available immediately.
 - Config validation at system boundaries catches misconfigurations early: `upstream_url` must have an http(s) scheme, `timeout_secs` and `max_connections` must be non-zero. Without URL scheme validation, reqwest fails at request time with a confusing error instead of at startup.
+- `metrics-exporter-prometheus` renders `metrics::histogram!()` as a Prometheus summary (quantiles) by default. To get a true histogram (with `_bucket` lines needed by `histogram_quantile()` queries), you must configure explicit bucket boundaries via `set_buckets_for_metric()`. Without this, RUNBOOK PromQL queries referencing `_bucket` will fail silently.
 
 ## Environment Notes
 
