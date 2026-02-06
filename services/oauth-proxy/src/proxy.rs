@@ -12,6 +12,12 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{error, info, instrument, warn};
 
+/// Maximum retry attempts for upstream timeouts (spec: 2 retries = 3 total attempts)
+const MAX_UPSTREAM_ATTEMPTS: u32 = 3;
+
+/// Fixed backoff between upstream timeout retries (spec: 100ms)
+const UPSTREAM_RETRY_DELAY: Duration = Duration::from_millis(100);
+
 /// Headers to strip before forwarding (hop-by-hop per RFC 2616 Section 13.5.1)
 const HOP_BY_HOP_HEADERS: &[&str] = &[
     "connection",
@@ -151,13 +157,10 @@ pub async fn proxy_request(
     };
 
     // Retry loop: up to 2 retries (3 total attempts) for timeouts only
-    let max_attempts = 3u32;
-    let retry_delay = Duration::from_millis(100);
-
-    for attempt in 0..max_attempts {
+    for attempt in 0..MAX_UPSTREAM_ATTEMPTS {
         if attempt > 0 {
             warn!(attempt, "retrying after upstream timeout");
-            tokio::time::sleep(retry_delay).await;
+            tokio::time::sleep(UPSTREAM_RETRY_DELAY).await;
         }
 
         let req = state
@@ -204,7 +207,7 @@ pub async fn proxy_request(
                         )
                     });
             }
-            Err(e) if e.is_timeout() && attempt < max_attempts - 1 => {
+            Err(e) if e.is_timeout() && attempt < MAX_UPSTREAM_ATTEMPTS - 1 => {
                 // Timeout and we have retries left — continue loop
                 continue;
             }
@@ -219,11 +222,11 @@ pub async fn proxy_request(
                     start.elapsed().as_secs_f64(),
                 );
                 crate::metrics::record_upstream_error("timeout");
-                error!(error = %e, attempts = max_attempts, "upstream timeout after all retries");
+                error!(error = %e, attempts = MAX_UPSTREAM_ATTEMPTS, "upstream timeout after all retries");
                 return error_response(
                     err_status,
                     &format!(
-                        "upstream timeout after {}s ({max_attempts} attempts)",
+                        "upstream timeout after {}s ({MAX_UPSTREAM_ATTEMPTS} attempts)",
                         state.timeout.as_secs()
                     ),
                     &request_id,

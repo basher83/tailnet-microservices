@@ -129,7 +129,7 @@ Scrape `GET /metrics` on port 8080. Four metrics are emitted:
 
 `proxy_request_duration_seconds` (histogram) with label `status` and bucket boundaries from 5ms to 60s. Use `histogram_quantile()` in PromQL to compute latency percentiles (p50, p90, p99) from the histogram buckets at query time.
 
-`proxy_upstream_errors_total` (counter) with label `error_type` tracks upstream failures. Error types include `timeout` (upstream did not respond within `timeout_secs`), `connection` (TCP connection to upstream failed), `invalid_request` (request body exceeded 10MB limit or malformed request), and `internal` (unexpected proxy error).
+`proxy_upstream_errors_total` (counter) with label `error_type` tracks upstream failures. Error types include `timeout` (upstream did not respond within `timeout_secs`), `connection` (TCP connection to upstream failed), `invalid_request` (request body exceeded 10 MiB limit or malformed request), and `internal` (unexpected proxy error).
 
 `tailnet_connected` (gauge) is 1 when the proxy has an active tailnet connection and 0 otherwise. Alert if this drops to 0 during normal operation.
 
@@ -185,7 +185,7 @@ For sustained 504s, check Anthropic API status. If the API is healthy, consider 
 
 ### Proxy Returning 400 Bad Request
 
-Either the request body exceeds the 10MB hardcoded limit, or the request is malformed. Check the `request_id` in the error response JSON and correlate with proxy logs.
+Either the request body exceeds the 10 MiB hardcoded limit, or the request is malformed. Check the `request_id` in the error response JSON and correlate with proxy logs.
 
 ### High Latency
 
@@ -230,4 +230,4 @@ Default resource configuration from `k8s/deployment.yaml`:
 | proxy | 50m | 500m | 32Mi | 128Mi |
 | tailscaled | 50m | 250m | 64Mi | 256Mi |
 
-The proxy binary is approximately 5MB and has minimal memory overhead. Increase memory limits if serving large request/response bodies concurrently, though the 10MB body size limit provides a natural ceiling.
+The proxy binary is approximately 5MB and has minimal memory overhead. Increase memory limits if serving large request/response bodies concurrently, though the 10 MiB body size limit provides a natural ceiling.
