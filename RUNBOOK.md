@@ -211,7 +211,7 @@ The tailscaled container runs in userspace mode (`TS_USERSPACE=true`) to avoid r
 
 `TS_AUTHKEY` expired or revoked: the sidecar will fail to authenticate. Rotate the secret.
 
-State directory corruption: the sidecar stores state in `/var/lib/tailscale` (an `emptyDir` volume). Deleting the pod clears this state and forces re-authentication.
+State directory corruption: the sidecar stores state in `/var/lib/ts-state` (an `emptyDir` volume). Deleting the pod clears this state and forces re-authentication.
 
 Socket path override: the proxy reads the tailscaled Unix socket from the `TAILSCALE_SOCKET` environment variable, defaulting to `/var/run/tailscale/tailscaled.sock`. If the sidecar writes the socket to a non-standard path, set `TAILSCALE_SOCKET` in the proxy container's env to match.
 

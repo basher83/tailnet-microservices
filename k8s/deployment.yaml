@@ -97,7 +97,7 @@ spec:
             - name: TS_HOSTNAME
               value: anthropic-oauth-proxy
             - name: TS_STATE_DIR
-              value: /var/lib/tailscale
+              value: /var/lib/ts-state
             - name: TS_USERSPACE
               value: "true"
             - name: TS_SOCKET
@@ -106,7 +106,7 @@ spec:
               value: ""
           volumeMounts:
             - name: tailscale-state
-              mountPath: /var/lib/tailscale
+              mountPath: /var/lib/ts-state
             - name: tailscale-socket
               mountPath: /var/run/tailscale
           securityContext:
@@ -117,7 +117,6 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
-              add: ["FOWNER"]
           resources:
             requests:
               cpu: 50m
