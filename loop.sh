@@ -1,13 +1,22 @@
 #!/bin/bash
 # Ralph Loop for Tailnet Microservices
-# Usage: ./loop.sh [plan] [max_iterations]
+# Usage: ./loop.sh [--json] [plan] [max_iterations]
 # Examples:
-#   ./loop.sh              # Build mode, unlimited tasks
+#   ./loop.sh              # Build mode, human output
+#   ./loop.sh --json       # Build mode, JSON output
 #   ./loop.sh 20           # Build mode, max 20 tasks
 #   ./loop.sh plan         # Plan mode, unlimited
 #   ./loop.sh plan 5       # Plan mode, max 5 iterations
+#   ./loop.sh --json plan  # Plan mode, JSON output
 
-# Parse arguments
+# Parse --json flag
+OUTPUT_FORMAT=""
+if [ "$1" = "--json" ]; then
+    OUTPUT_FORMAT="--output-format=stream-json"
+    shift
+fi
+
+# Parse mode and iterations
 if [ "$1" = "plan" ]; then
     MODE="plan"
     PROMPT_FILE="PROMPT_plan.md"
@@ -30,6 +39,7 @@ echo "🦀 Tailnet Microservices — Ralph Loop"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Mode:   $MODE"
 echo "Prompt: $PROMPT_FILE"
+echo "Output: ${OUTPUT_FORMAT:-human}"
 echo "Branch: $CURRENT_BRANCH"
 [ $MAX_ITERATIONS -gt 0 ] && echo "Max:    $MAX_ITERATIONS iterations"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -49,7 +59,7 @@ while true; do
     # Run Ralph iteration
     cat "$PROMPT_FILE" | claude -p \
         --dangerously-skip-permissions \
-        --output-format=stream-json \
+        $OUTPUT_FORMAT \
         --model opus \
         --verbose
 
