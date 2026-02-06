@@ -33,6 +33,17 @@ pub struct ProxyState {
     pub timeout: Duration,
     pub requests_total: Arc<std::sync::atomic::AtomicU64>,
     pub errors_total: Arc<std::sync::atomic::AtomicU64>,
+    pub in_flight: Arc<std::sync::atomic::AtomicU64>,
+}
+
+/// RAII guard that decrements the in-flight counter when dropped, ensuring the
+/// counter stays accurate even if the handler returns early or panics.
+struct InFlightGuard(Arc<std::sync::atomic::AtomicU64>);
+
+impl Drop for InFlightGuard {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+    }
 }
 
 /// JSON error response per spec: {"error":{"type":"proxy_error","message":"...","request_id":"req_..."}}
@@ -64,6 +75,10 @@ pub async fn proxy_request(
     state
         .requests_total
         .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    state
+        .in_flight
+        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let _in_flight_guard = InFlightGuard(state.in_flight.clone());
 
     let method = request.method().clone();
     let uri = request.uri().clone();
@@ -241,5 +256,41 @@ mod tests {
             "req_abc123",
         );
         assert_eq!(resp.status(), StatusCode::GATEWAY_TIMEOUT);
+    }
+
+    #[test]
+    fn test_in_flight_guard_decrements_on_drop() {
+        let counter = Arc::new(std::sync::atomic::AtomicU64::new(0));
+        counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        assert_eq!(counter.load(std::sync::atomic::Ordering::Relaxed), 1);
+
+        {
+            let _guard = InFlightGuard(counter.clone());
+        }
+        // Guard dropped, counter should be decremented
+        assert_eq!(counter.load(std::sync::atomic::Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn test_in_flight_guard_multiple_concurrent() {
+        let counter = Arc::new(std::sync::atomic::AtomicU64::new(0));
+
+        // Simulate 3 in-flight requests
+        counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let _g1 = InFlightGuard(counter.clone());
+        counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let _g2 = InFlightGuard(counter.clone());
+        counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let _g3 = InFlightGuard(counter.clone());
+        assert_eq!(counter.load(std::sync::atomic::Ordering::Relaxed), 3);
+
+        drop(_g1);
+        assert_eq!(counter.load(std::sync::atomic::Ordering::Relaxed), 2);
+
+        drop(_g2);
+        assert_eq!(counter.load(std::sync::atomic::Ordering::Relaxed), 1);
+
+        drop(_g3);
+        assert_eq!(counter.load(std::sync::atomic::Ordering::Relaxed), 0);
     }
 }

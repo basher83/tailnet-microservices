@@ -35,6 +35,10 @@ pub struct TailnetHandle {
 pub struct ServiceMetrics {
     pub requests_total: Arc<AtomicU64>,
     pub errors_total: Arc<AtomicU64>,
+    /// Number of requests currently being processed. Used for drain coordination:
+    /// on shutdown, the service waits until this reaches 0 (or the drain deadline
+    /// expires) before exiting.
+    pub in_flight: Arc<AtomicU64>,
     pub started_at: Instant,
 }
 
@@ -43,6 +47,7 @@ impl ServiceMetrics {
         Self {
             requests_total: Arc::new(AtomicU64::new(0)),
             errors_total: Arc::new(AtomicU64::new(0)),
+            in_flight: Arc::new(AtomicU64::new(0)),
             started_at: Instant::now(),
         }
     }
@@ -454,5 +459,26 @@ mod tests {
         assert_eq!(backoff_delay(2), Duration::from_secs(4));
         assert_eq!(backoff_delay(3), Duration::from_secs(8));
         assert_eq!(backoff_delay(4), Duration::from_secs(16));
+    }
+
+    #[test]
+    fn service_metrics_initializes_in_flight_at_zero() {
+        let metrics = ServiceMetrics::new();
+        assert_eq!(
+            metrics.in_flight.load(std::sync::atomic::Ordering::Relaxed),
+            0
+        );
+        assert_eq!(
+            metrics
+                .requests_total
+                .load(std::sync::atomic::Ordering::Relaxed),
+            0
+        );
+        assert_eq!(
+            metrics
+                .errors_total
+                .load(std::sync::atomic::Ordering::Relaxed),
+            0
+        );
     }
 }
