@@ -19,7 +19,7 @@ use axum::routing::get;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use tokio::net::TcpListener;
-use tracing::info;
+use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -128,6 +128,7 @@ async fn main() -> Result<()> {
         timeout: Duration::from_secs(config.proxy.timeout_secs),
         requests_total: metrics.requests_total.clone(),
         errors_total: metrics.errors_total.clone(),
+        in_flight: metrics.in_flight.clone(),
     };
 
     let app_state = AppState {
@@ -149,10 +150,25 @@ async fn main() -> Result<()> {
     let (_state, _action) = handle_event(state, ServiceEvent::ListenerReady);
     info!(addr = %listen_addr, "state: Running — accepting requests");
 
+    // Clone in_flight counter for drain observability after shutdown
+    let in_flight = metrics.in_flight.clone();
+
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await
         .context("server error")?;
+
+    // axum's graceful shutdown has stopped accepting new connections and waited
+    // for existing connections to close. Log the drain outcome.
+    let remaining = in_flight.load(Ordering::Relaxed);
+    if remaining > 0 {
+        warn!(
+            remaining,
+            "shutdown completed with in-flight requests still tracked"
+        );
+    } else {
+        info!("all in-flight requests drained");
+    }
 
     info!("shutdown complete");
     Ok(())
