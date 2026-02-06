@@ -34,6 +34,12 @@ use crate::service::{
     handle_event,
 };
 
+/// TCP connect timeout for the upstream HTTP client (distinct from per-request timeout)
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Maximum idle connections per host in the reqwest connection pool
+const POOL_MAX_IDLE_PER_HOST: usize = 100;
+
 /// Shared application state accessible from all handlers
 #[derive(Clone)]
 struct AppState {
@@ -187,8 +193,8 @@ async fn main() -> Result<()> {
     let metrics = ServiceMetrics::new();
 
     let client = reqwest::Client::builder()
-        .connect_timeout(Duration::from_secs(5))
-        .pool_max_idle_per_host(100)
+        .connect_timeout(CONNECT_TIMEOUT)
+        .pool_max_idle_per_host(POOL_MAX_IDLE_PER_HOST)
         .build()
         .context("failed to build HTTP client")?;
 
@@ -432,9 +438,10 @@ mod tests {
                     let method = request.method().to_string();
                     let path = request.uri().path().to_string();
                     let query = request.uri().query().unwrap_or("").to_string();
-                    let body_bytes = axum::body::to_bytes(request.into_body(), 10 * 1024 * 1024)
-                        .await
-                        .unwrap();
+                    let body_bytes =
+                        axum::body::to_bytes(request.into_body(), crate::proxy::MAX_BODY_SIZE)
+                            .await
+                            .unwrap();
                     let body_str = String::from_utf8_lossy(&body_bytes).to_string();
                     let body = serde_json::json!({
                         "echoed_headers": headers_map,
@@ -1325,8 +1332,8 @@ mod tests {
         let errors_total = state.proxy.errors_total.clone();
         let app = build_router(state, 1000);
 
-        // Create a body just over 10MB
-        let oversized = vec![b'x'; 10 * 1024 * 1024 + 1];
+        // Create a body just over the limit
+        let oversized = vec![b'x'; crate::proxy::MAX_BODY_SIZE + 1];
         let response = app
             .oneshot(
                 Request::builder()
@@ -1720,8 +1727,8 @@ mod tests {
         let state = test_app_state(&upstream_url, vec![]);
         let app = build_router(state, 1000);
 
-        // Exactly 10 MiB should succeed
-        let at_limit = vec![b'x'; 10 * 1024 * 1024];
+        // Exactly at the limit should succeed
+        let at_limit = vec![b'x'; crate::proxy::MAX_BODY_SIZE];
         let response = app
             .oneshot(
                 Request::builder()

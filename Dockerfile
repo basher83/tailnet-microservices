@@ -29,6 +29,8 @@ COPY --from=builder /anthropic-oauth-proxy /usr/local/bin/anthropic-oauth-proxy
 
 USER 1000
 
+EXPOSE 8080
+
 ENV CONFIG_PATH=/etc/anthropic-oauth-proxy/config.toml
 
 ENTRYPOINT ["anthropic-oauth-proxy"]
