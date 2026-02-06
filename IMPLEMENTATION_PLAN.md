@@ -4,6 +4,8 @@ Phases 1-5 complete. All 83 tests pass. Binary sizes well under 15MB target. Spe
 
 Twenty-second audit (v0.0.36): Found 3 issues. (1) HIGH: `kustomization.yaml` included `secret.yaml` with placeholder `REPLACE_ME` value, which overwrites any real secret created imperatively before `kubectl apply -k`. Fixed by removing `secret.yaml` from kustomization resources and updating RUNBOOK deployment order. (2) LOW: Spec `Running` state still listed `metrics: ServiceMetrics` field that was intentionally removed from code. Fixed spec to match implementation. (3) LOW: AGENTS.md recommended `async-trait` crate but Rust 2024 edition has native async traits; updated guidance. All 83 tests passing.
 
+Twenty-third audit (v0.0.37): Found 2 MEDIUM issues. (1) RUNBOOK.md described `proxy_request_duration_seconds` as "automatically computing p50, p90, p99, and p999 quantiles" — this describes a Prometheus summary, not a histogram. The implementation uses explicit histogram buckets via `set_buckets_for_metric()`. Fixed RUNBOOK to reference `histogram_quantile()` PromQL and bucket boundaries. (2) `TAILSCALE_SOCKET` environment variable in `tailnet.rs` (overrides the default Unix socket path) was undocumented in both the spec and RUNBOOK. Added to spec environment variables table and RUNBOOK troubleshooting section. All 83 tests passing.
+
 ## Remaining Work (requires live infrastructure)
 
 - [ ] Aperture config update — route `http://ai/` to the proxy (requires live tailnet)
@@ -54,6 +56,8 @@ Twenty-second audit (v0.0.36): Found 3 issues. (1) HIGH: `kustomization.yaml` in
 - K8s `terminationGracePeriodSeconds` should be DRAIN_TIMEOUT + small buffer (e.g. 1s), not significantly larger. The application force-exits after DRAIN_TIMEOUT regardless, so the extra Kubernetes wait is wasted delay during rolling updates and node drains.
 - Kustomize secrets with placeholder values overwrite real secrets on `kubectl apply -k`. If a secret contains a real credential created imperatively, do NOT include it in `kustomization.yaml`. Keep a schema-documenting `secret.yaml` in the repo but excluded from kustomization resources. The RUNBOOK should instruct users to create the secret imperatively after `kubectl apply -k`.
 - K8s Pod Security Standards restricted profile requires `runAsNonRoot: true` on every container, not just the main application container. Setting `runAsUser: 1000` is not sufficient — the explicit `runAsNonRoot` field is what Kubernetes admission controllers check. Missing it on sidecar containers is easy to overlook.
+- Prometheus histograms and summaries are different metric types with different semantics. Histograms produce `_bucket`, `_sum`, and `_count` lines; quantiles are computed at query time via `histogram_quantile()`. Summaries compute quantiles client-side. Documentation must use precise terminology — saying a histogram "automatically computes quantiles" is misleading and confuses operators writing PromQL.
+- Undocumented environment variable overrides create debugging blind spots. If code reads an env var to override defaults (like `TAILSCALE_SOCKET` for the socket path), it must be documented in both the spec's environment variables table and the operational runbook's troubleshooting section.
 
 ## Environment Notes
 

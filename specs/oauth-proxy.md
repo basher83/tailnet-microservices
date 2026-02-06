@@ -296,6 +296,7 @@ value = "oauth-2025-04-20"
 | `TS_AUTHKEY` | Tailscale auth key | Sets `auth_key` directly; `auth_key_file` is not read when set |
 | `CONFIG_PATH` | Config file path | Fallback when CLI `--config` is not provided |
 | `LOG_LEVEL` | Logging verbosity | Checked first; falls back to `RUST_LOG` |
+| `TAILSCALE_SOCKET` | Override tailscaled Unix socket path | Defaults to `/var/run/tailscale/tailscaled.sock` |
 
 ### Precedence
 
