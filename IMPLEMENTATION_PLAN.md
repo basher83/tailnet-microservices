@@ -10,6 +10,8 @@ Audits 50-55: Deep cross-cutting audits found and fixed PromQL aggregation, K8s 
 
 57th audit (v0.0.79): Clean audit. Fixed tailnet.md spec status (Draft → Complete). Added test for non-default listen_addr preservation through state transitions. Added missing Proxy-Authenticate case-insensitive hop-by-hop test. No bugs found. 109 tests pass.
 
+58th audit (v0.0.80): Clean audit. Three parallel code reviewers (main.rs, proxy/service/config/error, K8s/CI/Docker) found no bugs. Replaced `cargo install cargo-audit` in CI with `rustsec/audit-check@v2.0.0` action to eliminate 2-4 minutes of source compilation per CI run. All dependencies current except `matchit` 0.8.4 (blocked by axum pin). 109 tests pass.
+
 ## Remaining Work
 
 All implementation items complete. Aperture integration verified with live E2E traffic on 2026-02-06. Spec updated to Complete status.
@@ -43,7 +45,7 @@ All implementation items complete. Aperture integration verified with live E2E t
 - Tower's `ConcurrencyLimitLayer` queues excess requests rather than rejecting them. Requests above `max_connections` will wait (not fail) until a slot opens.
 - Docker build uses native `x86_64-unknown-linux-gnu` target (not musl) inside `rust:1-bookworm`. No cross-compilation needed since Docker IS Linux.
 - K8s manifests use `TS_USERSPACE=true` for the tailscaled sidecar to avoid requiring `NET_ADMIN` capabilities. The proxy and tailscaled share the Unix socket via an `emptyDir` volume.
-- GitHub Actions CI uses `actions/checkout@v6`, `dtolnay/rust-toolchain@stable`, and `Swatinem/rust-cache@v2`. All jobs have explicit least-privilege `permissions` blocks. Docker job uses `docker/build-push-action@v6` with GHA cache. Images push to GHCR using the built-in `GITHUB_TOKEN`.
+- GitHub Actions CI uses `actions/checkout@v6`, `dtolnay/rust-toolchain@stable`, `Swatinem/rust-cache@v2`, and `rustsec/audit-check@v2.0.0`. All jobs have explicit least-privilege `permissions` blocks. Docker job uses `docker/build-push-action@v6` with GHA cache. Images push to GHCR using the built-in `GITHUB_TOKEN`.
 - `BackendState::NeedsMachineAuth` requires manual admin approval in the Tailscale console. Mapping it to a retryable error wastes 31 seconds of exponential backoff before giving up. It must be non-retryable.
 - A spec-vs-implementation audit is valuable after completing major phases. Found 43+ discrepancies across ten audits including 5 bugs, spec documentation gaps, and positive deviations. The tenth audit found 1 state machine bug (terminal state not fully inert).
 - Terminal states in a state machine must be explicitly guarded before wildcard match arms. Without a `Stopped` guard before `(_, ShutdownSignal)`, the wildcard produces a `Shutdown` action from an already-stopped state, violating the "terminal means inert" invariant.
@@ -97,6 +99,7 @@ All implementation items complete. Aperture integration verified with live E2E t
 - Measuring process RSS in Rust requires platform-specific code: `mach_task_basic_info` via `task_info()` on macOS, `/proc/self/statm` on Linux. The `libc` crate deprecates its Mach wrappers (`mach_task_self()`, `mach_task_self_`) in favor of the `mach2` crate, but `mach2` v0.4 lacks the `mach_task_basic_info` struct definition — only constants are exported. Use `libc` with `#[allow(deprecated)]` until `mach2` catches up. A compressed soak test (20K requests after warmup, asserting <5 MiB RSS growth) can validate the "zero memory growth" spec criterion without a real 24-hour run — any per-request leak of 256+ bytes would exceed the threshold.
 
 - `rustls-pemfile` v1.x is unmaintained (RUSTSEC-2025-0134). Its functionality was absorbed into `rustls-pki-types`. This crate enters the dependency tree via `tailscale-localapi` v0.4.2. No security vulnerability — purely a maintenance status advisory. The `cargo audit` CI job reports it as a warning, not a failure, because the `--deny warnings` flag is not set (advisories without CVSS scores are informational).
+- `rustsec/audit-check@v2.0.0` is the official GitHub Action for cargo-audit. It handles installation, advisory database fetching, and GitHub check creation automatically. Using `cargo install cargo-audit` in CI compiles from source on every run (2-4 minutes), which is wasteful since the action provides a pre-built binary. The action requires `token: ${{ secrets.GITHUB_TOKEN }}` for creating GitHub checks.
 
 ## Environment Notes
 
