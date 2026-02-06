@@ -87,7 +87,7 @@ kubectl -n anthropic-oauth-proxy rollout restart deployment/anthropic-oauth-prox
 
 | Path | Purpose | Response |
 |------|---------|----------|
-| `GET /health` | Liveness and readiness probe | JSON with status, tailnet state, uptime, request count |
+| `GET /health` | Startup, liveness, and readiness probe | JSON with status, tailnet state, uptime, request count |
 | `GET /metrics` | Prometheus scrape target | Text exposition format |
 | `* /*` | Proxy fallback | Forwards to upstream with header injection |
 

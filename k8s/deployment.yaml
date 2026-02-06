@@ -44,17 +44,21 @@ spec:
             - name: tailscale-socket
               mountPath: /var/run/tailscale
               readOnly: true
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 2
+            failureThreshold: 30
           livenessProbe:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: 10
             periodSeconds: 15
           readinessProbe:
             httpGet:
               path: /health
               port: http
-            initialDelaySeconds: 5
             periodSeconds: 5
           securityContext:
             runAsNonRoot: true
