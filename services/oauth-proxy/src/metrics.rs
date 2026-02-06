@@ -56,6 +56,7 @@ pub fn set_tailnet_connected(connected: bool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use metrics_exporter_prometheus::PrometheusRecorder;
 
     #[test]
     fn record_functions_do_not_panic_without_recorder() {
@@ -65,5 +66,142 @@ mod tests {
         record_upstream_error("timeout");
         set_tailnet_connected(true);
         set_tailnet_connected(false);
+    }
+
+    /// Create an isolated recorder/handle pair for unit tests.
+    /// Uses build_recorder() instead of install_recorder() to avoid the
+    /// global recorder singleton constraint — only one global recorder can
+    /// exist per process, and install_recorder() panics on a second call.
+    fn isolated_recorder() -> (PrometheusRecorder, PrometheusHandle) {
+        let recorder = PrometheusBuilder::new()
+            .set_buckets_for_metric(
+                metrics_exporter_prometheus::Matcher::Full(
+                    "proxy_request_duration_seconds".to_string(),
+                ),
+                &[
+                    0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0,
+                ],
+            )
+            .expect("failed to set histogram buckets")
+            .build_recorder();
+        let handle = recorder.handle();
+        (recorder, handle)
+    }
+
+    #[test]
+    fn record_request_increments_counter_and_histogram() {
+        // Verifies that record_request() actually writes to the Prometheus
+        // recorder so that /metrics renders the expected counter and histogram
+        // lines. Without an installed recorder these calls are silent no-ops,
+        // which would leave operators with empty dashboards.
+        let (recorder, handle) = isolated_recorder();
+        let _guard = metrics::set_default_local_recorder(&recorder);
+
+        record_request(200, "GET", 0.042);
+        record_request(500, "POST", 1.5);
+
+        let output = handle.render();
+        assert!(
+            output.contains("proxy_requests_total"),
+            "rendered output must contain proxy_requests_total counter"
+        );
+        assert!(
+            output.contains("status=\"200\""),
+            "counter must carry status label"
+        );
+        assert!(
+            output.contains("method=\"GET\""),
+            "counter must carry method label"
+        );
+        assert!(
+            output.contains("status=\"500\""),
+            "second request status label must appear"
+        );
+        assert!(
+            output.contains("method=\"POST\""),
+            "second request method label must appear"
+        );
+        assert!(
+            output.contains("proxy_request_duration_seconds_bucket"),
+            "histogram must render _bucket lines for histogram_quantile() queries"
+        );
+    }
+
+    #[test]
+    fn record_upstream_error_increments_counter_with_label() {
+        // Verifies the upstream error counter is recorded with the error_type
+        // label so that operators can alert on specific failure modes (timeout
+        // vs connection refused vs other).
+        let (recorder, handle) = isolated_recorder();
+        let _guard = metrics::set_default_local_recorder(&recorder);
+
+        record_upstream_error("timeout");
+        record_upstream_error("connection");
+
+        let output = handle.render();
+        assert!(
+            output.contains("proxy_upstream_errors_total"),
+            "rendered output must contain proxy_upstream_errors_total counter"
+        );
+        assert!(
+            output.contains("error_type=\"timeout\""),
+            "error_type label must be recorded"
+        );
+        assert!(
+            output.contains("error_type=\"connection\""),
+            "distinct error_type values must appear separately"
+        );
+    }
+
+    #[test]
+    fn set_tailnet_connected_updates_gauge() {
+        // The tailnet_connected gauge drives the health endpoint status code
+        // (200 vs 503) and Prometheus alerts. Verify it toggles between 1 and 0.
+        let (recorder, handle) = isolated_recorder();
+        let _guard = metrics::set_default_local_recorder(&recorder);
+
+        set_tailnet_connected(true);
+        let output = handle.render();
+        assert!(
+            output.contains("tailnet_connected"),
+            "rendered output must contain tailnet_connected gauge"
+        );
+        assert!(
+            output.contains("tailnet_connected 1"),
+            "gauge must be 1 when connected"
+        );
+
+        set_tailnet_connected(false);
+        let output = handle.render();
+        assert!(
+            output.contains("tailnet_connected 0"),
+            "gauge must be 0 when disconnected"
+        );
+    }
+
+    #[test]
+    fn histogram_buckets_cover_spec_range() {
+        // The spec requires histogram buckets from 5ms to 60s so that
+        // histogram_quantile() queries in Grafana/RUNBOOK produce meaningful
+        // results. Without explicit buckets, metrics-exporter-prometheus
+        // renders summaries (quantiles) instead of histograms (_bucket lines),
+        // breaking all RUNBOOK PromQL.
+        let (recorder, handle) = isolated_recorder();
+        let _guard = metrics::set_default_local_recorder(&recorder);
+
+        record_request(200, "GET", 0.003); // 3ms, below lowest bucket
+
+        let output = handle.render();
+        // Verify specific bucket boundaries from the spec
+        assert!(output.contains("le=\"0.005\""), "5ms bucket must exist");
+        assert!(output.contains("le=\"0.01\""), "10ms bucket must exist");
+        assert!(
+            output.contains("le=\"60\""),
+            "60s bucket must exist (upper bound of timeout range)"
+        );
+        assert!(
+            output.contains("le=\"+Inf\""),
+            "+Inf bucket must exist (Prometheus convention)"
+        );
     }
 }
