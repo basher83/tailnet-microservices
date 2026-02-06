@@ -16,11 +16,6 @@ impl<T: Zeroize> Secret<T> {
     pub fn expose(&self) -> &T {
         &self.0
     }
-
-    /// Consume and expose the inner value
-    pub fn into_inner(self) -> T {
-        self.0
-    }
 }
 
 impl<T: Zeroize> fmt::Debug for Secret<T> {
