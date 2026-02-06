@@ -277,12 +277,6 @@ pub fn handle_event(state: ServiceState, event: ServiceEvent) -> (ServiceState, 
     }
 }
 
-/// Compute exponential backoff delay for a given retry count.
-#[allow(dead_code)]
-pub fn backoff_delay(retries: u32) -> Duration {
-    Duration::from_secs(2u64.pow(retries))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -451,12 +445,33 @@ mod tests {
     }
 
     #[test]
-    fn backoff_delay_calculation() {
-        assert_eq!(backoff_delay(0), Duration::from_secs(1));
-        assert_eq!(backoff_delay(1), Duration::from_secs(2));
-        assert_eq!(backoff_delay(2), Duration::from_secs(4));
-        assert_eq!(backoff_delay(3), Duration::from_secs(8));
-        assert_eq!(backoff_delay(4), Duration::from_secs(16));
+    fn connecting_error_backoff_values_match_spec() {
+        // Spec: "Exponential: 1s, 2s, 4s, 8s, 16s"
+        let expected = [1, 2, 4, 8, 16];
+        for (retry, &expected_secs) in expected.iter().enumerate() {
+            let (_, action) = handle_event(
+                ServiceState::ConnectingTailnet {
+                    retries: retry as u32,
+                    listen_addr: localhost_addr(),
+                },
+                ServiceEvent::TailnetError("test".into()),
+            );
+            match action {
+                ServiceAction::ScheduleRetry { delay } => {
+                    assert_eq!(
+                        delay,
+                        Duration::from_secs(expected_secs),
+                        "retry {retry}: expected {expected_secs}s backoff"
+                    );
+                }
+                ServiceAction::Shutdown { .. } => {
+                    // retry 5 (index 4 is 16s, retry 5 triggers shutdown)
+                    // but we only iterate 0..5, so all should be ScheduleRetry
+                    panic!("unexpected shutdown at retry {retry}");
+                }
+                _ => panic!("unexpected action at retry {retry}: {action:?}"),
+            }
+        }
     }
 
     #[test]
