@@ -10,7 +10,7 @@ use axum::response::{IntoResponse, Response};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tracing::{error, instrument, warn};
+use tracing::{error, info, instrument, warn};
 
 /// Headers to strip before forwarding (hop-by-hop per RFC 2616 Section 13.5.1)
 const HOP_BY_HOP_HEADERS: &[&str] = &[
@@ -96,10 +96,13 @@ pub async fn proxy_request(
     // The host header carries the proxy's hostname (e.g. "anthropic-oauth-proxy")
     // but the upstream expects its own hostname (e.g. "api.anthropic.com").
     // Reqwest automatically sets the correct Host from the upstream URL.
+    //
+    // Uses append() instead of insert() to preserve multi-value headers
+    // (e.g. multiple Cookie or Accept-Encoding values from the client).
     let mut headers = reqwest::header::HeaderMap::new();
     for (name, value) in request.headers() {
         if !is_hop_by_hop(name.as_str()) && name != axum::http::header::HOST {
-            headers.insert(name.clone(), value.clone());
+            headers.append(name.clone(), value.clone());
         }
     }
 
@@ -171,10 +174,16 @@ pub async fn proxy_request(
 
                 match upstream_response.bytes().await {
                     Ok(resp_body) => {
+                        let elapsed = start.elapsed();
                         crate::metrics::record_request(
                             status.as_u16(),
                             &method_str,
-                            start.elapsed().as_secs_f64(),
+                            elapsed.as_secs_f64(),
+                        );
+                        info!(
+                            status = status.as_u16(),
+                            latency_ms = elapsed.as_millis() as u64,
+                            "request completed"
                         );
                         let mut response = Response::builder().status(status);
                         for (name, value) in &resp_headers {
