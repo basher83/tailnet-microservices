@@ -7,7 +7,7 @@
 //! On Linux, connects via Unix socket at `/var/run/tailscale/tailscaled.sock`.
 //! On macOS, connects via TCP to the local API port.
 
-use crate::error::Error;
+use crate::error::{Error, Result};
 use crate::service::TailnetHandle;
 use std::path::Path;
 use tailscale_localapi::LocalApi;
@@ -21,7 +21,7 @@ const DEFAULT_SOCKET_PATH: &str = "/var/run/tailscale/tailscaled.sock";
 ///
 /// The `expected_hostname` is the hostname from config — we log a warning if
 /// the tailnet reports a different one (misconfiguration) but use the real one.
-pub async fn connect(expected_hostname: &str) -> Result<TailnetHandle, Error> {
+pub async fn connect(expected_hostname: &str) -> Result<TailnetHandle> {
     let status = fetch_status().await?;
 
     // Verify tailscaled is in a usable state
@@ -87,7 +87,7 @@ pub async fn connect(expected_hostname: &str) -> Result<TailnetHandle, Error> {
 }
 
 /// Fetch status from the tailscaled local API, auto-detecting the transport.
-async fn fetch_status() -> Result<tailscale_localapi::types::Status, Error> {
+async fn fetch_status() -> Result<tailscale_localapi::types::Status> {
     // On macOS, tailscaled uses a TCP port with a password file for auth.
     // On Linux, it uses a Unix domain socket.
     #[cfg(target_os = "macos")]
@@ -103,7 +103,7 @@ async fn fetch_status() -> Result<tailscale_localapi::types::Status, Error> {
 
 /// Connect via Unix socket (Linux and other Unix-like systems).
 #[cfg(not(target_os = "macos"))]
-async fn fetch_status_unix() -> Result<tailscale_localapi::types::Status, Error> {
+async fn fetch_status_unix() -> Result<tailscale_localapi::types::Status> {
     let socket_path =
         std::env::var("TAILSCALE_SOCKET").unwrap_or_else(|_| DEFAULT_SOCKET_PATH.to_string());
 
@@ -124,7 +124,7 @@ async fn fetch_status_unix() -> Result<tailscale_localapi::types::Status, Error>
 /// Connect via TCP on macOS. Reads the local API port and password from the
 /// macOS-specific locations where Tailscale stores them.
 #[cfg(target_os = "macos")]
-async fn fetch_status_macos() -> Result<tailscale_localapi::types::Status, Error> {
+async fn fetch_status_macos() -> Result<tailscale_localapi::types::Status> {
     // On macOS, tailscaled exposes the local API on a TCP port.
     // The port is written to a file, and a password is required.
     //
