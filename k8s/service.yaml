@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: anthropic-oauth-proxy
+  namespace: anthropic-oauth-proxy
+  labels:
+    app: anthropic-oauth-proxy
+spec:
+  selector:
+    app: anthropic-oauth-proxy
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
