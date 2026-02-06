@@ -1,5 +1,23 @@
+# Build artifacts
 target/
+
+# Git
 .git/
-.github/
-specs/
+.gitignore
+
+# Kubernetes manifests (not needed in image)
+k8s/
+
+# Documentation and specs
 *.md
+specs/
+.specstory/
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# CI
+.github/

@@ -469,6 +469,37 @@ max_connections = 0
     }
 
     #[test]
+    fn test_auth_key_env_overrides_nonexistent_file() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-env-over-missing");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[tailscale]
+hostname = "test"
+state_dir = "/tmp"
+auth_key_file = "/nonexistent/path/auth_key"
+
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+"#;
+        let config_path = dir.join("config.toml");
+        std::fs::write(&config_path, toml_content).unwrap();
+
+        unsafe { set_env("TS_AUTHKEY", "tskey-env-wins") };
+        let config = Config::load(&config_path).unwrap();
+        assert_eq!(
+            config.tailscale.auth_key.as_ref().unwrap().expose(),
+            "tskey-env-wins",
+            "TS_AUTHKEY env var must take precedence over nonexistent auth_key_file"
+        );
+        unsafe { remove_env("TS_AUTHKEY") };
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
     fn test_auth_key_file_nonexistent_returns_error() {
         let _lock = ENV_MUTEX.lock().unwrap();
         let dir = std::env::temp_dir().join("oauth-proxy-test-missing-keyfile");

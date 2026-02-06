@@ -1,6 +1,6 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 92 tests pass (87 oauth-proxy + 5 common). Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 93 tests pass (88 oauth-proxy + 5 common). Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
 Audits 1-33: Found and fixed 55+ issues across 33 audits including 5 bugs, spec documentation gaps, K8s security context issues, state machine correctness, metrics configuration, RUNBOOK accuracy, and dependency upgrades (reqwest 0.12→0.13, toml 0.8→0.9, metrics-exporter-prometheus 0.16→0.18). Recent audits (29-33) found increasingly fewer issues as the codebase stabilized: startup probe gap (32nd), RUNBOOK inaccuracies (33rd), and clean results (29th, 30th, 31st).
 
@@ -24,9 +24,11 @@ Forty-first audit (v0.0.60): Comprehensive Opus-level audit of all 10 Rust sourc
 
 Forty-second audit (v0.0.61): Comprehensive Opus-level audit found 6 issues across code, K8s manifests, CI, and Dockerfile. (1) Body size limit `10 * 1024 * 1024` was a magic number duplicated in proxy.rs and test echo server — extracted to `pub const MAX_BODY_SIZE` in proxy.rs, referenced from tests. (2) reqwest client settings `connect_timeout(5s)` and `pool_max_idle_per_host(100)` were inline magic numbers — extracted to named constants `CONNECT_TIMEOUT` and `POOL_MAX_IDLE_PER_HOST` in main.rs. (3) Dockerfile missing `EXPOSE 8080` — added for documentation and tooling. (4) K8s deployment using mutable `:main` tag without `imagePullPolicy: Always` — added to proxy container so updated images are always pulled. (5) CI workflow `on` trigger had no `tags` pattern, making `type=semver` Docker metadata unreachable — added `tags: ["v*"]` trigger and updated push condition to include tag refs. (6) No Prometheus scrape mechanism for K8s — added `prometheus.io/scrape`, `prometheus.io/port`, and `prometheus.io/path` annotations to pod template. Cluster confirmed accessible (Talos Omni online, kubectl authenticated). Pods still in ImagePullBackOff due to known GHCR 403 blocker. tailscale-authkey secret exists in cluster. All 92 tests pass, clippy clean, fmt clean.
 
+Forty-third audit (v0.0.62): Comprehensive Opus-level audit across all 10 Rust source files, 2 specs, 7 K8s manifests, Dockerfile, CI workflow, RUNBOOK, and example config. 0 bugs, 0 spec violations, 0 security issues found. All metric names, labels, error types, state transitions, config fields, and dependency versions verified consistent across specs, code, RUNBOOK, and K8s manifests. Found 3 improvements: (1) No `.dockerignore` file — Docker build context included `.git/`, `.specstory/`, `k8s/`, and other unnecessary files. Added `.dockerignore` excluding build artifacts, git metadata, K8s manifests, documentation, specs, and CI files. (2) `ghcr-pull-secret` referenced in deployment.yaml but not documented in RUNBOOK — added creation instructions to the Initial Deploy section. (3) Missing edge case test for `TS_AUTHKEY` env var overriding a nonexistent `auth_key_file` path — added test confirming env var precedence skips the file read entirely. All 93 tests pass (88 oauth-proxy + 5 common), clippy clean, fmt clean.
+
 ## Remaining Work
 
-- [ ] **GHCR package visibility (BLOCKING)** — The GHCR package is private and K8s nodes get 403 Forbidden when pulling. **Fix options**: (1) GitHub web UI: Profile → Packages → `tailnet-microservices/anthropic-oauth-proxy` → Package settings → Danger Zone → Change visibility → Public. (2) Run `gh auth refresh -h github.com -s read:packages,write:packages` in a terminal with browser access, then `gh api --method PATCH /user/packages/container/tailnet-microservices%2Fanthropic-oauth-proxy -f visibility=public`.
+- [x] ~~GHCR package visibility~~ — Package made public (2026-02-06). ImagePullBackOff blocker cleared.
 - [x] Create tailscale-authkey K8s secret — exists in cluster (confirmed via `kubectl get secrets -n anthropic-oauth-proxy`)
 - [ ] Verify deployment after GHCR fix — tailscaled `CAP_FOWNER` fix applied, `TS_KUBE_SECRET=""` set, need to confirm both containers start successfully
 - [ ] Aperture config update — route `http://ai/` to the proxy (requires live tailnet)
@@ -100,6 +102,8 @@ Forty-second audit (v0.0.61): Comprehensive Opus-level audit found 6 issues acro
 - K8s deployments using mutable image tags (`:main`, `:latest`) must set `imagePullPolicy: Always` explicitly. The Kubernetes default `IfNotPresent` caches images by tag, so updated images pushed to the same tag are never pulled. Pinned tags (`:v1.94.1`) can use `IfNotPresent` since the content is immutable.
 - CI workflows with `docker/metadata-action` semver tag patterns (`type=semver,pattern={{version}}`) require the workflow `on.push.tags` trigger to include `v*` or equivalent. Without it, tag pushes never fire the workflow and the semver metadata patterns are dead code. The push condition also needs updating to allow tag refs, not just `refs/heads/main`.
 - Prometheus pod annotations (`prometheus.io/scrape`, `prometheus.io/port`, `prometheus.io/path`) must be on the pod template metadata, not the Deployment metadata. Prometheus discovers scrape targets at the pod level. Without these, the RUNBOOK's "scrape `/metrics` on port 8080" instruction has no mechanism for auto-discovery.
+- Docker builds without a `.dockerignore` send the entire repository as build context to the daemon, including `.git/`, `.specstory/`, `k8s/`, `specs/`, and documentation. None of these are needed in the image. A `.dockerignore` reduces context transfer time and prevents accidental inclusion of sensitive files.
+- K8s `imagePullSecrets` that reference nonexistent secrets are tolerated when anonymous pulls succeed (public registry). But if the image is private, the missing secret causes `ErrImagePull` with no hint about the secret — operators need clear documentation of all prerequisite secrets.
 
 ## Environment Notes
 
