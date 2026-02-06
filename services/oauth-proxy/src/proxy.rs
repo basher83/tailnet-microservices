@@ -306,6 +306,21 @@ mod tests {
         assert_eq!(json["error"]["request_id"], "req_abc123");
     }
 
+    #[tokio::test]
+    async fn test_error_response_content_type() {
+        let resp = error_response(StatusCode::BAD_GATEWAY, "upstream error", "req_test123");
+        let content_type = resp
+            .headers()
+            .get("content-type")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert_eq!(
+            content_type, "application/json",
+            "error responses must have application/json Content-Type"
+        );
+    }
+
     #[test]
     fn test_in_flight_guard_decrements_on_drop() {
         let counter = Arc::new(std::sync::atomic::AtomicU64::new(0));

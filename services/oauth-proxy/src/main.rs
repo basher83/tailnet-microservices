@@ -1463,4 +1463,85 @@ mod tests {
             "non-authorization injections must still be applied"
         );
     }
+
+    #[tokio::test]
+    async fn health_endpoint_content_type_is_json() {
+        let state = test_app_state("http://unused", vec![]);
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert_eq!(
+            content_type, "application/json",
+            "health endpoint must return application/json Content-Type"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_blocks_authorization_injection_even_without_client_auth() {
+        // Per spec: authorization header is protected from injection regardless
+        // of whether the client sends one. If someone misconfigures an injection
+        // rule for "authorization" and the client sends no auth header, the
+        // injected value must NOT be applied.
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(
+            &upstream_url,
+            vec![
+                config::HeaderInjection {
+                    name: "anthropic-beta".into(),
+                    value: "oauth-2025-04-20".into(),
+                },
+                config::HeaderInjection {
+                    name: "authorization".into(),
+                    value: "Bearer INJECTED-SHOULD-NOT-APPEAR".into(),
+                },
+            ],
+        );
+
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .method("POST")
+                    // No authorization header sent by client
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // The injected authorization value must not appear
+        assert!(
+            json["echoed_headers"].get("authorization").is_none()
+                || json["echoed_headers"]["authorization"] != "Bearer INJECTED-SHOULD-NOT-APPEAR",
+            "authorization injection must be blocked even when client sends no auth header"
+        );
+        // The other injection should still work
+        assert_eq!(
+            json["echoed_headers"]["anthropic-beta"], "oauth-2025-04-20",
+            "non-authorization injections must still be applied"
+        );
+    }
 }
