@@ -17,8 +17,15 @@ spec:
     spec:
       serviceAccountName: anthropic-oauth-proxy
       terminationGracePeriodSeconds: 6
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+        fsGroup: 1000
       containers:
         # --- oauth-proxy ---
+        # For production, pin to a specific SHA or semver tag (e.g. :sha-abc1234)
+        # instead of the mutable :main branch tag.
         - name: proxy
           image: ghcr.io/basher83/tailnet-microservices/anthropic-oauth-proxy:main
           ports:
