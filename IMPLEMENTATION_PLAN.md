@@ -1,8 +1,8 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 70 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 71 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
-Seventh spec audit (v0.0.24): Found 4 documentation/consistency issues, 0 code bugs. All addressed: 1 workspace dependency fix, 3 documentation corrections.
+Ninth spec audit (v0.0.25): Closed 4 test gaps and 2 spec inconsistencies. Added `Result<T>` type alias per crate convention. Updated specs to match implementation (event payloads, action enum).
 
 ## Remaining Work (requires live infrastructure)
 
@@ -11,19 +11,10 @@ Seventh spec audit (v0.0.24): Found 4 documentation/consistency issues, 0 code b
 - [ ] Test MagicDNS hostname resolution (requires live tailnet)
 - [ ] Verify ACL connectivity from Aperture (requires live tailnet + Aperture)
 
-## Fixes & Improvements (v0.0.24)
-
-Seventh spec audit found 4 documentation/consistency issues:
-
-- `tower` was declared directly in `services/oauth-proxy/Cargo.toml` instead of via workspace dependencies. The spec listed it as a workspace dependency but the implementation had it inline. Moved to `[workspace.dependencies]` with `workspace = true` reference in the service crate.
-- Spec and example config used `listen_addr = "0.0.0.0:443"` but K8s deployment uses port 8080. Port 443 requires root privileges and TLS is handled by the tailnet, not the proxy. Updated spec and example to use 8080 to match the actual deployment.
-- RUNBOOK drain timeout section implied Kubernetes `terminationGracePeriodSeconds` was the drain enforcement mechanism. The actual implementation enforces its own 5-second `DRAIN_TIMEOUT` independent of Kubernetes. Also fixed the drain timeout log message text to match the actual code output.
-- RUNBOOK documented `body_too_large` and `connect` as `proxy_upstream_errors_total` error types but the code emits `invalid_request` and `connection`. Updated to list all five actual error types: `timeout`, `connection`, `invalid_request`, `response_read`, `internal`.
-
 ## Known Limitations
 
 - Health endpoint `tailnet` state is set once at startup and never updated during operation. If tailscaled drops during runtime, health still reports `"connected"`. Fixing this requires tailnet health monitoring (periodic polling of tailscaled), which is infrastructure work beyond the current spec. The `tailnet_connected` Prometheus gauge does get set to `false` during graceful shutdown.
-- `ConfigError` and `ListenerBindError` from the spec's `ServiceError` enum are not in the service's Rust error enum. Config errors use `common::Error` and listener bind errors use `anyhow`. These paths work correctly; the gap is only in enum structure.
+- `ConfigError` and `ListenerBindError` are not in the service's Rust error enum. Config errors use `common::Error` and listener bind errors use `anyhow`. These paths work correctly; the gap is only in enum naming, not behavior.
 
 ## Learnings
 
@@ -47,7 +38,7 @@ Seventh spec audit found 4 documentation/consistency issues:
 - K8s manifests use `TS_USERSPACE=true` for the tailscaled sidecar to avoid requiring `NET_ADMIN` capabilities. The proxy and tailscaled share the Unix socket via an `emptyDir` volume.
 - GitHub Actions CI uses `dtolnay/rust-toolchain@stable` and `Swatinem/rust-cache@v2`. Docker job uses `docker/build-push-action@v6` with GHA cache. Images push to GHCR using the built-in `GITHUB_TOKEN`.
 - `BackendState::NeedsMachineAuth` requires manual admin approval in the Tailscale console. Mapping it to a retryable error wastes 31 seconds of exponential backoff before giving up. It must be non-retryable.
-- A spec-vs-implementation audit is valuable after completing major phases. Found 43+ discrepancies across seven audits including 4 bugs, spec documentation gaps, and positive deviations.
+- A spec-vs-implementation audit is valuable after completing major phases. Found 43+ discrepancies across eight audits including 4 bugs, spec documentation gaps, and positive deviations. The eighth audit found 0 issues, confirming spec-implementation convergence.
 - K8s sidecar pattern requires both containers to mount the shared volume. The volume definition in `spec.volumes` is not enough — each container that needs the socket must have a `volumeMount` entry. Easy to miss because the tailscaled container (which creates the socket) works fine; only the consumer (proxy) fails.
 
 ## Environment Notes

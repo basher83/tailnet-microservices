@@ -22,3 +22,6 @@ pub enum Error {
     #[error("Tailnet daemon not running: {0}")]
     TailnetNotRunning(String),
 }
+
+/// Result alias using service Error
+pub type Result<T> = std::result::Result<T, Error>;

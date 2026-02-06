@@ -116,10 +116,10 @@ The service uses an explicit state machine for lifecycle management.
 |-------|-------------|---------|
 | `ConfigLoaded` | Configuration parsed successfully | `listen_addr: SocketAddr` |
 | `TailnetConnected` | Joined tailnet, got identity | `TailnetHandle` |
-| `TailnetError` | Failed to connect to tailnet | `TailnetError` |
-| `ListenerReady` | HTTP listener bound | `HttpListener` |
-| `RequestReceived` | Incoming HTTP request | `RequestId`, `Request` |
-| `RequestCompleted` | Request finished (success or error) | `RequestId`, `Duration`, `Option<ProxyError>` |
+| `TailnetError` | Failed to connect to tailnet | `String` (error message; type discrimination happens in the caller before feeding events) |
+| `ListenerReady` | HTTP listener bound | (no data) |
+| `RequestReceived` | Incoming HTTP request | `request_id: String` (request object handled directly by proxy handler) |
+| `RequestCompleted` | Request finished (success or error) | `request_id: String`, `duration: Duration`, `error: Option<ServiceError>` |
 | `ShutdownSignal` | SIGTERM/SIGINT received | — |
 | `DrainTimeout` | Drain deadline exceeded | — |
 | `RetryTimer` | Retry backoff expired | — |
@@ -128,18 +128,17 @@ The service uses an explicit state machine for lifecycle management.
 
 | Action | Description | Payload |
 |--------|-------------|---------|
-| `LoadConfig` | Read and parse config file (not in state machine) | `PathBuf` |
-| `ConnectTailnet` | Initiate tailnet connection | `TailscaleConfig` |
-| `StartListener` | Bind HTTP listener | `SocketAddr` |
-| `ProxyRequest` | Forward request to upstream (not in state machine) | `RequestId`, `Request`, `Vec<HeaderInjection>` |
-| `SendResponse` | Return response to client (not in state machine) | `RequestId`, `Response` |
-| `ScheduleRetry` | Set retry timer | `Duration` |
-| `EmitMetric` | Record metric (not in state machine) | `MetricEvent` |
-| `Shutdown` | Exit process | `i32` |
+| `ConnectTailnet` | Initiate tailnet connection | (no data) |
+| `StartListener` | Bind HTTP listener | `addr: SocketAddr` |
+| `ScheduleRetry` | Set retry timer | `delay: Duration` |
+| `Shutdown` | Exit process | `exit_code: i32` |
+| `None` | No-op | — |
 
-`LoadConfig`, `ProxyRequest`, `SendResponse`, and `EmitMetric` are not implemented as state machine actions. Config loading happens before the state machine starts, per-request actions are handled directly by the proxy handler, and metrics are emitted inline.
+Config loading, request proxying, response sending, and metric emission happen outside the state machine. `LoadConfig` occurs before the state machine starts. `ProxyRequest`/`SendResponse` are handled directly by the axum proxy handler. `EmitMetric` calls are inlined at the call site.
 
 The state machine drives the startup lifecycle (`Initializing` through `Running`). Once `Running`, graceful shutdown is handled by axum's `with_graceful_shutdown` mechanism with a `DRAIN_TIMEOUT` enforcement, rather than by firing `ShutdownSignal`/`DrainTimeout` events through the state machine. The `Draining` and `Stopped` transitions are implemented and tested for correctness but are not exercised at runtime.
+
+`RequestReceived` and `RequestCompleted` events exist in the enum for completeness but are handled directly by the proxy handler via atomic counters, not through the state machine. Calling `handle_event` with these events from `Running` state will `unreachable!()` — this is by design.
 
 ---
 
@@ -152,10 +151,9 @@ The state machine drives the startup lifecycle (`Initializing` through `Running`
 | `ConnectingTailnet` | `TailnetError` (retries < 5) | `Error` | `ScheduleRetry(backoff)` |
 | `ConnectingTailnet` | `TailnetError` (retries >= 5) | `Stopped` | `Shutdown(1)` |
 | `Error` (origin=Tailnet) | `RetryTimer` | `ConnectingTailnet` | `ConnectTailnet` |
-| `Starting` | `ListenerReady(l)` | `Running` | — |
-| `Running` | `RequestReceived(id, req)` | `Running` | `ProxyRequest(id, req)` |
-| `Running` | `RequestCompleted(id, dur, err)` | `Running` | `EmitMetric(...)` |
-| `Running` | `ShutdownSignal` | `Draining` | — |
+| `Starting` | `ListenerReady` | `Running` | `None` |
+| `Running` | `RequestReceived`/`RequestCompleted` | `Running` | (handled by proxy handler, not state machine) |
+| `Running` | `ShutdownSignal` | `Draining` | `None` |
 | `Draining` | `DrainTimeout` | `Stopped` | `Shutdown(0)` |
 | *any* | `ShutdownSignal` (if urgent) | `Stopped` | `Shutdown(0)` |
 

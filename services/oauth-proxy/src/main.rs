@@ -477,7 +477,9 @@ mod tests {
         assert_eq!(json["status"], "healthy");
         assert_eq!(json["tailnet"], "connected");
         assert_eq!(json["tailnet_hostname"], "test-node");
+        assert_eq!(json["tailnet_ip"], "100.64.0.1");
         assert_eq!(json["requests_served"], 5);
+        assert_eq!(json["errors_total"], 0);
     }
 
     #[tokio::test]
@@ -618,6 +620,16 @@ mod tests {
             StatusCode::SERVICE_UNAVAILABLE,
             "health endpoint must return 503 when tailnet is not connected"
         );
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert_eq!(
+            content_type, "application/json",
+            "503 health response must return application/json Content-Type"
+        );
         let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
             .await
             .unwrap();
@@ -627,6 +639,18 @@ mod tests {
         assert_eq!(json["tailnet"], "not_connected");
         assert!(json.get("tailnet_hostname").is_none());
         assert!(json.get("tailnet_ip").is_none());
+        assert!(
+            json.get("uptime_seconds").is_some(),
+            "503 health response must include uptime_seconds"
+        );
+        assert!(
+            json.get("requests_served").is_some(),
+            "503 health response must include requests_served"
+        );
+        assert!(
+            json.get("errors_total").is_some(),
+            "503 health response must include errors_total"
+        );
     }
 
     #[tokio::test]
@@ -1404,6 +1428,60 @@ mod tests {
         assert_eq!(
             attempts, 3,
             "proxy must make exactly 3 attempts (1 initial + 2 retries) on timeout, got {attempts}"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_does_not_retry_non_timeout_errors() {
+        // Per spec: only UpstreamTimeout gets retries. Connection errors (UpstreamError)
+        // must NOT be retried — verify exactly 1 connection attempt for a refused connection.
+        let connection_count = Arc::new(AtomicU64::new(0));
+        let counter_clone = connection_count.clone();
+
+        // Bind then immediately drop the listener to get a port that refuses connections
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream_url = format!("http://{addr}");
+
+        // Re-bind to count connection attempts — accept and immediately close
+        drop(listener);
+        let listener = TcpListener::bind(addr).await.unwrap();
+        let _server = tokio::spawn(async move {
+            loop {
+                match listener.accept().await {
+                    Ok((socket, _)) => {
+                        counter_clone.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        // Close immediately — simulates connection reset, not timeout
+                        drop(socket);
+                    }
+                    Err(_) => break,
+                }
+            }
+        });
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(&upstream_url, vec![]);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/no-retry-test")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+
+        // Wait briefly for connection handler to register
+        tokio::time::sleep(Duration::from_millis(50)).await;
+
+        let attempts = connection_count.load(std::sync::atomic::Ordering::SeqCst);
+        assert_eq!(
+            attempts, 1,
+            "non-timeout errors must NOT be retried — expected 1 attempt, got {attempts}"
         );
     }
 
