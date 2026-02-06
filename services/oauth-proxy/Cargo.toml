@@ -24,7 +24,7 @@ uuid = { workspace = true }
 tailscale-localapi = { workspace = true }
 metrics = { workspace = true }
 metrics-exporter-prometheus = { workspace = true }
-tower = { version = "0.5", features = ["limit"] }
+tower = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }

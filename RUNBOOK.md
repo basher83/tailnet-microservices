@@ -128,7 +128,7 @@ Scrape `GET /metrics` on port 8080. Four metrics are emitted:
 
 `proxy_request_duration_seconds` (histogram) with label `status` provides latency percentiles. The histogram automatically computes p50, p90, p99, and p999 quantiles.
 
-`proxy_upstream_errors_total` (counter) with label `error_type` tracks upstream failures. Error types include `timeout` (upstream did not respond within `timeout_secs`), `connect` (TCP connection to upstream failed), and `body_too_large` (request body exceeded 10MB limit).
+`proxy_upstream_errors_total` (counter) with label `error_type` tracks upstream failures. Error types include `timeout` (upstream did not respond within `timeout_secs`), `connection` (TCP connection to upstream failed), `invalid_request` (request body exceeded 10MB limit or malformed request), `response_read` (failed to read upstream response body), and `internal` (unexpected proxy error).
 
 `tailnet_connected` (gauge) is 1 when the proxy has an active tailnet connection and 0 otherwise. Alert if this drops to 0 during normal operation.
 
@@ -202,7 +202,7 @@ State directory corruption: the sidecar stores state in `/var/lib/tailscale` (an
 
 ## Graceful Shutdown
 
-On SIGTERM (Kubernetes pod termination), the proxy stops accepting new connections and waits for in-flight requests to complete. The `in_flight` atomic counter tracks active requests. After drain completes (or the Kubernetes `terminationGracePeriodSeconds` expires), the process exits.
+On SIGTERM (Kubernetes pod termination), the proxy stops accepting new connections and waits for in-flight requests to complete. The `in_flight` atomic counter tracks active requests. The proxy enforces a 5-second `DRAIN_TIMEOUT` starting from when it receives the signal. If in-flight requests complete within 5 seconds, shutdown is clean. If not, the proxy force-exits after 5 seconds regardless of the Kubernetes `terminationGracePeriodSeconds`.
 
 The shutdown sequence logged:
 
@@ -212,10 +212,10 @@ The shutdown sequence logged:
 {"message":"shutdown complete",...}
 ```
 
-If requests are still in flight when the termination grace period expires:
+If requests are still in flight when the 5-second drain timeout expires:
 
 ```text
-{"message":"shutdown completed with in-flight requests still tracked","remaining":3,...}
+{"message":"drain timeout exceeded, forcing shutdown","remaining":3,"drain_timeout_secs":5,...}
 ```
 
 ## Resource Limits
