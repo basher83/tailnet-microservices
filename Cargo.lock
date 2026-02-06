@@ -952,6 +952,7 @@ dependencies = [
  "anyhow",
  "axum",
  "common",
+ "libc",
  "metrics",
  "metrics-exporter-prometheus",
  "reqwest",

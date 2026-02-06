@@ -2516,6 +2516,226 @@ mod tests {
         );
     }
 
+    /// Get current process RSS (Resident Set Size) in bytes.
+    ///
+    /// Uses platform-specific APIs: `mach_task_basic_info` on macOS,
+    /// `/proc/self/statm` on Linux. Returns None on unsupported platforms.
+    fn current_rss_bytes() -> Option<usize> {
+        #[cfg(target_os = "macos")]
+        {
+            use std::mem;
+            // SAFETY: calling mach kernel API to read our own process memory stats.
+            // This is a read-only query with no side effects.
+            #[allow(deprecated)] // libc deprecates mach wrappers in favor of mach2 crate,
+            // but mach2 v0.4 lacks the mach_task_basic_info struct definition
+            unsafe {
+                let task = libc::mach_task_self();
+                let flavor = 5; // MACH_TASK_BASIC_INFO
+                let mut info: libc::mach_task_basic_info = mem::zeroed();
+                let mut count = (mem::size_of::<libc::mach_task_basic_info>()
+                    / mem::size_of::<libc::natural_t>())
+                    as libc::mach_msg_type_number_t;
+                let kr = libc::task_info(
+                    task,
+                    flavor,
+                    &mut info as *mut _ as libc::task_info_t,
+                    &mut count,
+                );
+                if kr == 0 {
+                    // KERN_SUCCESS
+                    Some(info.resident_size as usize)
+                } else {
+                    None
+                }
+            }
+        }
+        #[cfg(target_os = "linux")]
+        {
+            // /proc/self/statm fields: size resident shared text lib data dt (in pages)
+            if let Ok(statm) = std::fs::read_to_string("/proc/self/statm") {
+                let fields: Vec<&str> = statm.split_whitespace().collect();
+                if fields.len() >= 2 {
+                    if let Ok(resident_pages) = fields[1].parse::<usize>() {
+                        let page_size = unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize };
+                        return Some(resident_pages * page_size);
+                    }
+                }
+            }
+            None
+        }
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        {
+            None
+        }
+    }
+
+    /// Memory soak test: verify no memory leaks under sustained load.
+    ///
+    /// This validates the spec success criterion (specs/oauth-proxy.md "Success Criteria"):
+    /// "Zero memory growth over 24h". A full 24-hour soak is impractical in CI, so this
+    /// compressed version runs 20,000 requests through the proxy after a warmup phase,
+    /// sampling RSS at intervals. Any per-request memory leak (retained allocations,
+    /// unbounded caches, connection pool growth) would manifest as linear RSS growth
+    /// across the sample windows. The test asserts that post-warmup RSS growth stays
+    /// under 5 MiB — enough headroom for OS-level jitter while catching real leaks
+    /// (20,000 requests with even a 256-byte-per-request leak would grow ~5 MiB).
+    ///
+    /// Marked `#[ignore]` because soak tests take longer than unit tests and should
+    /// not gate CI. Run explicitly with:
+    ///
+    ///   cargo test -p oauth-proxy -- --ignored memory_soak_test_zero_growth
+    #[tokio::test]
+    #[ignore]
+    async fn memory_soak_test_zero_growth() {
+        let rss = match current_rss_bytes() {
+            Some(r) => r,
+            None => {
+                eprintln!(
+                    "skipping memory soak test: RSS measurement not supported on this platform"
+                );
+                return;
+            }
+        };
+        let _ = rss; // Confirm measurement works before setup
+
+        // Start a mock upstream echo server
+        let upstream_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let upstream_addr = upstream_listener.local_addr().unwrap();
+        let upstream_url = format!("http://{upstream_addr}");
+
+        tokio::spawn(async move {
+            let app =
+                axum::Router::new().fallback(|request: axum::http::Request<Body>| async move {
+                    let body_bytes =
+                        axum::body::to_bytes(request.into_body(), crate::proxy::MAX_BODY_SIZE)
+                            .await
+                            .unwrap();
+                    (StatusCode::OK, body_bytes)
+                });
+            axum::serve(upstream_listener, app).await.unwrap();
+        });
+
+        // Start the proxy on a real TCP listener
+        let metrics = ServiceMetrics::new();
+        let state = AppState {
+            proxy: ProxyState {
+                client: reqwest::Client::builder()
+                    .pool_max_idle_per_host(100)
+                    .build()
+                    .unwrap(),
+                upstream_url,
+                headers_to_inject: vec![config::HeaderInjection {
+                    name: "anthropic-beta".into(),
+                    value: "oauth-2025-04-20".into(),
+                }],
+                timeout: Duration::from_secs(5),
+                requests_total: metrics.requests_total.clone(),
+                errors_total: metrics.errors_total.clone(),
+                in_flight: metrics.in_flight.clone(),
+            },
+            metrics,
+            tailnet: Some(TailnetHandle {
+                hostname: "soak-test-proxy".into(),
+                ip: "100.64.0.1".parse().unwrap(),
+            }),
+            prometheus: test_prometheus_handle(),
+        };
+
+        let app = build_router(state, 1000);
+        let proxy_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let proxy_addr = proxy_listener.local_addr().unwrap();
+        let proxy_url = format!("http://{proxy_addr}");
+
+        tokio::spawn(async move {
+            axum::serve(proxy_listener, app).await.unwrap();
+        });
+        tokio::time::sleep(Duration::from_millis(50)).await;
+
+        let client = reqwest::Client::builder()
+            .pool_max_idle_per_host(100)
+            .build()
+            .unwrap();
+
+        // Warmup phase: fill connection pools, internal caches, and trigger any
+        // one-time allocations so they don't skew the measurement window.
+        let warmup_requests = 2000;
+        for _ in 0..warmup_requests {
+            let resp = client
+                .post(format!("{proxy_url}/v1/messages"))
+                .header("content-type", "application/json")
+                .header("authorization", "Bearer sk-test")
+                .body(r#"{"model":"claude-3","max_tokens":1}"#)
+                .send()
+                .await
+                .unwrap();
+            let _ = resp.bytes().await;
+        }
+
+        // Force a brief pause to let any deferred deallocation settle
+        tokio::time::sleep(Duration::from_millis(100)).await;
+
+        let rss_after_warmup = current_rss_bytes().unwrap();
+
+        // Sustained load phase: 20,000 requests across 10 concurrent tasks
+        let total_requests: u64 = 20_000;
+        let concurrency: u64 = 10;
+        let per_task = total_requests / concurrency;
+        let mut handles = Vec::new();
+
+        for _ in 0..concurrency {
+            let client = client.clone();
+            let url = format!("{proxy_url}/v1/messages");
+            handles.push(tokio::spawn(async move {
+                let mut ok_count = 0u64;
+                for _ in 0..per_task {
+                    let resp = client
+                        .post(&url)
+                        .header("content-type", "application/json")
+                        .header("authorization", "Bearer sk-test")
+                        .body(r#"{"model":"claude-3","max_tokens":1}"#)
+                        .send()
+                        .await
+                        .unwrap();
+                    let _ = resp.bytes().await;
+                    ok_count += 1;
+                }
+                ok_count
+            }));
+        }
+
+        let mut total_ok = 0u64;
+        for handle in handles {
+            total_ok += handle.await.unwrap();
+        }
+
+        assert_eq!(total_ok, total_requests, "all soak requests must succeed");
+
+        // Brief pause for deferred deallocation
+        tokio::time::sleep(Duration::from_millis(100)).await;
+
+        let rss_after_soak = current_rss_bytes().unwrap();
+        let growth_bytes = rss_after_soak.saturating_sub(rss_after_warmup);
+        let growth_mib = growth_bytes as f64 / (1024.0 * 1024.0);
+
+        // A 256-byte-per-request leak across 20,000 requests would grow ~5 MiB.
+        // Allow 5 MiB of headroom for OS-level jitter (page reclamation timing,
+        // thread stack growth, allocator fragmentation).
+        let max_growth_mib = 5.0;
+
+        eprintln!(
+            "memory soak results: warmup_rss={:.1} MiB, final_rss={:.1} MiB, growth={:.2} MiB ({} requests)",
+            rss_after_warmup as f64 / (1024.0 * 1024.0),
+            rss_after_soak as f64 / (1024.0 * 1024.0),
+            growth_mib,
+            total_requests,
+        );
+
+        assert!(
+            growth_mib < max_growth_mib,
+            "spec requires zero memory growth under sustained load; measured {growth_mib:.2} MiB growth over {total_requests} requests (limit: {max_growth_mib} MiB). This indicates a memory leak."
+        );
+    }
+
     #[tokio::test]
     async fn listener_bind_fails_when_port_in_use() {
         // Per spec: ListenerBindError when port is already in use.

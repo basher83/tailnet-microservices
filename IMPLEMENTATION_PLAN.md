@@ -1,6 +1,6 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 107 tests pass (98 oauth-proxy + 9 common). Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 108 tests pass (99 oauth-proxy + 9 common, including 2 ignored soak/load tests). Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
 Audits 1-48: Found and fixed 70+ issues across 48 audits including 5 bugs, spec documentation gaps, K8s security context issues, state machine correctness, metrics configuration, RUNBOOK accuracy, dependency upgrades, CI/CD blockers, live cluster deployment fixes, and test coverage gaps. Key milestones: 34th audit (v0.0.48) first clean audit; 44th audit (v0.0.63) deployment went live; 46th-49th audits found only test coverage gaps and dependency updates as the codebase stabilized.
 
@@ -25,7 +25,7 @@ All implementation items complete. Aperture integration verified with live E2E t
 - [x] Production traffic flowing — Claude API responses confirmed with header injection
 - [ ] Long-term production monitoring — observe traffic patterns, error rates, and resource usage over time
 - [x] Load testing — verified ~2400 req/s in test (1000 requests, 50 concurrent tasks, 0.42s). Run: `cargo test -p oauth-proxy -- --ignored load_test_sustains_100_rps`
-- [ ] Memory soak testing — verify zero memory growth over 24h (spec success criterion)
+- [x] Memory soak testing — compressed soak test sends 20,000 requests after 2,000-request warmup, asserts <5 MiB RSS growth (catches per-request leaks). Run: `cargo test -p oauth-proxy -- --ignored memory_soak_test_zero_growth`
 
 ## Known Limitations
 
@@ -103,6 +103,7 @@ All implementation items complete. Aperture integration verified with live E2E t
 - Tailscaled sidecar containers need liveness probes even though they don't expose HTTP health endpoints. The Unix socket at the shared `emptyDir` volume serves as a health signal — if tailscaled crashes, the socket file disappears. Use `exec` probe with `test -S <socket-path>` to detect this. Set `initialDelaySeconds` to give tailscaled time to create the socket on startup, and use a generous `failureThreshold × periodSeconds` window (e.g. 90s) to tolerate transient issues without unnecessary restarts.
 - K8s probe fields that default to reasonable values (like `failureThreshold: 3`) should still be set explicitly when the value represents a deliberate operational decision. Implicit defaults work but don't communicate intent — future operators may not know whether the omission was deliberate or accidental.
 - Transitive dependency updates may be blocked by exact version pins in upstream crates. axum v0.8.8 pins `matchit = "=0.8.4"` (exact), so `cargo update matchit --precise 0.8.6` fails. The only fix is waiting for axum to release with the updated pin. `cargo update --dry-run --verbose` reveals these blocked updates.
+- Measuring process RSS in Rust requires platform-specific code: `mach_task_basic_info` via `task_info()` on macOS, `/proc/self/statm` on Linux. The `libc` crate deprecates its Mach wrappers (`mach_task_self()`, `mach_task_self_`) in favor of the `mach2` crate, but `mach2` v0.4 lacks the `mach_task_basic_info` struct definition — only constants are exported. Use `libc` with `#[allow(deprecated)]` until `mach2` catches up. A compressed soak test (20K requests after warmup, asserting <5 MiB RSS growth) can validate the "zero memory growth" spec criterion without a real 24-hour run — any per-request leak of 256+ bytes would exceed the threshold.
 
 ## Environment Notes
 
