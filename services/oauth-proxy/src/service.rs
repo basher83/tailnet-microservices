@@ -1,7 +1,8 @@
 //! Service state machine
 //!
 //! Pure state machine: receives events, returns actions.
-//! Caller handles I/O.
+//! Caller handles I/O. Will be wired into main.rs when tailnet
+//! integration is implemented (Priority 4 in IMPLEMENTATION_PLAN.md).
 
 use std::time::Instant;
 
@@ -57,14 +58,19 @@ pub fn handle_event(state: ServiceState, event: ServiceEvent) -> (ServiceState, 
         ),
 
         // Connecting
-        (ServiceState::ConnectingTailnet { .. }, ServiceEvent::TailnetConnected) => (
-            ServiceState::Starting,
-            ServiceAction::StartListener,
-        ),
-        (ServiceState::ConnectingTailnet { retries }, ServiceEvent::TailnetError(e)) if retries < 5 => (
-            ServiceState::Error { error: e, retries },
-            ServiceAction::ScheduleRetry { delay_ms: 1000 * 2u64.pow(retries) },
-        ),
+        (ServiceState::ConnectingTailnet { .. }, ServiceEvent::TailnetConnected) => {
+            (ServiceState::Starting, ServiceAction::StartListener)
+        }
+        (ServiceState::ConnectingTailnet { retries }, ServiceEvent::TailnetError(e))
+            if retries < 5 =>
+        {
+            (
+                ServiceState::Error { error: e, retries },
+                ServiceAction::ScheduleRetry {
+                    delay_ms: 1000 * 2u64.pow(retries),
+                },
+            )
+        }
         (ServiceState::ConnectingTailnet { .. }, ServiceEvent::TailnetError(_)) => (
             ServiceState::Stopped { exit_code: 1 },
             ServiceAction::Shutdown { exit_code: 1 },
@@ -72,24 +78,35 @@ pub fn handle_event(state: ServiceState, event: ServiceEvent) -> (ServiceState, 
 
         // Error recovery
         (ServiceState::Error { retries, .. }, ServiceEvent::RetryTimer) => (
-            ServiceState::ConnectingTailnet { retries: retries + 1 },
+            ServiceState::ConnectingTailnet {
+                retries: retries + 1,
+            },
             ServiceAction::ConnectTailnet,
         ),
 
         // Starting
         (ServiceState::Starting, ServiceEvent::ListenerReady) => (
-            ServiceState::Running { started_at: Instant::now() },
+            ServiceState::Running {
+                started_at: Instant::now(),
+            },
             ServiceAction::None,
         ),
 
         // Running
         (ServiceState::Running { .. }, ServiceEvent::ShutdownSignal) => (
-            ServiceState::Draining { pending_requests: 0 },
+            ServiceState::Draining {
+                pending_requests: 0,
+            },
             ServiceAction::None,
         ),
 
         // Draining
-        (ServiceState::Draining { pending_requests: 0 }, ServiceEvent::DrainComplete) => (
+        (
+            ServiceState::Draining {
+                pending_requests: 0,
+            },
+            ServiceEvent::DrainComplete,
+        ) => (
             ServiceState::Stopped { exit_code: 0 },
             ServiceAction::Shutdown { exit_code: 0 },
         ),
@@ -111,11 +128,11 @@ mod tests {
 
     #[test]
     fn test_init_to_connecting() {
-        let (state, action) = handle_event(
-            ServiceState::Initializing,
-            ServiceEvent::ConfigLoaded,
-        );
-        assert!(matches!(state, ServiceState::ConnectingTailnet { retries: 0 }));
+        let (state, action) = handle_event(ServiceState::Initializing, ServiceEvent::ConfigLoaded);
+        assert!(matches!(
+            state,
+            ServiceState::ConnectingTailnet { retries: 0 }
+        ));
         assert!(matches!(action, ServiceAction::ConnectTailnet));
     }
 
@@ -126,7 +143,10 @@ mod tests {
             ServiceEvent::TailnetError("timeout".into()),
         );
         assert!(matches!(state, ServiceState::Error { retries: 2, .. }));
-        assert!(matches!(action, ServiceAction::ScheduleRetry { delay_ms: 4000 }));
+        assert!(matches!(
+            action,
+            ServiceAction::ScheduleRetry { delay_ms: 4000 }
+        ));
     }
 
     #[test]

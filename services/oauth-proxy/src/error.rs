@@ -2,7 +2,8 @@
 
 use thiserror::Error;
 
-/// OAuth Proxy errors
+/// OAuth Proxy errors — variants defined per spec, used as tailnet/proxy integration matures.
+#[allow(dead_code)]
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Configuration error: {0}")]
@@ -21,11 +22,12 @@ pub enum Error {
     UpstreamTimeout(u64),
 
     #[error("Upstream error: {0}")]
-    UpstreamError(String),
+    Upstream(String),
 
     #[error("Invalid request: {0}")]
     InvalidRequest(String),
 }
 
 /// Result alias
+#[allow(dead_code)]
 pub type Result<T> = std::result::Result<T, Error>;
