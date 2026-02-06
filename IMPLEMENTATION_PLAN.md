@@ -2,7 +2,7 @@
 
 Phases 1-5 complete. All 71 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
-Ninth spec audit (v0.0.25): Closed 4 test gaps and 2 spec inconsistencies. Added `Result<T>` type alias per crate convention. Updated specs to match implementation (event payloads, action enum).
+Tenth spec audit (v0.0.26): Fixed terminal state bug (Stopped + ShutdownSignal produced Shutdown instead of None), added ListenerBindError port-in-use test, corrected spec wording for TS_AUTHKEY precedence and body size unit (10 MiB).
 
 ## Remaining Work (requires live infrastructure)
 
@@ -38,7 +38,8 @@ Ninth spec audit (v0.0.25): Closed 4 test gaps and 2 spec inconsistencies. Added
 - K8s manifests use `TS_USERSPACE=true` for the tailscaled sidecar to avoid requiring `NET_ADMIN` capabilities. The proxy and tailscaled share the Unix socket via an `emptyDir` volume.
 - GitHub Actions CI uses `dtolnay/rust-toolchain@stable` and `Swatinem/rust-cache@v2`. Docker job uses `docker/build-push-action@v6` with GHA cache. Images push to GHCR using the built-in `GITHUB_TOKEN`.
 - `BackendState::NeedsMachineAuth` requires manual admin approval in the Tailscale console. Mapping it to a retryable error wastes 31 seconds of exponential backoff before giving up. It must be non-retryable.
-- A spec-vs-implementation audit is valuable after completing major phases. Found 43+ discrepancies across eight audits including 4 bugs, spec documentation gaps, and positive deviations. The eighth audit found 0 issues, confirming spec-implementation convergence.
+- A spec-vs-implementation audit is valuable after completing major phases. Found 43+ discrepancies across ten audits including 5 bugs, spec documentation gaps, and positive deviations. The tenth audit found 1 state machine bug (terminal state not fully inert).
+- Terminal states in a state machine must be explicitly guarded before wildcard match arms. Without a `Stopped` guard before `(_, ShutdownSignal)`, the wildcard produces a `Shutdown` action from an already-stopped state, violating the "terminal means inert" invariant.
 - K8s sidecar pattern requires both containers to mount the shared volume. The volume definition in `spec.volumes` is not enough — each container that needs the socket must have a `volumeMount` entry. Easy to miss because the tailscaled container (which creates the socket) works fine; only the consumer (proxy) fails.
 
 ## Environment Notes

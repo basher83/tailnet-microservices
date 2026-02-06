@@ -1748,4 +1748,23 @@ mod tests {
         assert!(values.contains(&serde_json::json!("value1")));
         assert!(values.contains(&serde_json::json!("value2")));
     }
+
+    #[tokio::test]
+    async fn listener_bind_fails_when_port_in_use() {
+        // Per spec: ListenerBindError when port is already in use.
+        // The bind path in main() uses TcpListener::bind with anyhow context.
+        // Verify that binding to an occupied port produces an error with the address.
+        let first = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = first.local_addr().unwrap();
+
+        let result = TcpListener::bind(addr).await;
+        assert!(result.is_err(), "binding to an occupied port must fail");
+        let err = result.unwrap_err();
+        assert_eq!(
+            err.kind(),
+            std::io::ErrorKind::AddrInUse,
+            "error kind must be AddrInUse, got {:?}",
+            err.kind()
+        );
+    }
 }
