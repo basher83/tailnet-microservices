@@ -378,7 +378,7 @@ tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 metrics = "0.24"
 metrics-exporter-prometheus = "0.16"
 tower = { version = "0.5", features = ["limit"] }
-zeroize = { version = "1", features = ["derive"] }
+zeroize = "1"
 uuid = { version = "1", features = ["v4"] }
 thiserror = "2"
 anyhow = "1"

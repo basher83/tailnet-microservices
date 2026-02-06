@@ -8,6 +8,8 @@ Twenty-third audit (v0.0.37): Found 2 MEDIUM issues. (1) RUNBOOK.md described `p
 
 Twenty-fourth audit (v0.0.37): Comprehensive cross-file audit using parallel subagents covering all source files, specs, K8s manifests, CI, Dockerfile, and RUNBOOK. Found 0 issues. All 83 tests pass, clippy clean, formatting clean. State machine transitions, proxy logic, config validation, tailnet integration, metrics, error types, security contexts, and operational documentation all match specs exactly. Codebase is production-ready; all remaining work requires live tailnet infrastructure.
 
+Twenty-fifth audit (v0.0.38): Found 1 LOW issue. `zeroize` workspace dependency had `features = ["derive"]` enabled but `#[derive(Zeroize)]` is never used — `Secret<T>` uses `Zeroize` only as a trait bound and calls `.zeroize()` directly in `Drop`. The `derive` feature pulls in `syn`, `quote`, and `proc-macro2` as unnecessary build dependencies. Removed from both `Cargo.toml` and spec. All 83 tests pass, clippy clean, formatting clean.
+
 ## Remaining Work (requires live infrastructure)
 
 - [ ] Aperture config update — route `http://ai/` to the proxy (requires live tailnet)
@@ -60,6 +62,7 @@ Twenty-fourth audit (v0.0.37): Comprehensive cross-file audit using parallel sub
 - K8s Pod Security Standards restricted profile requires `runAsNonRoot: true` on every container, not just the main application container. Setting `runAsUser: 1000` is not sufficient — the explicit `runAsNonRoot` field is what Kubernetes admission controllers check. Missing it on sidecar containers is easy to overlook.
 - Prometheus histograms and summaries are different metric types with different semantics. Histograms produce `_bucket`, `_sum`, and `_count` lines; quantiles are computed at query time via `histogram_quantile()`. Summaries compute quantiles client-side. Documentation must use precise terminology — saying a histogram "automatically computes quantiles" is misleading and confuses operators writing PromQL.
 - Undocumented environment variable overrides create debugging blind spots. If code reads an env var to override defaults (like `TAILSCALE_SOCKET` for the socket path), it must be documented in both the spec's environment variables table and the operational runbook's troubleshooting section.
+- Crate `derive` features (e.g. `zeroize = { features = ["derive"] }`) pull in proc-macro dependencies (`syn`, `quote`, `proc-macro2`). Only enable them if `#[derive(Trait)]` is actually used. Using a trait as a bound or calling methods directly does not require the derive feature.
 
 ## Environment Notes
 
