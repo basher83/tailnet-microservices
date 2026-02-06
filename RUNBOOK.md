@@ -151,7 +151,7 @@ Alert on `tailnet_connected == 0` for more than 60 seconds. The proxy cannot ser
 
 Alert on `rate(proxy_upstream_errors_total[5m]) > 0.1` to catch sustained upstream failures.
 
-Alert on `histogram_quantile(0.99, rate(proxy_request_duration_seconds_bucket[5m])) > 30` to detect upstream latency degradation approaching the 60s timeout.
+Alert on `histogram_quantile(0.99, sum by (le) (rate(proxy_request_duration_seconds_bucket[5m]))) > 30` to detect upstream latency degradation approaching the 60s timeout. The `sum by (le)` aggregation is required because the histogram carries a `status` label — without it, `histogram_quantile` receives multiple series per `le` bucket and produces incorrect results.
 
 ### Structured Logs
 
