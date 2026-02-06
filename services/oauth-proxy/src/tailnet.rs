@@ -33,10 +33,7 @@ pub async fn connect(expected_hostname: &str) -> Result<TailnetHandle, Error> {
             return Err(Error::TailnetAuth);
         }
         BackendState::NeedsMachineAuth => {
-            return Err(Error::TailnetConnect(
-                "tailscaled needs machine authorization — approve this node in the admin console"
-                    .into(),
-            ));
+            return Err(Error::TailnetMachineAuth);
         }
         BackendState::Stopped => {
             return Err(Error::TailnetNotRunning(
@@ -206,6 +203,7 @@ mod tests {
             Err(Error::TailnetConnect(_)) => { /* transient failure */ }
             Err(Error::TailnetNotRunning(_)) => { /* expected in CI — no tailscaled */ }
             Err(Error::TailnetAuth) => { /* also acceptable */ }
+            Err(Error::TailnetMachineAuth) => { /* needs admin approval */ }
         }
     }
 }
