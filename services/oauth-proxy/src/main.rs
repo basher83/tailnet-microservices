@@ -2211,6 +2211,78 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn health_and_metrics_bypass_concurrency_limit() {
+        // Health and metrics endpoints must respond even when the proxy's
+        // concurrency limit (max_connections) is fully saturated. This ensures
+        // K8s probes and Prometheus scrapes are never blocked by slow proxy traffic.
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream_url = format!("http://{addr}");
+
+        // Slow upstream: holds connections for 2s before responding
+        let _server = tokio::spawn(async move {
+            let app = axum::Router::new().fallback(|| async {
+                tokio::time::sleep(Duration::from_secs(2)).await;
+                (StatusCode::OK, "slow")
+            });
+            axum::serve(listener, app).await.unwrap();
+        });
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(&upstream_url, vec![]);
+        // max_connections=1: only one proxy request can be in-flight at a time
+        let app = build_router(state, 1);
+
+        let test_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let test_addr = test_listener.local_addr().unwrap();
+        let test_url = format!("http://{test_addr}");
+
+        tokio::spawn(async move {
+            axum::serve(test_listener, app).await.unwrap();
+        });
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(5))
+            .build()
+            .unwrap();
+
+        // Saturate the proxy's concurrency slot with a slow request
+        let proxy_req = client.get(format!("{test_url}/slow-proxy"));
+
+        // Fire the slow proxy request (don't await yet)
+        let slow_future = tokio::spawn(async move { proxy_req.send().await });
+        // Give it a moment to start occupying the slot
+        tokio::time::sleep(Duration::from_millis(100)).await;
+
+        // Health and metrics must respond immediately despite the saturated slot
+        let health = client
+            .get(format!("{test_url}/health"))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(
+            health.status().as_u16(),
+            200,
+            "health endpoint must respond even when concurrency limit is saturated"
+        );
+
+        let metrics = client
+            .get(format!("{test_url}/metrics"))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(
+            metrics.status().as_u16(),
+            200,
+            "metrics endpoint must respond even when concurrency limit is saturated"
+        );
+
+        // Clean up the slow request
+        let _ = slow_future.await;
+    }
+
+    #[tokio::test]
     async fn listener_bind_fails_when_port_in_use() {
         // Per spec: ListenerBindError when port is already in use.
         // The bind path in main() uses TcpListener::bind with anyhow context.
