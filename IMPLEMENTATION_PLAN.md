@@ -14,6 +14,8 @@ Audits 50-55: Deep cross-cutting audits found and fixed PromQL aggregation, K8s 
 
 59th audit (v0.0.81): Added tailscaled sidecar readiness probe and upgraded liveness probe. Containerboot's built-in `/healthz` HTTP endpoint (enabled via `TS_HEALTHCHECK_ADDR_PORT=127.0.0.1:9002`) replaces the socket existence check for liveness, and adds readiness gating so the pod isn't marked Ready until tailscaled has authenticated and received tailnet IPs. Updated RUNBOOK to document the new probe behavior. Full spec-vs-implementation audit found no bugs. All dependencies at latest compatible versions. 109 tests pass.
 
+60th audit (v0.0.82): Added startupProbe to the tailscaled sidecar container. The 59th audit added liveness and readiness probes using the `/healthz` endpoint but kept the legacy `initialDelaySeconds: 10` pattern on liveness instead of a proper startupProbe. The liveness probe could kill tailscaled during slow tailnet authentication (e.g. coordination server latency). The new startupProbe gives tailscaled a 60-second startup budget (`periodSeconds: 2` x `failureThreshold: 30`), matching the proxy container's pattern. Removed `initialDelaySeconds` from liveness since the startup probe handles the startup window. Updated RUNBOOK to document the new three-probe configuration. Full codebase audit (main.rs, proxy/service/config/error, K8s/CI/Docker, common crate) found no bugs. All dependencies at latest compatible versions. 109 tests pass.
+
 ## Remaining Work
 
 All implementation items complete. Aperture integration verified with live E2E traffic on 2026-02-06. Spec updated to Complete status.
