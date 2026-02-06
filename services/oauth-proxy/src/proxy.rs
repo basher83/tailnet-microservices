@@ -18,6 +18,9 @@ const MAX_UPSTREAM_ATTEMPTS: u32 = 3;
 /// Fixed backoff between upstream timeout retries (spec: 100ms)
 const UPSTREAM_RETRY_DELAY: Duration = Duration::from_millis(100);
 
+/// Maximum request body size (spec: 10 MiB)
+pub const MAX_BODY_SIZE: usize = 10 * 1024 * 1024;
+
 /// Headers to strip before forwarding (hop-by-hop per RFC 2616 Section 13.5.1)
 const HOP_BY_HOP_HEADERS: &[&str] = &[
     "connection",
@@ -138,7 +141,7 @@ pub async fn proxy_request(
     }
 
     // Read the request body
-    let body_bytes = match axum::body::to_bytes(request.into_body(), 10 * 1024 * 1024).await {
+    let body_bytes = match axum::body::to_bytes(request.into_body(), MAX_BODY_SIZE).await {
         Ok(b) => b,
         Err(e) => {
             state
