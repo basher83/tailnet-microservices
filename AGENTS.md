@@ -57,7 +57,7 @@ Use `common::Secret<T>` for sensitive values. Auto-redacts in Debug/Display/logs
 
 ### Async
 - Tokio runtime
-- Use `async-trait` for async trait methods
+- Rust 2024 edition supports native async traits (no `async-trait` crate needed)
 
 ### Logging
 - Use `tracing` with structured fields

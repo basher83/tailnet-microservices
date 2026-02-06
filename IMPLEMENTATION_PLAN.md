@@ -2,7 +2,7 @@
 
 Phases 1-5 complete. All 83 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
-Twenty-first audit (v0.0.35): Full cross-file spec verification. Found 1 K8s issue: tailscaled sidecar container was missing `runAsNonRoot: true` in its securityContext while the proxy container had it — inconsistent with the restricted Pod Security Standards profile. Fixed by adding the field. All other areas verified clean: proxy logic, state machine, metrics, health endpoint, error handling, retry strategy, Dockerfile, CI workflow, dependency list, header injection, response streaming. 83 tests passing.
+Twenty-second audit (v0.0.36): Found 3 issues. (1) HIGH: `kustomization.yaml` included `secret.yaml` with placeholder `REPLACE_ME` value, which overwrites any real secret created imperatively before `kubectl apply -k`. Fixed by removing `secret.yaml` from kustomization resources and updating RUNBOOK deployment order. (2) LOW: Spec `Running` state still listed `metrics: ServiceMetrics` field that was intentionally removed from code. Fixed spec to match implementation. (3) LOW: AGENTS.md recommended `async-trait` crate but Rust 2024 edition has native async traits; updated guidance. All 83 tests passing.
 
 ## Remaining Work (requires live infrastructure)
 
@@ -52,7 +52,7 @@ Twenty-first audit (v0.0.35): Full cross-file spec verification. Found 1 K8s iss
 - Using `:latest` for sidecar images in K8s deployments breaks reproducibility and rollbacks. Pin to specific versions (e.g. `tailscale:v1.94.1`) so that `kubectl rollout undo` works predictably.
 - State machine variants should only carry data they own and use. The `Running` state had a `ServiceMetrics` that was never read because `main.rs` creates its own metrics instance wired to `ProxyState`. Dead allocations in state variants waste memory and confuse readers.
 - K8s `terminationGracePeriodSeconds` should be DRAIN_TIMEOUT + small buffer (e.g. 1s), not significantly larger. The application force-exits after DRAIN_TIMEOUT regardless, so the extra Kubernetes wait is wasted delay during rolling updates and node drains.
-- Kustomize only deploys resources listed in `kustomization.yaml`. A Secret file existing in the directory but not referenced means `kubectl apply -k` won't create it, causing pod failures when deployments reference the missing Secret via `secretKeyRef`.
+- Kustomize secrets with placeholder values overwrite real secrets on `kubectl apply -k`. If a secret contains a real credential created imperatively, do NOT include it in `kustomization.yaml`. Keep a schema-documenting `secret.yaml` in the repo but excluded from kustomization resources. The RUNBOOK should instruct users to create the secret imperatively after `kubectl apply -k`.
 - K8s Pod Security Standards restricted profile requires `runAsNonRoot: true` on every container, not just the main application container. Setting `runAsUser: 1000` is not sufficient — the explicit `runAsNonRoot` field is what Kubernetes admission controllers check. Missing it on sidecar containers is easy to overlook.
 
 ## Environment Notes

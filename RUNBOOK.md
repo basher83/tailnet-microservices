@@ -30,17 +30,17 @@ A Tailscale auth key with appropriate ACL permissions. Generate one from the Tai
 
 ### Initial Deploy
 
-Create the namespace and secret first, then apply manifests:
+Apply the manifests first (creates the namespace), then create the secret imperatively:
 
 ```bash
-kubectl create namespace anthropic-oauth-proxy
+kubectl apply -k k8s/
 
 kubectl create secret generic tailscale-authkey \
   --namespace=anthropic-oauth-proxy \
   --from-literal=TS_AUTHKEY=tskey-auth-XXXXX
-
-kubectl apply -k k8s/
 ```
+
+The secret is not included in `kustomization.yaml` because it contains a real auth key. The `k8s/secret.yaml` file documents the expected schema but is not applied by Kustomize. The deployment pod will be in `CreateContainerConfigError` until the secret is created.
 
 ### Verify Deployment
 
