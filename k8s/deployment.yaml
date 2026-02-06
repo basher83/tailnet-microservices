@@ -70,6 +70,7 @@ spec:
               path: /health
               port: http
             periodSeconds: 5
+            failureThreshold: 3
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
@@ -107,6 +108,15 @@ spec:
               value: /var/run/tailscale/tailscaled.sock
             - name: TS_KUBE_SECRET
               value: ""
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - test -S /var/run/tailscale/tailscaled.sock
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3
           volumeMounts:
             - name: tailscale-state
               mountPath: /var/lib/ts-state
