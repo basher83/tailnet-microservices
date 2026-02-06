@@ -92,15 +92,20 @@ pub async fn proxy_request(
         state.upstream_url.clone()
     };
 
-    // Collect request headers, stripping hop-by-hop
+    // Collect request headers, stripping hop-by-hop and host.
+    // The host header carries the proxy's hostname (e.g. "anthropic-oauth-proxy")
+    // but the upstream expects its own hostname (e.g. "api.anthropic.com").
+    // Reqwest automatically sets the correct Host from the upstream URL.
     let mut headers = reqwest::header::HeaderMap::new();
     for (name, value) in request.headers() {
-        if !is_hop_by_hop(name.as_str()) {
+        if !is_hop_by_hop(name.as_str()) && name != axum::http::header::HOST {
             headers.insert(name.clone(), value.clone());
         }
     }
 
-    // Inject configured headers (add if not present, replace if present)
+    // Inject configured headers (add if not present, replace if present).
+    // The authorization header is protected per spec: it must always pass
+    // through from the client unchanged, regardless of injection config.
     for injection in &state.headers_to_inject {
         let name = match HeaderName::from_str(&injection.name) {
             Ok(n) => n,
@@ -109,6 +114,10 @@ pub async fn proxy_request(
                 continue;
             }
         };
+        if name == axum::http::header::AUTHORIZATION {
+            warn!(header = %injection.name, "refusing to overwrite authorization header per spec");
+            continue;
+        }
         let value = match HeaderValue::from_str(&injection.value) {
             Ok(v) => v,
             Err(e) => {

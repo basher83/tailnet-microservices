@@ -1238,6 +1238,11 @@ mod tests {
             .unwrap();
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(json["error"]["type"], "proxy_error");
+        let request_id = json["error"]["request_id"].as_str().unwrap();
+        assert!(
+            request_id.starts_with("req_"),
+            "oversized body error must include request_id with req_ prefix, got: {request_id}"
+        );
         assert_eq!(
             errors_total.load(Ordering::Relaxed),
             1,
@@ -1365,6 +1370,97 @@ mod tests {
         assert_eq!(
             attempts, 3,
             "proxy must make exactly 3 attempts (1 initial + 2 retries) on timeout, got {attempts}"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_strips_host_header_before_forwarding() {
+        // The client's Host header carries the proxy's hostname, but the upstream
+        // expects its own hostname. Reqwest sets the correct Host from the URL,
+        // so we must strip the client's Host before forwarding.
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(&upstream_url, vec![]);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .header("host", "anthropic-oauth-proxy.tailnet:443")
+                    .header("authorization", "Bearer sk-test")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // The host header reaching the upstream must be the upstream's own address,
+        // not the proxy's tailnet hostname that the client sent
+        let echoed_host = json["echoed_headers"]["host"].as_str().unwrap();
+        assert!(
+            !echoed_host.contains("anthropic-oauth-proxy"),
+            "proxy must strip client's host header so upstream receives its own host, got: {echoed_host}"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_protects_authorization_from_injection() {
+        // Per spec: authorization header must pass through unchanged regardless
+        // of injection configuration. Even if someone misconfigures an injection
+        // rule for "authorization", the client's Bearer token must not be overwritten.
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(
+            &upstream_url,
+            vec![
+                config::HeaderInjection {
+                    name: "anthropic-beta".into(),
+                    value: "oauth-2025-04-20".into(),
+                },
+                config::HeaderInjection {
+                    name: "authorization".into(),
+                    value: "Bearer INJECTED-SHOULD-NOT-APPEAR".into(),
+                },
+            ],
+        );
+
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .method("POST")
+                    .header("authorization", "Bearer sk-real-user-token")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // The client's authorization must pass through, not be replaced by injection
+        assert_eq!(
+            json["echoed_headers"]["authorization"], "Bearer sk-real-user-token",
+            "authorization header must pass through unchanged per spec, injection must not overwrite it"
+        );
+        // The other injection should still work
+        assert_eq!(
+            json["echoed_headers"]["anthropic-beta"], "oauth-2025-04-20",
+            "non-authorization injections must still be applied"
         );
     }
 }
