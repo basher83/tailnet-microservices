@@ -25,3 +25,40 @@ pub enum Error {
 
 /// Result alias using service Error
 pub type Result<T> = std::result::Result<T, Error>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn error_display_messages_are_descriptive() {
+        assert_eq!(
+            Error::TailnetAuth.to_string(),
+            "Tailnet authentication failed"
+        );
+        assert_eq!(
+            Error::TailnetMachineAuth.to_string(),
+            "Tailnet needs machine authorization \u{2014} approve this node in the admin console"
+        );
+        assert!(
+            Error::TailnetConnect("timeout".into())
+                .to_string()
+                .contains("timeout")
+        );
+        assert!(
+            Error::TailnetNotRunning("socket missing".into())
+                .to_string()
+                .contains("socket missing")
+        );
+    }
+
+    #[test]
+    fn error_debug_includes_variant_name() {
+        let err = Error::TailnetConnect("test error".into());
+        let debug = format!("{err:?}");
+        assert!(
+            debug.contains("TailnetConnect"),
+            "Debug output must include variant name, got: {debug}"
+        );
+    }
+}
