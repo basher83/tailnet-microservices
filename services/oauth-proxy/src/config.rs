@@ -18,8 +18,7 @@ pub struct Config {
     pub headers: Vec<HeaderInjection>,
 }
 
-/// Tailnet connection settings — fields used when tailnet integration is wired.
-#[allow(dead_code)]
+/// Tailnet connection settings
 #[derive(Debug, Deserialize)]
 pub struct TailscaleConfig {
     pub hostname: String,
@@ -28,6 +27,7 @@ pub struct TailscaleConfig {
     /// Path to a file containing the auth key (alternative to TS_AUTHKEY env var)
     #[serde(default)]
     pub auth_key_file: Option<PathBuf>,
+    #[allow(dead_code)] // Used when tailnet integration is wired (Priority 6)
     pub state_dir: PathBuf,
 }
 
