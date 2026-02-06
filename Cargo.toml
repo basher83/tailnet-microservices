@@ -1,0 +1,39 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/common",
+    "services/oauth-proxy",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+authors = ["Brent <brent@basher83.dev>"]
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# HTTP
+axum = "0.8"
+reqwest = { version = "0.12", features = ["rustls-tls"] }
+hyper = "1"
+
+# Config
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json"] }
+
+# Security
+zeroize = { version = "1", features = ["derive"] }
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Internal crates
+common = { path = "crates/common" }
