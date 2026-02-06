@@ -276,7 +276,7 @@ hostname = "anthropic-oauth-proxy"
 # Auth key from environment: TS_AUTHKEY
 # Or specify path to file:
 # auth_key_file = "/run/secrets/ts-authkey"
-state_dir = "/var/lib/anthropic-oauth-proxy/tailscale"
+state_dir = "/var/lib/tailscale"
 
 [proxy]
 listen_addr = "0.0.0.0:8080"

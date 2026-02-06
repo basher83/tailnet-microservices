@@ -5,7 +5,7 @@
 
 [tailscale]
 hostname = "anthropic-oauth-proxy"
-state_dir = "/var/lib/anthropic-oauth-proxy/tailscale"
+state_dir = "/var/lib/tailscale"
 # auth_key_file = "/run/secrets/ts-authkey"
 
 [proxy]
