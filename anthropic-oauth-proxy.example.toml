@@ -1,0 +1,19 @@
+# Anthropic OAuth Proxy — Example Configuration
+#
+# Copy to anthropic-oauth-proxy.toml and adjust values for your environment.
+# Auth key: set TS_AUTHKEY env var or use auth_key_file below.
+
+[tailscale]
+hostname = "anthropic-oauth-proxy"
+state_dir = "/var/lib/anthropic-oauth-proxy/tailscale"
+# auth_key_file = "/run/secrets/ts-authkey"
+
+[proxy]
+listen_addr = "0.0.0.0:443"
+upstream_url = "https://api.anthropic.com"
+timeout_secs = 60
+max_connections = 1000
+
+[[headers]]
+name = "anthropic-beta"
+value = "oauth-2025-04-20"

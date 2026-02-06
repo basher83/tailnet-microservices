@@ -1,7 +1,7 @@
 //! Common types for Tailnet Microservices
 
-mod secret;
 mod error;
+mod secret;
 
-pub use secret::Secret;
 pub use error::{Error, Result};
+pub use secret::Secret;

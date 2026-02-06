@@ -26,10 +26,16 @@ toml = "0.8"
 
 # Observability
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["json"] }
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 
 # Security
 zeroize = { version = "1", features = ["derive"] }
+
+# Serialization
+serde_json = "1"
+
+# Identifiers
+uuid = { version = "1", features = ["v4"] }
 
 # Error handling
 thiserror = "2"
@@ -37,3 +43,9 @@ anyhow = "1"
 
 # Internal crates
 common = { path = "crates/common" }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
