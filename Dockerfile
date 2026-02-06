@@ -23,7 +23,7 @@ FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd -u 1000 -r -s /sbin/nologin proxy
+    && useradd -u 1000 -r -s /sbin/nologin appuser
 
 COPY --from=builder /anthropic-oauth-proxy /usr/local/bin/anthropic-oauth-proxy
 
