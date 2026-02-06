@@ -53,6 +53,10 @@ spec:
             runAsNonRoot: true
             runAsUser: 1000
             runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           resources:
             requests:
               cpu: 50m
@@ -65,7 +69,7 @@ spec:
         # The proxy queries tailscaled via the Unix socket at
         # /var/run/tailscale/tailscaled.sock for tailnet identity.
         - name: tailscaled
-          image: ghcr.io/tailscale/tailscale:latest
+          image: ghcr.io/tailscale/tailscale:v1.94.1
           env:
             - name: TS_AUTHKEY
               valueFrom:
@@ -88,6 +92,10 @@ spec:
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           resources:
             requests:
               cpu: 50m

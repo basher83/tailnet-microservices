@@ -182,8 +182,14 @@ async fn main() -> Result<()> {
 
     let metrics = ServiceMetrics::new();
 
+    let client = reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(5))
+        .pool_max_idle_per_host(100)
+        .build()
+        .context("failed to build HTTP client")?;
+
     let proxy_state = ProxyState {
-        client: reqwest::Client::new(),
+        client,
         upstream_url: config.proxy.upstream_url.clone(),
         headers_to_inject: config.headers.clone(),
         timeout: Duration::from_secs(config.proxy.timeout_secs),

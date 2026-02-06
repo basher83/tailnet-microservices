@@ -1,8 +1,8 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 82 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 83 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
-Eighteenth spec audit (v0.0.32): Fixed stale spec — `specs/oauth-proxy.md` listed reqwest features as `["rustls-tls", "http2"]` but the actual Cargo.toml includes `"stream"` (required for response streaming per the spec's own Response Streaming section). Comprehensive audit confirmed 0 code deviations: all 8 core spec areas verified (ServiceMetrics fields, hop-by-hop headers, body size limit, upstream retry strategy, tailnet retry strategy, drain timeout, health endpoint fields, error response format). Test coverage verified across all 17 spec requirement categories — 16 fully tested, 1 partially tested (graceful shutdown is component-tested but lacks an end-to-end integration test). 1 spec doc bug fixed, 82 tests still passing.
+Nineteenth audit (v0.0.33): Comprehensive production-readiness audit found 1 deployment blocker, 2 unused dependencies, 4 hardening gaps, 1 dead code allocation, and 1 test coverage gap. All resolved: Dockerfile now creates non-root user (UID 1000) for K8s `runAsNonRoot`; removed unused `hyper` (workspace + oauth-proxy) and `serde` (common crate) dependencies; hardened K8s securityContext with `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`, `capabilities.drop: [ALL]`; pinned tailscaled sidecar to v1.94.1 (was `:latest`); configured `reqwest::Client` with `connect_timeout(5s)` and `pool_max_idle_per_host(100)`; removed dead `ServiceMetrics` from state machine `Running` variant (metrics are owned by `ProxyState`); added CLI arg precedence test; spec updated to remove `hyper` from dependency list. 83 tests passing.
 
 ## Remaining Work (requires live infrastructure)
 
@@ -46,6 +46,11 @@ Eighteenth spec audit (v0.0.32): Fixed stale spec — `specs/oauth-proxy.md` lis
 - `metrics-exporter-prometheus` renders `metrics::histogram!()` as a Prometheus summary (quantiles) by default. To get a true histogram (with `_bucket` lines needed by `histogram_quantile()` queries), you must configure explicit bucket boundaries via `set_buckets_for_metric()`. Without this, RUNBOOK PromQL queries referencing `_bucket` will fail silently.
 - In a sidecar pattern, secrets should only be mounted in the container that consumes them. `TS_AUTHKEY` belongs on the tailscaled sidecar, not the proxy container — the proxy queries tailnet state via the Unix socket and never authenticates directly.
 - Spec dependency lists can drift from the actual Cargo.toml when features are added during implementation. The `"stream"` feature on reqwest was added for response streaming but the spec's Build & Distribution section was not updated. Always update the spec when adding dependency features.
+- Dockerfiles for K8s pods with `runAsNonRoot: true` must create the non-root user in the image. `debian:bookworm-slim` only has root; use `useradd -u 1000 -r -s /sbin/nologin proxy` and `USER 1000` in the runtime stage. Without this, the pod crashes with `CreateContainerConfigError`.
+- `reqwest::Client::new()` uses unbounded connection pool defaults. For a proxy with configurable `max_connections`, set `connect_timeout()` and `pool_max_idle_per_host()` on the builder to prevent unbounded TCP connections when upstream is slow to accept.
+- K8s Pod Security Standards (restricted profile) require `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`, and `capabilities: { drop: ["ALL"] }` on every container. Missing these can block deployment to hardened clusters.
+- Using `:latest` for sidecar images in K8s deployments breaks reproducibility and rollbacks. Pin to specific versions (e.g. `tailscale:v1.94.1`) so that `kubectl rollout undo` works predictably.
+- State machine variants should only carry data they own and use. The `Running` state had a `ServiceMetrics` that was never read because `main.rs` creates its own metrics instance wired to `ProxyState`. Dead allocations in state variants waste memory and confuse readers.
 
 ## Environment Notes
 
