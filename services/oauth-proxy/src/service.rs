@@ -141,8 +141,10 @@ pub enum ServiceAction {
 /// Maximum tailnet connection retries before giving up
 const MAX_TAILNET_RETRIES: u32 = 5;
 
-/// Drain timeout duration (spec: graceful shutdown <5s)
-const DRAIN_TIMEOUT: Duration = Duration::from_secs(5);
+/// Drain timeout duration (spec: graceful shutdown <5s).
+/// Used by the state machine for transition deadlines and by main.rs
+/// to enforce a hard exit if in-flight requests don't complete in time.
+pub const DRAIN_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Handle a state transition. Pure function: no I/O.
 pub fn handle_event(state: ServiceState, event: ServiceEvent) -> (ServiceState, ServiceAction) {

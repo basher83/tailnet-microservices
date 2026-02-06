@@ -30,7 +30,8 @@ use metrics_exporter_prometheus::PrometheusHandle;
 use crate::config::Config;
 use crate::proxy::ProxyState;
 use crate::service::{
-    ServiceAction, ServiceEvent, ServiceMetrics, ServiceState, TailnetHandle, handle_event,
+    DRAIN_TIMEOUT, ServiceAction, ServiceEvent, ServiceMetrics, ServiceState, TailnetHandle,
+    handle_event,
 };
 
 /// Shared application state accessible from all handlers
@@ -203,25 +204,53 @@ async fn main() -> Result<()> {
     // Clone in_flight counter for drain observability after shutdown
     let in_flight = metrics.in_flight.clone();
 
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .context("server error")?;
+    // Graceful shutdown with drain timeout enforcement per spec:
+    // 1. shutdown_signal() fires on SIGTERM/SIGINT
+    // 2. axum stops accepting new connections and drains in-flight requests
+    // 3. We enforce DRAIN_TIMEOUT so a slow client cannot block process exit
+    //
+    // The drain timeout starts when the shutdown signal fires, not when the
+    // server starts. We achieve this by notifying the server to drain, then
+    // racing the drain against the timeout.
+    let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+
+    let server_handle = tokio::spawn(async move {
+        axum::serve(listener, app)
+            .with_graceful_shutdown(async {
+                let _ = shutdown_rx.await;
+            })
+            .await
+    });
+
+    // Wait for the OS signal
+    shutdown_signal().await;
+
+    // Signal the server to begin draining
+    let _ = shutdown_tx.send(());
+
+    // Now enforce the drain timeout — this timer starts at signal receipt
+    match tokio::time::timeout(DRAIN_TIMEOUT, server_handle).await {
+        Ok(Ok(Ok(()))) => {
+            info!("all in-flight requests drained");
+        }
+        Ok(Ok(Err(e))) => {
+            error!(error = %e, "server error during shutdown");
+        }
+        Ok(Err(e)) => {
+            error!(error = %e, "server task panicked");
+        }
+        Err(_) => {
+            let remaining = in_flight.load(Ordering::Relaxed);
+            warn!(
+                remaining,
+                drain_timeout_secs = DRAIN_TIMEOUT.as_secs(),
+                "drain timeout exceeded, forcing shutdown"
+            );
+        }
+    }
 
     // Mark tailnet as disconnected in Prometheus before shutting down
     metrics::set_tailnet_connected(false);
-
-    // axum's graceful shutdown has stopped accepting new connections and waited
-    // for existing connections to close. Log the drain outcome.
-    let remaining = in_flight.load(Ordering::Relaxed);
-    if remaining > 0 {
-        warn!(
-            remaining,
-            "shutdown completed with in-flight requests still tracked"
-        );
-    } else {
-        info!("all in-flight requests drained");
-    }
 
     info!("shutdown complete");
     Ok(())
