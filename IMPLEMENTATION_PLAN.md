@@ -1,6 +1,6 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 88 tests pass (85 oauth-proxy + 3 common). Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 90 tests pass (87 oauth-proxy + 3 common). Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
 Audits 1-33: Found and fixed 55+ issues across 33 audits including 5 bugs, spec documentation gaps, K8s security context issues, state machine correctness, metrics configuration, RUNBOOK accuracy, and dependency upgrades (reqwest 0.12→0.13, toml 0.8→0.9, metrics-exporter-prometheus 0.16→0.18). Recent audits (29-33) found increasingly fewer issues as the codebase stabilized: startup probe gap (32nd), RUNBOOK inaccuracies (33rd), and clean results (29th, 30th, 31st).
 
@@ -16,7 +16,7 @@ Thirty-eighth audit (v0.0.56): Comprehensive Opus-level audit of all source file
 
 GHCR access investigation: `gh auth` token lacks `read:packages`/`write:packages` scopes. `gh auth refresh -s read:packages,write:packages` requires interactive browser authentication. Alternative: make the package public via GitHub web UI (Settings → Packages → Change visibility), or use a classic PAT with `write:packages` scope.
 
-Thirty-ninth audit (v0.0.57): Updated CI workflow — actions/checkout v4→v6, added explicit least-privilege permissions blocks to all CI jobs. Dependencies audit: all 16 workspace dependencies match spec exactly, Cargo.lock at latest compatible versions. Comprehensive source file review found 0 bugs or spec discrepancies. K8s deployment confirmed stuck in ImagePullBackOff due to GHCR 403 (known blocker). ts-authkey secret missing from cluster — must be created imperatively after GHCR fix. All 88 tests pass, clippy clean, fmt clean.
+Thirty-ninth audit (v0.0.58): Updated CI workflow — actions/checkout v4→v6, added explicit least-privilege permissions blocks to all CI jobs (CI run confirmed successful). Dependencies audit: all 16 workspace dependencies match spec exactly, Cargo.lock at latest compatible versions. Comprehensive source file review found 0 bugs or spec discrepancies. Added 2 error Display/Debug formatting tests. K8s deployment confirmed stuck in ImagePullBackOff due to GHCR 403 (known blocker). ts-authkey secret missing from cluster — must be created imperatively after GHCR fix. All 90 tests pass, clippy clean, fmt clean.
 
 ## Remaining Work
 
@@ -53,7 +53,7 @@ Thirty-ninth audit (v0.0.57): Updated CI workflow — actions/checkout v4→v6, 
 - Tower's `ConcurrencyLimitLayer` queues excess requests rather than rejecting them. Requests above `max_connections` will wait (not fail) until a slot opens.
 - Docker build uses native `x86_64-unknown-linux-gnu` target (not musl) inside `rust:1-bookworm`. No cross-compilation needed since Docker IS Linux.
 - K8s manifests use `TS_USERSPACE=true` for the tailscaled sidecar to avoid requiring `NET_ADMIN` capabilities. The proxy and tailscaled share the Unix socket via an `emptyDir` volume.
-- GitHub Actions CI uses `dtolnay/rust-toolchain@stable` and `Swatinem/rust-cache@v2`. Docker job uses `docker/build-push-action@v6` with GHA cache. Images push to GHCR using the built-in `GITHUB_TOKEN`.
+- GitHub Actions CI uses `actions/checkout@v6`, `dtolnay/rust-toolchain@stable`, and `Swatinem/rust-cache@v2`. All jobs have explicit least-privilege `permissions` blocks. Docker job uses `docker/build-push-action@v6` with GHA cache. Images push to GHCR using the built-in `GITHUB_TOKEN`.
 - `BackendState::NeedsMachineAuth` requires manual admin approval in the Tailscale console. Mapping it to a retryable error wastes 31 seconds of exponential backoff before giving up. It must be non-retryable.
 - A spec-vs-implementation audit is valuable after completing major phases. Found 43+ discrepancies across ten audits including 5 bugs, spec documentation gaps, and positive deviations. The tenth audit found 1 state machine bug (terminal state not fully inert).
 - Terminal states in a state machine must be explicitly guarded before wildcard match arms. Without a `Stopped` guard before `(_, ShutdownSignal)`, the wildcard produces a `Shutdown` action from an already-stopped state, violating the "terminal means inert" invariant.
