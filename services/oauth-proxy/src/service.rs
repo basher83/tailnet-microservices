@@ -626,6 +626,100 @@ mod tests {
     }
 
     #[test]
+    fn draining_ignores_request_events() {
+        // During graceful shutdown, in-flight requests completing generate
+        // RequestCompleted events. The state machine must stay in Draining
+        // and produce no action — drain coordination is handled by axum.
+        let (state, action) = handle_event(
+            ServiceState::Draining {
+                deadline: Instant::now() + Duration::from_secs(5),
+            },
+            ServiceEvent::RequestReceived {
+                request_id: "req_test".into(),
+            },
+        );
+        assert!(matches!(state, ServiceState::Draining { .. }));
+        assert!(matches!(action, ServiceAction::None));
+
+        let (state, action) = handle_event(
+            ServiceState::Draining {
+                deadline: Instant::now() + Duration::from_secs(5),
+            },
+            ServiceEvent::RequestCompleted {
+                request_id: "req_test".into(),
+                duration: Duration::from_millis(100),
+                error: None,
+            },
+        );
+        assert!(matches!(state, ServiceState::Draining { .. }));
+        assert!(matches!(action, ServiceAction::None));
+    }
+
+    #[test]
+    fn starting_ignores_unexpected_events() {
+        // Starting should only respond to ListenerReady (and ShutdownSignal).
+        // All other events should be silently ignored via the catch-all.
+        let (state, action) = handle_event(
+            ServiceState::Starting {
+                tailnet: dummy_tailnet_handle(),
+                listen_addr: localhost_addr(),
+            },
+            ServiceEvent::TailnetError("late error".into()),
+        );
+        assert!(
+            matches!(state, ServiceState::Starting { .. }),
+            "Starting must ignore TailnetError"
+        );
+        assert!(matches!(action, ServiceAction::None));
+
+        let (state, action) = handle_event(
+            ServiceState::Starting {
+                tailnet: dummy_tailnet_handle(),
+                listen_addr: localhost_addr(),
+            },
+            ServiceEvent::RetryTimer,
+        );
+        assert!(
+            matches!(state, ServiceState::Starting { .. }),
+            "Starting must ignore RetryTimer"
+        );
+        assert!(matches!(action, ServiceAction::None));
+
+        let (state, action) = handle_event(
+            ServiceState::Starting {
+                tailnet: dummy_tailnet_handle(),
+                listen_addr: localhost_addr(),
+            },
+            ServiceEvent::ConfigLoaded {
+                listen_addr: localhost_addr(),
+            },
+        );
+        assert!(
+            matches!(state, ServiceState::Starting { .. }),
+            "Starting must ignore ConfigLoaded"
+        );
+        assert!(matches!(action, ServiceAction::None));
+    }
+
+    #[test]
+    fn connecting_ignores_listener_ready() {
+        // ConnectingTailnet receiving ListenerReady (before the listener is started)
+        // must remain in ConnectingTailnet and produce no action.
+        let (state, action) = handle_event(
+            ServiceState::ConnectingTailnet {
+                retries: 0,
+                listen_addr: localhost_addr(),
+            },
+            ServiceEvent::ListenerReady,
+        );
+        assert!(
+            matches!(state, ServiceState::ConnectingTailnet { retries: 0, .. }),
+            "ConnectingTailnet must ignore ListenerReady"
+        );
+        assert!(matches!(action, ServiceAction::None));
+    }
+
+    #[test]
     fn service_metrics_initializes_in_flight_at_zero() {
         let metrics = ServiceMetrics::new();
         assert_eq!(
