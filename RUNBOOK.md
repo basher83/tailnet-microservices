@@ -30,7 +30,7 @@ A Tailscale auth key with appropriate ACL permissions. Generate one from the Tai
 
 ### Initial Deploy
 
-Apply the manifests first (creates the namespace), then create the secret imperatively:
+Apply the manifests first (creates the namespace), then create the secrets imperatively:
 
 ```bash
 kubectl apply -k k8s/
@@ -40,7 +40,19 @@ kubectl create secret generic tailscale-authkey \
   --from-literal=TS_AUTHKEY=tskey-auth-XXXXX
 ```
 
-The secret is not included in `kustomization.yaml` because it contains a real auth key. The `k8s/secret.yaml` file documents the expected schema but is not applied by Kustomize. The deployment pod will be in `CreateContainerConfigError` until the secret is created.
+The tailscale-authkey secret is not included in `kustomization.yaml` because it contains a real auth key. The `k8s/secret.yaml` file documents the expected schema but is not applied by Kustomize. The deployment pod will be in `CreateContainerConfigError` until the secret is created.
+
+If the GHCR package is private, pods also need a `ghcr-pull-secret` for image pulls. Create it with a GitHub personal access token that has `read:packages` scope:
+
+```bash
+kubectl create secret docker-registry ghcr-pull-secret \
+  --namespace=anthropic-oauth-proxy \
+  --docker-server=ghcr.io \
+  --docker-username=<github-username> \
+  --docker-password=<pat-with-read-packages>
+```
+
+If the GHCR package is public, this secret is still referenced by the deployment but unused — Kubernetes tolerates a missing `imagePullSecret` when anonymous pulls succeed.
 
 ### Verify Deployment
 
