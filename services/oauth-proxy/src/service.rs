@@ -14,11 +14,8 @@ use crate::error::Error as ServiceError;
 
 /// Origin of an error for retry decisions
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[allow(dead_code)]
 pub enum ErrorOrigin {
     Tailnet,
-    Listener,
-    Config,
 }
 
 /// Opaque handle representing an active tailnet connection.
@@ -51,7 +48,11 @@ impl ServiceMetrics {
     }
 }
 
-/// Service states per spec
+/// Service states per spec.
+///
+/// Fields marked `dead_code` are structurally required by state transitions
+/// (used in match arms for destructuring/reconstruction) but never read
+/// independently. They exist because the spec defines them as state data.
 #[derive(Debug)]
 #[allow(dead_code)]
 pub enum ServiceState {
@@ -89,7 +90,12 @@ pub enum ServiceState {
     },
 }
 
-/// Events that drive state transitions
+/// Events that drive state transitions.
+///
+/// Some variants are only constructed in tests (e.g. `ShutdownSignal`,
+/// `DrainTimeout`, `RequestCompleted`). They exist because the spec defines
+/// them and the state machine handles them; the caller (`main.rs`) delegates
+/// some of these concerns to axum's built-in mechanisms instead.
 #[derive(Debug)]
 #[allow(dead_code)]
 pub enum ServiceEvent {
@@ -119,7 +125,6 @@ pub enum ServiceEvent {
 
 /// Actions the caller should execute after a state transition
 #[derive(Debug)]
-#[allow(dead_code)]
 pub enum ServiceAction {
     /// Initiate tailnet connection
     ConnectTailnet,

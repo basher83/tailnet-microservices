@@ -205,7 +205,6 @@ mod tests {
             }
             Err(Error::TailnetConnect(_)) => { /* expected in CI */ }
             Err(Error::TailnetAuth) => { /* also acceptable */ }
-            Err(other) => panic!("unexpected error variant: {other}"),
         }
     }
 }
