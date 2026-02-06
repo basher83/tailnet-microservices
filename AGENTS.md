@@ -28,6 +28,10 @@ cargo fmt --all
 
 # Check (format + lint + build + test)
 cargo fmt --all --check && cargo clippy --workspace -- -D warnings && cargo build --workspace && cargo test --workspace
+
+# Cross-compile for Linux (requires cargo-zigbuild + zig)
+cargo zigbuild --workspace --release --target x86_64-unknown-linux-gnu
+cargo zigbuild --workspace --release --target aarch64-unknown-linux-gnu
 ```
 
 ## Project Structure

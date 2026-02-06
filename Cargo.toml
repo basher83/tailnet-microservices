@@ -17,7 +17,7 @@ tokio = { version = "1", features = ["full"] }
 
 # HTTP
 axum = "0.8"
-reqwest = { version = "0.12", features = ["rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "http2"] }
 hyper = "1"
 
 # Config
