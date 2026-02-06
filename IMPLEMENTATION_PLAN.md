@@ -33,10 +33,10 @@ Forty-fourth audit (v0.0.63): Live cluster deployment fix. Tailscaled sidecar wa
 - [x] ~~GHCR package visibility~~ — Package made public (2026-02-06). ImagePullBackOff blocker cleared.
 - [x] Create tailscale-authkey K8s secret — exists in cluster (confirmed via `kubectl get secrets -n anthropic-oauth-proxy`)
 - [x] Verify deployment — both containers running, health endpoint healthy, proxy forwarding to upstream confirmed
-- [ ] Aperture config update — route `http://ai/` to the proxy (requires live tailnet)
+- [x] Test MagicDNS hostname resolution — `curl http://anthropic-oauth-proxy:8080/health` returns healthy response, proxy accessible from tailnet via MagicDNS at `100.72.121.123`
+- [ ] Aperture config update — route `http://ai/` to the proxy (requires Aperture configuration)
 - [ ] Production monitoring — observe live traffic
-- [ ] Test MagicDNS hostname resolution (requires live tailnet)
-- [ ] Verify ACL connectivity from Aperture (requires live tailnet + Aperture)
+- [ ] Verify ACL connectivity from Aperture (requires Aperture configured to route through proxy)
 
 ## Known Limitations
 
