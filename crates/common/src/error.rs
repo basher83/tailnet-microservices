@@ -47,4 +47,28 @@ mod tests {
             "Debug should include variant name, got: {debug}"
         );
     }
+
+    #[test]
+    fn toml_parse_error_display_includes_context() {
+        let bad_toml = "not { valid toml @@";
+        let toml_err: std::result::Result<toml::Value, _> = toml::from_str(bad_toml);
+        let err = Error::Toml(toml_err.unwrap_err());
+        let display = err.to_string();
+        assert!(
+            display.starts_with("TOML parse error:"),
+            "Toml error display must start with 'TOML parse error:', got: {display}"
+        );
+    }
+
+    #[test]
+    fn toml_error_debug_includes_variant() {
+        let bad_toml = "{{invalid";
+        let toml_err: std::result::Result<toml::Value, _> = toml::from_str(bad_toml);
+        let err = Error::Toml(toml_err.unwrap_err());
+        let debug = format!("{:?}", err);
+        assert!(
+            debug.contains("Toml"),
+            "Debug should include Toml variant name, got: {debug}"
+        );
+    }
 }

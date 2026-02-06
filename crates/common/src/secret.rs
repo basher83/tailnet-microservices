@@ -67,4 +67,22 @@ mod tests {
         assert_eq!(display, "[REDACTED]");
         assert!(!display.contains("super-secret-token"));
     }
+
+    #[test]
+    fn test_secret_clone_preserves_value() {
+        let secret = Secret::new(String::from("clone-me"));
+        let cloned = secret.clone();
+        assert_eq!(cloned.expose(), "clone-me");
+        // Both the original and clone must independently expose the value
+        assert_eq!(secret.expose(), cloned.expose());
+    }
+
+    #[test]
+    fn test_secret_clone_is_independent() {
+        let secret = Secret::new(String::from("independent"));
+        let cloned = secret.clone();
+        // Dropping the original must not affect the clone
+        drop(secret);
+        assert_eq!(cloned.expose(), "independent");
+    }
 }
