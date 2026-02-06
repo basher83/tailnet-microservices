@@ -106,11 +106,11 @@ When connected to tailnet:
 }
 ```
 
-When tailnet is not connected (should not happen in steady state):
+When tailnet is not connected (returns 503 Service Unavailable, should not happen in steady state):
 
 ```json
 {
-  "status": "healthy",
+  "status": "degraded",
   "tailnet": "not_connected",
   "uptime_seconds": 0,
   "requests_served": 0,
@@ -158,6 +158,8 @@ Set log verbosity via the `LOG_LEVEL` environment variable in the deployment. Ac
 Check proxy container logs first. The three lifecycle errors that cause crashes:
 
 `TailnetAuth` ("Tailnet authentication failed") means the `TS_AUTHKEY` secret is invalid or expired. Generate a new auth key from the Tailscale admin console and rotate the secret (see Rotating the Tailscale Auth Key above).
+
+`TailnetMachineAuth` ("Tailnet needs machine authorization") means the node requires admin approval in the Tailscale admin console. Navigate to the Tailscale admin console, find the pending node, and approve it. Then restart the pod.
 
 `TailnetNotRunning` ("Tailnet daemon not running") means the tailscaled sidecar is not running or the Unix socket at `/var/run/tailscale/tailscaled.sock` is not reachable. Check the tailscaled container logs. Verify both containers share the `tailscale-socket` volume.
 

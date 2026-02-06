@@ -38,6 +38,9 @@ spec:
             - name: config
               mountPath: /etc/anthropic-oauth-proxy
               readOnly: true
+            - name: tailscale-socket
+              mountPath: /var/run/tailscale
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /health

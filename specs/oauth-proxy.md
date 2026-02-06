@@ -447,6 +447,8 @@ panic = "abort"
 2. **TLS termination** — Inbound TLS is handled by Aperture / tailnet WireGuard encryption. The proxy listens on plain TCP. Outbound to upstream uses `reqwest` with `rustls-tls`.
 3. **Multi-tenant** — Single-tenant: one proxy instance injects a fixed set of headers from `[[headers]]` config. Deploy separate instances for different header sets.
 4. **State persistence** — Since Option B was chosen, `state_dir` is deserialized from TOML for schema compliance but the Rust service does not use it. `tailscaled` manages its own state externally.
+5. **Auth key usage** — Since Option B was chosen, `auth_key` and `auth_key_file` are loaded from config/env for schema compliance but are not passed to the tailnet module. The Rust service queries an already-authenticated `tailscaled`; authentication is the sidecar's responsibility.
+6. **Tailnet disconnect** — Spec lifecycle step 5 says "disconnect cleanly." With the sidecar model, the Rust service does not own the tailnet connection, so disconnect is a no-op. On shutdown, the `tailnet_connected` Prometheus gauge is set to 0 for observability. The `tailscaled` sidecar handles its own lifecycle via the pod termination signal.
 
 ---
 

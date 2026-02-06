@@ -1580,6 +1580,37 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn proxy_accepts_body_at_exact_size_limit() {
+        // The proxy enforces a 10 MiB body limit. A body of exactly 10 MiB
+        // must succeed, while 10 MiB + 1 byte is rejected. This boundary test
+        // verifies the limit is inclusive (at-limit succeeds).
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(&upstream_url, vec![]);
+        let app = build_router(state, 1000);
+
+        // Exactly 10 MiB should succeed
+        let at_limit = vec![b'x'; 10 * 1024 * 1024];
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .method("POST")
+                    .body(Body::from(at_limit))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(
+            response.status(),
+            StatusCode::OK,
+            "a request body of exactly 10 MiB must be accepted"
+        );
+    }
+
+    #[tokio::test]
     async fn proxy_preserves_multi_value_request_headers() {
         // HTTP allows multiple values for the same header name (e.g. multiple
         // Cookie or Accept-Encoding values). The proxy must preserve all values

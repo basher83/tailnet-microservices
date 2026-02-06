@@ -1,8 +1,8 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 69 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 70 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
-Fifth spec audit (v0.0.22): Found 1 bug, 3 spec gaps, and 3 missing test assertions. All addressed: 1 bug fixed, 3 spec gaps resolved, 1 new test added (69 total).
+Sixth spec audit (v0.0.23): Found 1 K8s deployment bug, 1 runbook documentation bug, 2 spec documentation gaps, 1 missing runbook error. All addressed: 1 bug fixed, 2 doc bugs fixed, 2 spec gaps resolved, 1 boundary test added (70 total).
 
 ## Remaining Work (requires live infrastructure)
 
@@ -11,16 +11,16 @@ Fifth spec audit (v0.0.22): Found 1 bug, 3 spec gaps, and 3 missing test asserti
 - [ ] Test MagicDNS hostname resolution (requires live tailnet)
 - [ ] Verify ACL connectivity from Aperture (requires live tailnet + Aperture)
 
-## Bug Fixed & Improvements (v0.0.22)
+## Fixes & Improvements (v0.0.23)
 
-Fifth spec audit found 1 bug, 3 spec gaps, and 3 missing test assertions:
+Sixth spec audit found 1 deployment bug, 1 runbook doc bug, 2 spec gaps, and 1 missing test:
 
-- BUG: Multi-value request headers were collapsed by `insert()` — if a client sent multiple values for the same header name (e.g. multiple Cookie values), only the last survived. Fixed by using `append()` which preserves all values. The response path already used append-style correctly.
-- Added per-request completion log with latency (`info!(status, latency_ms, "request completed")`) per the spec's observability example. Previously only errors/retries were logged; successful requests were silent.
-- Spec: Environment variable precedence table column renamed from "Fallback for" to "Precedence" with per-entry descriptions that accurately match both the stated precedence rule and the implementation.
-- Spec: Added note clarifying that the state machine drives startup lifecycle only; graceful shutdown is handled by axum's `with_graceful_shutdown` mechanism rather than by firing events through the state machine.
-- Test: Prometheus metrics test now verifies all 4 spec-defined metrics (`proxy_requests_total`, `proxy_request_duration_seconds`, `proxy_upstream_errors_total`, `tailnet_connected`). Previously only checked 2 of 4.
-- Test: Added multi-value request header preservation test to verify the `insert()` -> `append()` fix.
+- BUG: K8s deployment was missing the `tailscale-socket` volume mount on the proxy container. Without this mount, the proxy cannot communicate with the tailscaled sidecar via the Unix socket at `/var/run/tailscale/tailscaled.sock`. The tailscaled container had the mount but the proxy container did not. Fixed by adding the volume mount with `readOnly: true`.
+- RUNBOOK: Health endpoint not_connected response was documented as returning 200 OK with `"status": "healthy"`. The actual implementation (and spec) returns 503 Service Unavailable with `"status": "degraded"`. Fixed.
+- RUNBOOK: Added `TailnetMachineAuth` error to CrashLoopBackOff troubleshooting section. This error occurs when a node needs admin approval in the Tailscale console and was previously undocumented.
+- Spec (oauth-proxy.md): Added resolved question documenting that `auth_key`/`auth_key_file` are loaded for schema compliance but not consumed by `tailnet::connect()` in the sidecar model.
+- Spec (tailnet.md): Added resolved questions documenting auth key usage and tailnet disconnect behavior for the sidecar approach.
+- Test: Added body size boundary test verifying that a request body of exactly 10 MiB succeeds (at-limit case). The existing oversized test only verified 10 MiB + 1 byte is rejected.
 
 ## Known Limitations
 
@@ -49,7 +49,8 @@ Fifth spec audit found 1 bug, 3 spec gaps, and 3 missing test assertions:
 - K8s manifests use `TS_USERSPACE=true` for the tailscaled sidecar to avoid requiring `NET_ADMIN` capabilities. The proxy and tailscaled share the Unix socket via an `emptyDir` volume.
 - GitHub Actions CI uses `dtolnay/rust-toolchain@stable` and `Swatinem/rust-cache@v2`. Docker job uses `docker/build-push-action@v6` with GHA cache. Images push to GHCR using the built-in `GITHUB_TOKEN`.
 - `BackendState::NeedsMachineAuth` requires manual admin approval in the Tailscale console. Mapping it to a retryable error wastes 31 seconds of exponential backoff before giving up. It must be non-retryable.
-- A spec-vs-implementation audit is valuable after completing major phases. Found 39+ discrepancies across five audits including 4 bugs, spec documentation gaps, and positive deviations.
+- A spec-vs-implementation audit is valuable after completing major phases. Found 39+ discrepancies across six audits including 4 bugs, spec documentation gaps, and positive deviations.
+- K8s sidecar pattern requires both containers to mount the shared volume. The volume definition in `spec.volumes` is not enough — each container that needs the socket must have a `volumeMount` entry. Easy to miss because the tailscaled container (which creates the socket) works fine; only the consumer (proxy) fails.
 
 ## Environment Notes
 
