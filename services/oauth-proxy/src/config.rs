@@ -147,7 +147,7 @@ mod tests {
         r#"
 [tailscale]
 hostname = "anthropic-oauth-proxy"
-state_dir = "/var/lib/tailscale"
+state_dir = "/var/lib/ts-state"
 
 [proxy]
 listen_addr = "127.0.0.1:8080"
