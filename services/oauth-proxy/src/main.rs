@@ -2100,6 +2100,110 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn proxy_skips_invalid_header_name_and_applies_valid_ones() {
+        // If a header injection config contains an invalid header name (e.g. with
+        // spaces), the proxy must skip it with a warning and still apply the
+        // remaining valid injections.
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(
+            &upstream_url,
+            vec![
+                config::HeaderInjection {
+                    name: "invalid header name".into(),
+                    value: "should-be-skipped".into(),
+                },
+                config::HeaderInjection {
+                    name: "anthropic-beta".into(),
+                    value: "oauth-2025-04-20".into(),
+                },
+            ],
+        );
+
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .method("POST")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // Invalid header name must be skipped, not cause a panic or error response
+        assert!(
+            json["echoed_headers"].get("invalid header name").is_none(),
+            "invalid header name must be skipped"
+        );
+        // Valid injection must still be applied
+        assert_eq!(
+            json["echoed_headers"]["anthropic-beta"], "oauth-2025-04-20",
+            "valid header injection must still be applied alongside invalid ones"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_skips_invalid_header_value_and_applies_valid_ones() {
+        // If a header injection config contains an invalid header value (e.g. with
+        // control characters), the proxy must skip it and still apply the remaining
+        // valid injections.
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(
+            &upstream_url,
+            vec![
+                config::HeaderInjection {
+                    name: "x-bad-value".into(),
+                    value: "invalid\r\nvalue".into(),
+                },
+                config::HeaderInjection {
+                    name: "anthropic-beta".into(),
+                    value: "oauth-2025-04-20".into(),
+                },
+            ],
+        );
+
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .method("POST")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // Invalid header value must be skipped
+        assert!(
+            json["echoed_headers"].get("x-bad-value").is_none(),
+            "header with invalid value must be skipped"
+        );
+        // Valid injection must still be applied
+        assert_eq!(
+            json["echoed_headers"]["anthropic-beta"], "oauth-2025-04-20",
+            "valid header injection must still be applied alongside invalid values"
+        );
+    }
+
+    #[tokio::test]
     async fn listener_bind_fails_when_port_in_use() {
         // Per spec: ListenerBindError when port is already in use.
         // The bind path in main() uses TcpListener::bind with anyhow context.

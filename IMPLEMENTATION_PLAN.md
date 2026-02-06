@@ -1,6 +1,6 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 83 tests pass (80 oauth-proxy + 3 common). Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 88 tests pass (85 oauth-proxy + 3 common). Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
 Audits 1-33: Found and fixed 55+ issues across 33 audits including 5 bugs, spec documentation gaps, K8s security context issues, state machine correctness, metrics configuration, RUNBOOK accuracy, and dependency upgrades (reqwest 0.12→0.13, toml 0.8→0.9, metrics-exporter-prometheus 0.16→0.18). Recent audits (29-33) found increasingly fewer issues as the codebase stabilized: startup probe gap (32nd), RUNBOOK inaccuracies (33rd), and clean results (29th, 30th, 31st).
 
@@ -12,9 +12,13 @@ Thirty-sixth audit (v0.0.54): Live cluster verification. Confirmed CI Docker bui
 
 Thirty-seventh audit (v0.0.55): Live cluster debugging. Found tailscaled sidecar crashing with `store.New failed: creating state directory: chmod /var/lib/tailscale: operation not permitted; starting with in-memory store` followed by `500 Internal Server Error: cannot start backend when state store is unhealthy`. Root cause: `capabilities: drop: ["ALL"]` removes `CAP_FOWNER`, which tailscale v1.94.1 needs to `chmod` its state directory. Fix: added `capabilities: add: ["FOWNER"]` to the tailscaled container security context. The proxy container retains the strict `drop: ["ALL"]` with no adds. GHCR 403 remains the primary blocker — package still private.
 
+Thirty-eighth audit (v0.0.56): Comprehensive Opus-level audit of all source files, specs, K8s manifests, CI, RUNBOOK. 0 spec-vs-implementation discrepancies found. Identified 8 test coverage gaps (all edge cases, not behavioral bugs) and 8 code quality observations (all by-design tradeoffs). Added 5 new tests covering the most impactful gaps: state machine edge cases (Draining+RequestReceived/RequestCompleted, Starting+unexpected events, ConnectingTailnet+ListenerReady) and proxy header injection resilience (invalid header names/values skip gracefully without affecting valid injections). Test count: 85 oauth-proxy + 3 common = 88.
+
+GHCR access investigation: `gh auth` token lacks `read:packages`/`write:packages` scopes. `gh auth refresh -s read:packages,write:packages` requires interactive browser authentication. Alternative: make the package public via GitHub web UI (Settings → Packages → Change visibility), or use a classic PAT with `write:packages` scope.
+
 ## Remaining Work
 
-- [ ] **GHCR package visibility (BLOCKING)** — The GHCR package is private and K8s nodes get 403 Forbidden when pulling. **Fix**: Go to github.com → Your Profile → Packages → `tailnet-microservices/anthropic-oauth-proxy` → Package settings → Danger Zone → Change visibility → Public. This is a one-time manual step.
+- [ ] **GHCR package visibility (BLOCKING)** — The GHCR package is private and K8s nodes get 403 Forbidden when pulling. **Fix options**: (1) GitHub web UI: Profile → Packages → `tailnet-microservices/anthropic-oauth-proxy` → Package settings → Danger Zone → Change visibility → Public. (2) Run `gh auth refresh -h github.com -s read:packages,write:packages` in a terminal with browser access, then `gh api --method PATCH /user/packages/container/tailnet-microservices%2Fanthropic-oauth-proxy -f visibility=public`.
 - [ ] Verify deployment after GHCR fix — tailscaled `CAP_FOWNER` fix applied, `TS_KUBE_SECRET=""` set, need to confirm both containers start successfully
 - [ ] Aperture config update — route `http://ai/` to the proxy (requires live tailnet)
 - [ ] Production monitoring — observe live traffic
