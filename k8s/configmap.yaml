@@ -3,6 +3,8 @@ kind: ConfigMap
 metadata:
   name: anthropic-oauth-proxy
   namespace: anthropic-oauth-proxy
+  labels:
+    app: anthropic-oauth-proxy
 data:
   config.toml: |
     [tailscale]
