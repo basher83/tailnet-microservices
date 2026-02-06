@@ -103,12 +103,12 @@ The service uses an explicit state machine for lifecycle management.
 | State | Description | Fields |
 |-------|-------------|--------|
 | `Initializing` | Loading config, setting up resources | (no data) |
-| `ConnectingTailnet` | Joining the tailnet | `config: Config`, `retries: u32` |
-| `Starting` | Starting HTTP listener | `config: Config`, `tailnet: TailnetHandle` |
-| `Running` | Accepting and proxying requests | `config: Config`, `tailnet: TailnetHandle`, `listener: HttpListener`, `metrics: ServiceMetrics` |
+| `ConnectingTailnet` | Joining the tailnet | `retries: u32`, `listen_addr: SocketAddr` |
+| `Starting` | Starting HTTP listener | `tailnet: TailnetHandle`, `listen_addr: SocketAddr` |
+| `Running` | Accepting and proxying requests | `tailnet: TailnetHandle`, `listen_addr: SocketAddr`, `metrics: ServiceMetrics` |
 | `Draining` | Graceful shutdown, finishing in-flight | `deadline: Instant` (drain coordination handled by axum's graceful shutdown and the `in_flight` atomic counter) |
 | `Stopped` | Terminal state | `exit_code: i32` |
-| `Error` | Recoverable error with retry | `error: ServiceError`, `origin: ErrorOrigin`, `retries: u32` |
+| `Error` | Recoverable error with retry | `error: String`, `origin: ErrorOrigin`, `retries: u32`, `listen_addr: SocketAddr` |
 
 ### `ServiceEvent` Enum
 
