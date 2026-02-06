@@ -662,6 +662,45 @@ mod tests {
     }
 
     #[test]
+    fn running_handles_request_events_as_noop() {
+        // Request tracking is handled by ProxyState's atomic counters, not the
+        // state machine. If RequestReceived or RequestCompleted events reach the
+        // state machine while Running, they must be treated as no-ops: the state
+        // stays Running and no action is produced.
+        let (state, action) = handle_event(
+            ServiceState::Running {
+                tailnet: dummy_tailnet_handle(),
+                listen_addr: localhost_addr(),
+            },
+            ServiceEvent::RequestReceived {
+                request_id: "req_running_test".into(),
+            },
+        );
+        assert!(
+            matches!(state, ServiceState::Running { .. }),
+            "Running must stay Running on RequestReceived"
+        );
+        assert!(matches!(action, ServiceAction::None));
+
+        let (state, action) = handle_event(
+            ServiceState::Running {
+                tailnet: dummy_tailnet_handle(),
+                listen_addr: localhost_addr(),
+            },
+            ServiceEvent::RequestCompleted {
+                request_id: "req_running_test".into(),
+                duration: Duration::from_millis(50),
+                error: None,
+            },
+        );
+        assert!(
+            matches!(state, ServiceState::Running { .. }),
+            "Running must stay Running on RequestCompleted"
+        );
+        assert!(matches!(action, ServiceAction::None));
+    }
+
+    #[test]
     fn starting_ignores_unexpected_events() {
         // Starting should only respond to ListenerReady (and ShutdownSignal).
         // All other events should be silently ignored via the catch-all.
