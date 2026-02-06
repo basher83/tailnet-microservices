@@ -9,7 +9,7 @@ use axum::http::{HeaderName, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
 use std::str::FromStr;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tracing::{error, instrument, warn};
 
 /// Headers to strip before forwarding (hop-by-hop per RFC 2616 Section 13.5.1)
@@ -72,6 +72,7 @@ pub async fn proxy_request(
     request: axum::http::Request<axum::body::Body>,
     request_id: String,
 ) -> Response {
+    let start = Instant::now();
     state
         .requests_total
         .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -81,6 +82,7 @@ pub async fn proxy_request(
     let _in_flight_guard = InFlightGuard(state.in_flight.clone());
 
     let method = request.method().clone();
+    let method_str = method.to_string();
     let uri = request.uri().clone();
 
     // Build the upstream URL by appending the request path and query
@@ -125,11 +127,14 @@ pub async fn proxy_request(
                 .errors_total
                 .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             error!(error = %e, "failed to read request body");
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                &format!("invalid request body: {e}"),
-                &request_id,
+            let status = StatusCode::BAD_REQUEST;
+            crate::metrics::record_request(
+                status.as_u16(),
+                &method_str,
+                start.elapsed().as_secs_f64(),
             );
+            crate::metrics::record_upstream_error("invalid_request");
+            return error_response(status, &format!("invalid request body: {e}"), &request_id);
         }
     };
 
@@ -157,6 +162,11 @@ pub async fn proxy_request(
 
                 match upstream_response.bytes().await {
                     Ok(resp_body) => {
+                        crate::metrics::record_request(
+                            status.as_u16(),
+                            &method_str,
+                            start.elapsed().as_secs_f64(),
+                        );
                         let mut response = Response::builder().status(status);
                         for (name, value) in &resp_headers {
                             if !is_hop_by_hop(name.as_str()) {
@@ -177,9 +187,16 @@ pub async fn proxy_request(
                         state
                             .errors_total
                             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let err_status = StatusCode::BAD_GATEWAY;
+                        crate::metrics::record_request(
+                            err_status.as_u16(),
+                            &method_str,
+                            start.elapsed().as_secs_f64(),
+                        );
+                        crate::metrics::record_upstream_error("response_read");
                         error!(error = %e, "failed to read upstream response body");
                         return error_response(
-                            StatusCode::BAD_GATEWAY,
+                            err_status,
                             &format!("upstream response read error: {e}"),
                             &request_id,
                         );
@@ -194,9 +211,16 @@ pub async fn proxy_request(
                 state
                     .errors_total
                     .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                let err_status = StatusCode::GATEWAY_TIMEOUT;
+                crate::metrics::record_request(
+                    err_status.as_u16(),
+                    &method_str,
+                    start.elapsed().as_secs_f64(),
+                );
+                crate::metrics::record_upstream_error("timeout");
                 error!(error = %e, attempts = max_attempts, "upstream timeout after all retries");
                 return error_response(
-                    StatusCode::GATEWAY_TIMEOUT,
+                    err_status,
                     &format!(
                         "upstream timeout after {}s ({max_attempts} attempts)",
                         state.timeout.as_secs()
@@ -208,22 +232,28 @@ pub async fn proxy_request(
                 state
                     .errors_total
                     .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                error!(error = %e, "upstream request failed");
-                return error_response(
-                    StatusCode::BAD_GATEWAY,
-                    &format!("upstream error: {e}"),
-                    &request_id,
+                let err_status = StatusCode::BAD_GATEWAY;
+                crate::metrics::record_request(
+                    err_status.as_u16(),
+                    &method_str,
+                    start.elapsed().as_secs_f64(),
                 );
+                crate::metrics::record_upstream_error("connection");
+                error!(error = %e, "upstream request failed");
+                return error_response(err_status, &format!("upstream error: {e}"), &request_id);
             }
         }
     }
 
     // Should be unreachable, but handle defensively
-    error_response(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "unexpected retry exhaustion",
-        &request_id,
-    )
+    let err_status = StatusCode::INTERNAL_SERVER_ERROR;
+    crate::metrics::record_request(
+        err_status.as_u16(),
+        &method_str,
+        start.elapsed().as_secs_f64(),
+    );
+    crate::metrics::record_upstream_error("internal");
+    error_response(err_status, "unexpected retry exhaustion", &request_id)
 }
 
 /// Check if a header is hop-by-hop (should be stripped before forwarding)

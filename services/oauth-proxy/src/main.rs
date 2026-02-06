@@ -8,6 +8,7 @@
 
 mod config;
 mod error;
+mod metrics;
 mod proxy;
 mod service;
 mod tailnet;
@@ -24,6 +25,8 @@ use tracing::{error, info, warn};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use metrics_exporter_prometheus::PrometheusHandle;
+
 use crate::config::Config;
 use crate::proxy::ProxyState;
 use crate::service::{
@@ -36,6 +39,16 @@ struct AppState {
     proxy: ProxyState,
     metrics: ServiceMetrics,
     tailnet: Option<TailnetHandle>,
+    prometheus: PrometheusHandle,
+}
+
+/// Build the axum router with all routes and shared state.
+fn build_router(state: AppState) -> Router {
+    Router::new()
+        .route("/health", get(health_handler))
+        .route("/metrics", get(metrics_handler))
+        .fallback(proxy_handler)
+        .with_state(state)
 }
 
 #[tokio::main]
@@ -51,6 +64,9 @@ async fn main() -> Result<()> {
         .init();
 
     info!("starting anthropic-oauth-proxy");
+
+    // Install Prometheus metrics recorder before any metrics are emitted
+    let prometheus_handle = metrics::install_recorder();
 
     // --- State: Initializing ---
     let mut state = ServiceState::Initializing;
@@ -130,6 +146,9 @@ async fn main() -> Result<()> {
         }
     };
 
+    // Record tailnet connection in Prometheus
+    metrics::set_tailnet_connected(true);
+
     // Transition: ConnectingTailnet -> Starting
     let (new_state, action) = handle_event(
         state,
@@ -160,12 +179,10 @@ async fn main() -> Result<()> {
         proxy: proxy_state,
         metrics: metrics.clone(),
         tailnet: Some(tailnet_handle),
+        prometheus: prometheus_handle,
     };
 
-    let app = Router::new()
-        .route("/health", get(health_handler))
-        .fallback(proxy_handler)
-        .with_state(app_state);
+    let app = build_router(app_state);
 
     let listener = TcpListener::bind(listen_addr)
         .await
@@ -231,6 +248,18 @@ async fn health_handler(State(state): State<AppState>) -> impl IntoResponse {
     )
 }
 
+/// Prometheus metrics endpoint — returns metrics in text exposition format.
+async fn metrics_handler(State(state): State<AppState>) -> impl IntoResponse {
+    (
+        axum::http::StatusCode::OK,
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "text/plain; version=0.0.4; charset=utf-8",
+        )],
+        state.prometheus.render(),
+    )
+}
+
 /// Catch-all handler that proxies all non-health requests to upstream.
 async fn proxy_handler(
     State(state): State<AppState>,
@@ -262,5 +291,228 @@ async fn shutdown_signal() {
     tokio::select! {
         _ = ctrl_c => info!("received SIGINT, shutting down"),
         _ = terminate => info!("received SIGTERM, shutting down"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode};
+    use std::sync::Arc;
+    use std::sync::atomic::AtomicU64;
+    use tower::ServiceExt;
+
+    /// Create a PrometheusHandle for tests without installing a global recorder.
+    /// Using build_recorder() avoids the "recorder already installed" panic when
+    /// multiple tests run in the same process.
+    fn test_prometheus_handle() -> PrometheusHandle {
+        let recorder = metrics_exporter_prometheus::PrometheusBuilder::new().build_recorder();
+        recorder.handle()
+    }
+
+    /// Build test app state pointing at the given upstream URL with specified headers.
+    fn test_app_state(upstream_url: &str, headers: Vec<config::HeaderInjection>) -> AppState {
+        let metrics = ServiceMetrics::new();
+
+        AppState {
+            proxy: ProxyState {
+                client: reqwest::Client::new(),
+                upstream_url: upstream_url.to_string(),
+                headers_to_inject: headers,
+                timeout: Duration::from_secs(5),
+                requests_total: metrics.requests_total.clone(),
+                errors_total: metrics.errors_total.clone(),
+                in_flight: metrics.in_flight.clone(),
+            },
+            metrics,
+            tailnet: Some(TailnetHandle {
+                hostname: "test-proxy".into(),
+                ip: "100.64.0.1".parse().unwrap(),
+            }),
+            prometheus: test_prometheus_handle(),
+        }
+    }
+
+    /// Start a mock upstream server that echoes back request headers as JSON.
+    async fn start_echo_server() -> (String, tokio::task::JoinHandle<()>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let url = format!("http://{addr}");
+
+        let handle = tokio::spawn(async move {
+            let app =
+                axum::Router::new().fallback(|request: axum::http::Request<Body>| async move {
+                    let mut headers_map = serde_json::Map::new();
+                    for (name, value) in request.headers() {
+                        headers_map.insert(
+                            name.to_string(),
+                            serde_json::Value::String(value.to_str().unwrap_or("").to_string()),
+                        );
+                    }
+                    let body = serde_json::json!({
+                        "echoed_headers": headers_map,
+                        "method": request.method().to_string(),
+                        "path": request.uri().path().to_string(),
+                    });
+                    (StatusCode::OK, axum::Json(body))
+                });
+            axum::serve(listener, app).await.unwrap();
+        });
+
+        (url, handle)
+    }
+
+    #[tokio::test]
+    async fn health_endpoint_returns_json() {
+        let metrics = ServiceMetrics::new();
+        // Increment requests counter to verify it appears in health response
+        metrics
+            .requests_total
+            .fetch_add(5, std::sync::atomic::Ordering::Relaxed);
+
+        let state = AppState {
+            proxy: ProxyState {
+                client: reqwest::Client::new(),
+                upstream_url: "http://unused".into(),
+                headers_to_inject: vec![],
+                timeout: Duration::from_secs(5),
+                requests_total: metrics.requests_total.clone(),
+                errors_total: metrics.errors_total.clone(),
+                in_flight: Arc::new(AtomicU64::new(0)),
+            },
+            metrics,
+            tailnet: Some(TailnetHandle {
+                hostname: "test-node".into(),
+                ip: "100.64.0.1".parse().unwrap(),
+            }),
+            prometheus: test_prometheus_handle(),
+        };
+
+        let app = build_router(state);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(json["status"], "healthy");
+        assert_eq!(json["tailnet"], "connected");
+        assert_eq!(json["tailnet_hostname"], "test-node");
+        assert_eq!(json["requests_served"], 5);
+    }
+
+    #[tokio::test]
+    async fn proxy_injects_headers_and_forwards() {
+        let (upstream_url, _server) = start_echo_server().await;
+        // Give the echo server a moment to bind
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(
+            &upstream_url,
+            vec![config::HeaderInjection {
+                name: "anthropic-beta".into(),
+                value: "oauth-2025-04-20".into(),
+            }],
+        );
+
+        let app = build_router(state);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .method("POST")
+                    .header("content-type", "application/json")
+                    .header("authorization", "Bearer sk-test")
+                    .body(Body::from(r#"{"model":"claude-3"}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // Verify the injected header reached upstream
+        assert_eq!(
+            json["echoed_headers"]["anthropic-beta"], "oauth-2025-04-20",
+            "anthropic-beta header should be injected"
+        );
+        // Verify authorization header passes through unchanged
+        assert_eq!(
+            json["echoed_headers"]["authorization"], "Bearer sk-test",
+            "authorization header should pass through"
+        );
+        // Verify path is forwarded
+        assert_eq!(json["path"], "/v1/messages");
+        assert_eq!(json["method"], "POST");
+    }
+
+    #[tokio::test]
+    async fn proxy_strips_hop_by_hop_headers() {
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(&upstream_url, vec![]);
+        let app = build_router(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/test")
+                    .header("connection", "keep-alive")
+                    .header("x-custom", "preserved")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // connection is hop-by-hop and should be stripped
+        assert!(
+            json["echoed_headers"].get("connection").is_none(),
+            "hop-by-hop 'connection' header should be stripped"
+        );
+        // custom header should pass through
+        assert_eq!(json["echoed_headers"]["x-custom"], "preserved");
+    }
+
+    #[tokio::test]
+    async fn proxy_returns_502_for_dead_upstream() {
+        // Point at an unreachable upstream to trigger a connection error
+        let state = test_app_state("http://127.0.0.1:1", vec![]);
+        let app = build_router(state);
+
+        let response = app
+            .oneshot(Request::builder().uri("/fail").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        // Connection refused → 502 Bad Gateway
+        assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["error"]["type"], "proxy_error");
     }
 }
