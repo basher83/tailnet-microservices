@@ -2,7 +2,8 @@
 
 use thiserror::Error;
 
-/// OAuth Proxy errors — variants defined per spec, used as tailnet/proxy integration matures.
+/// OAuth Proxy errors per spec (specs/oauth-proxy.md "Error Handling" section).
+/// Variants are constructed as each integration path is implemented.
 #[allow(dead_code)]
 #[derive(Error, Debug)]
 pub enum Error {
