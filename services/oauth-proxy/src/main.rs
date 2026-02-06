@@ -849,6 +849,7 @@ mod tests {
         tokio::time::sleep(Duration::from_millis(10)).await;
 
         let metrics = ServiceMetrics::new();
+        let errors_total = metrics.errors_total.clone();
         let state = AppState {
             proxy: ProxyState {
                 client: reqwest::Client::new(),
@@ -886,7 +887,20 @@ mod tests {
             json["error"]["message"]
                 .as_str()
                 .unwrap()
-                .contains("timeout")
+                .contains("timeout"),
+            "error message must mention timeout"
+        );
+        // Verify spec-mandated request_id field with req_ prefix
+        let request_id = json["error"]["request_id"].as_str().unwrap();
+        assert!(
+            request_id.starts_with("req_"),
+            "timeout error must include request_id with req_ prefix, got: {request_id}"
+        );
+        // errors_total must increment exactly once (not per retry attempt)
+        assert_eq!(
+            errors_total.load(Ordering::Relaxed),
+            1,
+            "errors_total must increment once on timeout (not per retry)"
         );
     }
 
@@ -1260,6 +1274,22 @@ mod tests {
         assert!(
             rendered.contains("tailnet_connected"),
             "/metrics must contain tailnet_connected.\nRendered:\n{rendered}"
+        );
+
+        // Verify spec-mandated label names appear alongside their metrics.
+        // proxy_requests_total must have status and method labels.
+        assert!(
+            rendered.contains(r#"status=""#),
+            "/metrics proxy_requests_total must include 'status' label.\nRendered:\n{rendered}"
+        );
+        assert!(
+            rendered.contains(r#"method=""#),
+            "/metrics proxy_requests_total must include 'method' label.\nRendered:\n{rendered}"
+        );
+        // proxy_upstream_errors_total must have error_type label.
+        assert!(
+            rendered.contains(r#"error_type=""#),
+            "/metrics proxy_upstream_errors_total must include 'error_type' label.\nRendered:\n{rendered}"
         );
     }
 
@@ -1747,6 +1777,109 @@ mod tests {
         );
         assert!(values.contains(&serde_json::json!("value1")));
         assert!(values.contains(&serde_json::json!("value2")));
+    }
+
+    #[tokio::test]
+    async fn proxy_replaces_header_case_insensitively() {
+        // HeaderMap is case-insensitive per HTTP spec. A client sending
+        // "Anthropic-Beta: old" should have it replaced by the injection
+        // config specifying "anthropic-beta: oauth-2025-04-20".
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(
+            &upstream_url,
+            vec![config::HeaderInjection {
+                name: "anthropic-beta".into(),
+                value: "oauth-2025-04-20".into(),
+            }],
+        );
+
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .method("POST")
+                    // Mixed-case header name — injection should still replace it
+                    .header("Anthropic-Beta", "old-value")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(
+            json["echoed_headers"]["anthropic-beta"], "oauth-2025-04-20",
+            "case-insensitive header replacement must work"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_streams_response_body() {
+        // Verify that the proxy streams the upstream response body rather than
+        // buffering it. We use a chunked upstream that sends data in parts.
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream_url = format!("http://{addr}");
+
+        let _server = tokio::spawn(async move {
+            let app = axum::Router::new().fallback(|| async {
+                // Return a body that simulates SSE-style streamed chunks
+                let body = "data: chunk1\n\ndata: chunk2\n\n";
+                (
+                    StatusCode::OK,
+                    [("content-type", "text/event-stream")],
+                    body,
+                )
+            });
+            axum::serve(listener, app).await.unwrap();
+        });
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(&upstream_url, vec![]);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert_eq!(
+            content_type, "text/event-stream",
+            "content-type must be preserved for SSE responses"
+        );
+
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let body_str = String::from_utf8(body.to_vec()).unwrap();
+        assert!(
+            body_str.contains("data: chunk1"),
+            "streamed body must contain first chunk"
+        );
+        assert!(
+            body_str.contains("data: chunk2"),
+            "streamed body must contain second chunk"
+        );
     }
 
     #[tokio::test]
