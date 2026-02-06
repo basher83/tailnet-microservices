@@ -2,15 +2,19 @@
 
 Phases 1-5 complete. All 83 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
-Twenty-second audit (v0.0.36): Found 3 issues. (1) HIGH: `kustomization.yaml` included `secret.yaml` with placeholder `REPLACE_ME` value, which overwrites any real secret created imperatively before `kubectl apply -k`. Fixed by removing `secret.yaml` from kustomization resources and updating RUNBOOK deployment order. (2) LOW: Spec `Running` state still listed `metrics: ServiceMetrics` field that was intentionally removed from code. Fixed spec to match implementation. (3) LOW: AGENTS.md recommended `async-trait` crate but Rust 2024 edition has native async traits; updated guidance. All 83 tests passing.
+Audits 1-21: Found and fixed 43+ issues across ten initial audits including 5 bugs, spec documentation gaps, and positive deviations. Subsequent audits (11-21) found incremental issues in state machine transitions, K8s manifests, Docker configuration, metrics, and documentation.
 
-Twenty-third audit (v0.0.37): Found 2 MEDIUM issues. (1) RUNBOOK.md described `proxy_request_duration_seconds` as "automatically computing p50, p90, p99, and p999 quantiles" — this describes a Prometheus summary, not a histogram. The implementation uses explicit histogram buckets via `set_buckets_for_metric()`. Fixed RUNBOOK to reference `histogram_quantile()` PromQL and bucket boundaries. (2) `TAILSCALE_SOCKET` environment variable in `tailnet.rs` (overrides the default Unix socket path) was undocumented in both the spec and RUNBOOK. Added to spec environment variables table and RUNBOOK troubleshooting section. All 83 tests passing.
+Twenty-second audit (v0.0.36): Fixed 3 issues — kustomization.yaml overwrote real secrets, spec `Running` state had stale `metrics` field, AGENTS.md recommended deprecated `async-trait`.
 
-Twenty-fourth audit (v0.0.37): Comprehensive cross-file audit using parallel subagents covering all source files, specs, K8s manifests, CI, Dockerfile, and RUNBOOK. Found 0 issues. All 83 tests pass, clippy clean, formatting clean. State machine transitions, proxy logic, config validation, tailnet integration, metrics, error types, security contexts, and operational documentation all match specs exactly. Codebase is production-ready; all remaining work requires live tailnet infrastructure.
+Twenty-third audit (v0.0.37): Fixed 2 issues — RUNBOOK described histogram as summary, `TAILSCALE_SOCKET` env var undocumented.
 
-Twenty-fifth audit (v0.0.38): Found 1 LOW issue. `zeroize` workspace dependency had `features = ["derive"]` enabled but `#[derive(Zeroize)]` is never used — `Secret<T>` uses `Zeroize` only as a trait bound and calls `.zeroize()` directly in `Drop`. The `derive` feature pulls in `syn`, `quote`, and `proc-macro2` as unnecessary build dependencies. Removed from both `Cargo.toml` and spec. All 83 tests pass, clippy clean, formatting clean.
+Twenty-fourth audit (v0.0.37): Comprehensive audit, 0 issues found.
 
-Twenty-sixth audit (v0.0.39): Comprehensive Opus-level audit of all source files, specs, K8s manifests, CI, Dockerfile, and RUNBOOK. Found 3 LOW issues, 0 HIGH/MEDIUM. (1) `ConcurrencyLimitLayer` applied to entire router including `/health` and `/metrics` — under sustained load at `max_connections`, K8s liveness probes could be queued behind slow proxy requests, triggering pod restarts. Fixed by nesting routes so health/metrics are outside the concurrency limit. (2) RUNBOOK troubleshooting referenced `curl` inside the proxy container, but the minimal Docker image only has `ca-certificates`. Fixed to use `kubectl port-forward` from workstation instead. (3) RUNBOOK secret rotation used `delete` then `create`, leaving a window where a rescheduled pod would hit `CreateContainerConfigError`. Fixed to use `--dry-run=client -o yaml | kubectl apply -f -` for atomic update. All 83 tests pass, clippy clean, formatting clean.
+Twenty-fifth audit (v0.0.38): Removed unused `zeroize` derive feature.
+
+Twenty-sixth audit (v0.0.39): Fixed 3 issues — concurrency limit included health/metrics endpoints, RUNBOOK referenced `curl` inside container, RUNBOOK secret rotation was non-atomic.
+
+Twenty-seventh audit (v0.0.41): Comprehensive Opus-level audit of all source files, specs, K8s manifests, CI, Dockerfile, and RUNBOOK. Found 2 MEDIUM issues, 0 HIGH/LOW, 0 spec discrepancies. (1) K8s deployment.yaml missing pod-level `securityContext` with `seccompProfile: RuntimeDefault` — the restricted pod security profile requires this for admission controller compliance. Container-level security contexts were complete but pod-level was absent. Fixed by adding pod-level `securityContext` with `runAsNonRoot`, `seccompProfile.type: RuntimeDefault`, and `fsGroup: 1000`. (2) Proxy container image used mutable `:main` branch tag without documentation — operators may not realize rollbacks are non-deterministic. Added comment noting production should use SHA or semver tags. All 83 tests pass, clippy clean, formatting clean.
 
 ## Remaining Work (requires live infrastructure)
 
@@ -68,6 +72,7 @@ Twenty-sixth audit (v0.0.39): Comprehensive Opus-level audit of all source files
 - Concurrency limits on a proxy must exclude observability endpoints. K8s liveness/readiness probes and Prometheus scrapes must always be responsive regardless of proxy load. In axum, use `Router::merge()` to nest a concurrency-limited sub-router (proxy routes) under an unlimited parent router (health/metrics routes).
 - K8s secret rotation should use `kubectl create --dry-run=client -o yaml | kubectl apply -f -` for atomic updates. A `delete` then `create` sequence leaves a window where pods rescheduled between the two commands fail with `CreateContainerConfigError`.
 - Minimal Docker images (debian-slim + ca-certificates only) don't have debugging tools like `curl`. RUNBOOK troubleshooting steps should use `kubectl port-forward` from the operator's workstation instead of `kubectl exec` with tools that aren't in the image.
+- K8s restricted pod security profile requires pod-level `securityContext` with `seccompProfile.type: RuntimeDefault`. Container-level security contexts alone are insufficient — admission controllers check the pod-level seccomp profile separately. Also set `fsGroup` at the pod level so emptyDir volumes are writable by the non-root group.
 
 ## Environment Notes
 
