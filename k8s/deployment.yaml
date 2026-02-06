@@ -90,6 +90,7 @@ spec:
             - name: tailscale-socket
               mountPath: /var/run/tailscale
           securityContext:
+            runAsNonRoot: true
             runAsUser: 1000
             runAsGroup: 1000
             allowPrivilegeEscalation: false

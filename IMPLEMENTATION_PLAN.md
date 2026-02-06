@@ -2,7 +2,7 @@
 
 Phases 1-5 complete. All 83 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
-Twentieth audit (v0.0.34): Full cross-file verification of all specs, K8s manifests, CI workflow, Dockerfile, proxy logic, state machine, config loading, and dependencies. Found 2 K8s issues, 0 code bugs. Resolved: `terminationGracePeriodSeconds` reduced from 10s to 6s (DRAIN_TIMEOUT is 5s, extra 5s was wasted delay during rolling updates); added `secret.yaml` to `kustomization.yaml` (deployment references `tailscale-authkey` secret but kustomize wasn't creating it). All other areas verified clean: proxy logic, state machine transitions, metrics, health endpoint, error handling, retry strategy, Dockerfile, CI workflow, dependency list. 83 tests passing.
+Twenty-first audit (v0.0.35): Full cross-file spec verification. Found 1 K8s issue: tailscaled sidecar container was missing `runAsNonRoot: true` in its securityContext while the proxy container had it — inconsistent with the restricted Pod Security Standards profile. Fixed by adding the field. All other areas verified clean: proxy logic, state machine, metrics, health endpoint, error handling, retry strategy, Dockerfile, CI workflow, dependency list, header injection, response streaming. 83 tests passing.
 
 ## Remaining Work (requires live infrastructure)
 
@@ -53,6 +53,7 @@ Twentieth audit (v0.0.34): Full cross-file verification of all specs, K8s manife
 - State machine variants should only carry data they own and use. The `Running` state had a `ServiceMetrics` that was never read because `main.rs` creates its own metrics instance wired to `ProxyState`. Dead allocations in state variants waste memory and confuse readers.
 - K8s `terminationGracePeriodSeconds` should be DRAIN_TIMEOUT + small buffer (e.g. 1s), not significantly larger. The application force-exits after DRAIN_TIMEOUT regardless, so the extra Kubernetes wait is wasted delay during rolling updates and node drains.
 - Kustomize only deploys resources listed in `kustomization.yaml`. A Secret file existing in the directory but not referenced means `kubectl apply -k` won't create it, causing pod failures when deployments reference the missing Secret via `secretKeyRef`.
+- K8s Pod Security Standards restricted profile requires `runAsNonRoot: true` on every container, not just the main application container. Setting `runAsUser: 1000` is not sufficient — the explicit `runAsNonRoot` field is what Kubernetes admission controllers check. Missing it on sidecar containers is easy to overlook.
 
 ## Environment Notes
 
