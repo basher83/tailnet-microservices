@@ -85,4 +85,34 @@ mod tests {
         drop(secret);
         assert_eq!(cloned.expose(), "independent");
     }
+
+    #[test]
+    fn test_secret_zeroizes_on_drop() {
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        /// Tracks whether zeroize() was called via a shared flag.
+        #[derive(Clone)]
+        struct Witness {
+            zeroed: Arc<AtomicBool>,
+        }
+
+        impl Zeroize for Witness {
+            fn zeroize(&mut self) {
+                self.zeroed.store(true, Ordering::SeqCst);
+            }
+        }
+
+        let zeroed = Arc::new(AtomicBool::new(false));
+        let secret = Secret::new(Witness {
+            zeroed: Arc::clone(&zeroed),
+        });
+
+        assert!(
+            !zeroed.load(Ordering::SeqCst),
+            "must not zeroize before drop"
+        );
+        drop(secret);
+        assert!(zeroed.load(Ordering::SeqCst), "must zeroize on drop");
+    }
 }
