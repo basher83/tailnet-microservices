@@ -1,8 +1,8 @@
 # Spec: Tailnet Microservices in Rust
 
-**Status:** Draft (ghuntley pattern v2)  
-**Created:** 2026-02-05  
-**Updated:** 2026-02-05  
+**Status:** Complete
+**Created:** 2026-02-05
+**Updated:** 2026-02-06
 **Author:** Astrogator + Brent  
 
 ---
@@ -407,12 +407,12 @@ panic = "abort"
 ## Success Criteria
 
 - [x] Single binary, <15MB (macOS 4.4MB, Linux x86_64 5.4MB, Linux aarch64 4.7MB)
-- [ ] Joins tailnet in <5s on startup (requires live tailnet)
+- [x] Joins tailnet in <5s on startup (verified in production deployment 2026-02-06)
 - [x] Handles 100+ req/s sustained (~2400 req/s measured via `load_test_sustains_100_rps`)
 - [x] Zero memory growth over 24h (validated via compressed soak: 20K requests, <5 MiB growth threshold, `memory_soak_test_zero_growth`)
 - [x] Works on macOS (arm64) and Linux (amd64/arm64)
-- [ ] Aperture routes to it successfully (requires live tailnet + Aperture)
-- [ ] Claude Max OAuth tokens work end-to-end (requires live infrastructure)
+- [x] Aperture routes to it successfully (Metric ID 235, verified 2026-02-06)
+- [x] Claude Max OAuth tokens work end-to-end (Claude API responses confirmed with header injection, 2026-02-06)
 - [x] Graceful shutdown <5s on SIGTERM (DRAIN_TIMEOUT=5s, tested via state machine)
 
 ---
@@ -435,8 +435,8 @@ panic = "abort"
 ### Phase 3: Tailnet Integration — COMPLETE
 - [x] Chose Option B (tailscaled sidecar + `tailscale-localapi`)
 - [x] Implement `ConnectingTailnet` → `Running` flow
-- [ ] Test MagicDNS resolution (requires live tailnet)
-- [ ] ACL verification (requires live tailnet + Aperture)
+- [x] Test MagicDNS resolution (verified in production 2026-02-06)
+- [x] ACL verification (Aperture→proxy connectivity confirmed, Metric ID 235)
 
 ### Phase 4: Hardening — COMPLETE
 - [x] Full state machine with error recovery
@@ -445,13 +445,13 @@ panic = "abort"
 - [x] Cross-compilation (macOS → Linux via cargo-zigbuild)
 - [x] Concurrency limiting via ConcurrencyLimitLayer
 
-### Phase 5: Deploy — PARTIALLY COMPLETE
+### Phase 5: Deploy — COMPLETE
 - [x] Dockerfile for containerized deployment
 - [x] GitHub Actions CI workflow
 - [x] Kubernetes manifests with tailscaled sidecar
 - [x] Operational runbook (RUNBOOK.md)
-- [ ] Update Aperture config to route to proxy (requires live tailnet)
-- [ ] Monitor production traffic (requires live infrastructure)
+- [x] Update Aperture config to route to proxy (`anthropic-oauth` provider, `tailnet: true`)
+- [x] Monitor production traffic (live E2E traffic verified 2026-02-06)
 
 ---
 
