@@ -16,6 +16,8 @@ spec:
         app: anthropic-oauth-proxy
     spec:
       serviceAccountName: anthropic-oauth-proxy
+      imagePullSecrets:
+        - name: ghcr-pull-secret
       terminationGracePeriodSeconds: 6
       securityContext:
         runAsNonRoot: true
