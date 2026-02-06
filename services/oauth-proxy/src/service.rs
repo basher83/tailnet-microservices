@@ -228,19 +228,22 @@ pub fn handle_event(state: ServiceState, event: ServiceEvent) -> (ServiceState, 
 
         // --- Running ---
         (
-            ServiceState::Running { .. },
+            ServiceState::Running {
+                tailnet,
+                listen_addr,
+            },
             ServiceEvent::RequestReceived { .. } | ServiceEvent::RequestCompleted { .. },
         ) => {
-            // Request tracking is handled by ProxyState's atomic counters.
-            // The state machine stays in Running; no action needed.
-            // (We can't destructure and reconstruct Running here without moving
-            // the fields, so the caller should not consume the state for these events.
-            // In practice, main.rs tracks metrics directly via ProxyState.)
-            //
-            // This arm exists so these events don't fall through to the catch-all.
-            // The caller retains ownership of the Running state.
-            unreachable!(
-                "RequestReceived/RequestCompleted should be handled by the caller without consuming state"
+            // Request tracking is handled by ProxyState's atomic counters,
+            // not through the state machine. The caller (main.rs) should never
+            // send these events. This arm returns a defensive no-op instead of
+            // unreachable!() to avoid aborting the process if triggered accidentally.
+            (
+                ServiceState::Running {
+                    tailnet,
+                    listen_addr,
+                },
+                ServiceAction::None,
             )
         }
 

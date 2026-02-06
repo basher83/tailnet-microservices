@@ -16,6 +16,8 @@ Twenty-sixth audit (v0.0.39): Fixed 3 issues — concurrency limit included heal
 
 Twenty-seventh audit (v0.0.41): Comprehensive Opus-level audit of all source files, specs, K8s manifests, CI, Dockerfile, and RUNBOOK. Found 2 MEDIUM issues, 0 HIGH/LOW, 0 spec discrepancies. (1) K8s deployment.yaml missing pod-level `securityContext` with `seccompProfile: RuntimeDefault` — the restricted pod security profile requires this for admission controller compliance. Container-level security contexts were complete but pod-level was absent. Fixed by adding pod-level `securityContext` with `runAsNonRoot`, `seccompProfile.type: RuntimeDefault`, and `fsGroup: 1000`. (2) Proxy container image used mutable `:main` branch tag without documentation — operators may not realize rollbacks are non-deterministic. Added comment noting production should use SHA or semver tags. All 83 tests pass, clippy clean, formatting clean.
 
+Twenty-eighth audit (v0.0.42): Comprehensive Opus-level audit of all source files, specs, K8s manifests, CI, Dockerfile, and RUNBOOK. Found 2 issues fixed, 0 HIGH. (1) State machine `unreachable!()` in production code path — the `Running + RequestReceived/RequestCompleted` match arm used `unreachable!()` which would abort the process (especially dangerous with `panic = "abort"` release profile) if accidentally triggered by future code. Replaced with a defensive no-op return. Updated spec to match. (2) K8s resources (namespace, configmap, serviceaccount, secret) missing `app: anthropic-oauth-proxy` labels — prevents `kubectl get -l app=...` queries from finding all project resources. Added labels to all four manifests. RUNBOOK, specs, and all other dimensions fully consistent. All 83 tests pass, clippy clean, formatting clean.
+
 ## Remaining Work (requires live infrastructure)
 
 - [ ] Aperture config update — route `http://ai/` to the proxy (requires live tailnet)
@@ -73,6 +75,8 @@ Twenty-seventh audit (v0.0.41): Comprehensive Opus-level audit of all source fil
 - K8s secret rotation should use `kubectl create --dry-run=client -o yaml | kubectl apply -f -` for atomic updates. A `delete` then `create` sequence leaves a window where pods rescheduled between the two commands fail with `CreateContainerConfigError`.
 - Minimal Docker images (debian-slim + ca-certificates only) don't have debugging tools like `curl`. RUNBOOK troubleshooting steps should use `kubectl port-forward` from the operator's workstation instead of `kubectl exec` with tools that aren't in the image.
 - K8s restricted pod security profile requires pod-level `securityContext` with `seccompProfile.type: RuntimeDefault`. Container-level security contexts alone are insufficient — admission controllers check the pod-level seccomp profile separately. Also set `fsGroup` at the pod level so emptyDir volumes are writable by the non-root group.
+- `unreachable!()` in non-test code paths is a latent process abort, especially with `panic = "abort"` in the release profile. Even if the current caller never triggers the arm, future code changes might. Replace `unreachable!()` with defensive no-op returns in state machines where the arm is theoretically reachable but practically unused.
+- K8s resources should carry consistent `app:` labels even if they are not selected by anything. Labels enable `kubectl get <kind> -l app=<name>` queries for discovering all resources belonging to a project, which aids operational debugging and bulk cleanup.
 
 ## Environment Notes
 

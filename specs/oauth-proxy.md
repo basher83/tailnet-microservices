@@ -138,7 +138,7 @@ Config loading, request proxying, response sending, and metric emission happen o
 
 The state machine drives the startup lifecycle (`Initializing` through `Running`). Once `Running`, graceful shutdown is handled by axum's `with_graceful_shutdown` mechanism with a `DRAIN_TIMEOUT` enforcement, rather than by firing `ShutdownSignal`/`DrainTimeout` events through the state machine. The `Draining` and `Stopped` transitions are implemented and tested for correctness but are not exercised at runtime.
 
-`RequestReceived` and `RequestCompleted` events exist in the enum for completeness but are handled directly by the proxy handler via atomic counters, not through the state machine. Calling `handle_event` with these events from `Running` state will `unreachable!()` — this is by design.
+`RequestReceived` and `RequestCompleted` events exist in the enum for completeness but are handled directly by the proxy handler via atomic counters, not through the state machine. Calling `handle_event` with these events from `Running` state returns a defensive no-op (`Running`, `None`) — the state machine stays in `Running` with no action.
 
 ---
 
