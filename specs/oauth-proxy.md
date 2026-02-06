@@ -408,7 +408,7 @@ panic = "abort"
 
 - [x] Single binary, <15MB (macOS 4.4MB, Linux x86_64 5.4MB, Linux aarch64 4.7MB)
 - [ ] Joins tailnet in <5s on startup (requires live tailnet)
-- [ ] Handles 100+ req/s sustained (requires load testing)
+- [x] Handles 100+ req/s sustained (~2400 req/s measured via `load_test_sustains_100_rps`)
 - [ ] Zero memory growth over 24h (requires soak testing)
 - [x] Works on macOS (arm64) and Linux (amd64/arm64)
 - [ ] Aperture routes to it successfully (requires live tailnet + Aperture)
