@@ -2,7 +2,7 @@
 
 Phases 1-5 complete. All 70 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
-Sixth spec audit (v0.0.23): Found 1 K8s deployment bug, 1 runbook documentation bug, 2 spec documentation gaps, 1 missing runbook error. All addressed: 1 bug fixed, 2 doc bugs fixed, 2 spec gaps resolved, 1 boundary test added (70 total).
+Seventh spec audit (v0.0.24): Found 4 documentation/consistency issues, 0 code bugs. All addressed: 1 workspace dependency fix, 3 documentation corrections.
 
 ## Remaining Work (requires live infrastructure)
 
@@ -11,16 +11,14 @@ Sixth spec audit (v0.0.23): Found 1 K8s deployment bug, 1 runbook documentation 
 - [ ] Test MagicDNS hostname resolution (requires live tailnet)
 - [ ] Verify ACL connectivity from Aperture (requires live tailnet + Aperture)
 
-## Fixes & Improvements (v0.0.23)
+## Fixes & Improvements (v0.0.24)
 
-Sixth spec audit found 1 deployment bug, 1 runbook doc bug, 2 spec gaps, and 1 missing test:
+Seventh spec audit found 4 documentation/consistency issues:
 
-- BUG: K8s deployment was missing the `tailscale-socket` volume mount on the proxy container. Without this mount, the proxy cannot communicate with the tailscaled sidecar via the Unix socket at `/var/run/tailscale/tailscaled.sock`. The tailscaled container had the mount but the proxy container did not. Fixed by adding the volume mount with `readOnly: true`.
-- RUNBOOK: Health endpoint not_connected response was documented as returning 200 OK with `"status": "healthy"`. The actual implementation (and spec) returns 503 Service Unavailable with `"status": "degraded"`. Fixed.
-- RUNBOOK: Added `TailnetMachineAuth` error to CrashLoopBackOff troubleshooting section. This error occurs when a node needs admin approval in the Tailscale console and was previously undocumented.
-- Spec (oauth-proxy.md): Added resolved question documenting that `auth_key`/`auth_key_file` are loaded for schema compliance but not consumed by `tailnet::connect()` in the sidecar model.
-- Spec (tailnet.md): Added resolved questions documenting auth key usage and tailnet disconnect behavior for the sidecar approach.
-- Test: Added body size boundary test verifying that a request body of exactly 10 MiB succeeds (at-limit case). The existing oversized test only verified 10 MiB + 1 byte is rejected.
+- `tower` was declared directly in `services/oauth-proxy/Cargo.toml` instead of via workspace dependencies. The spec listed it as a workspace dependency but the implementation had it inline. Moved to `[workspace.dependencies]` with `workspace = true` reference in the service crate.
+- Spec and example config used `listen_addr = "0.0.0.0:443"` but K8s deployment uses port 8080. Port 443 requires root privileges and TLS is handled by the tailnet, not the proxy. Updated spec and example to use 8080 to match the actual deployment.
+- RUNBOOK drain timeout section implied Kubernetes `terminationGracePeriodSeconds` was the drain enforcement mechanism. The actual implementation enforces its own 5-second `DRAIN_TIMEOUT` independent of Kubernetes. Also fixed the drain timeout log message text to match the actual code output.
+- RUNBOOK documented `body_too_large` and `connect` as `proxy_upstream_errors_total` error types but the code emits `invalid_request` and `connection`. Updated to list all five actual error types: `timeout`, `connection`, `invalid_request`, `response_read`, `internal`.
 
 ## Known Limitations
 
@@ -49,7 +47,7 @@ Sixth spec audit found 1 deployment bug, 1 runbook doc bug, 2 spec gaps, and 1 m
 - K8s manifests use `TS_USERSPACE=true` for the tailscaled sidecar to avoid requiring `NET_ADMIN` capabilities. The proxy and tailscaled share the Unix socket via an `emptyDir` volume.
 - GitHub Actions CI uses `dtolnay/rust-toolchain@stable` and `Swatinem/rust-cache@v2`. Docker job uses `docker/build-push-action@v6` with GHA cache. Images push to GHCR using the built-in `GITHUB_TOKEN`.
 - `BackendState::NeedsMachineAuth` requires manual admin approval in the Tailscale console. Mapping it to a retryable error wastes 31 seconds of exponential backoff before giving up. It must be non-retryable.
-- A spec-vs-implementation audit is valuable after completing major phases. Found 39+ discrepancies across six audits including 4 bugs, spec documentation gaps, and positive deviations.
+- A spec-vs-implementation audit is valuable after completing major phases. Found 43+ discrepancies across seven audits including 4 bugs, spec documentation gaps, and positive deviations.
 - K8s sidecar pattern requires both containers to mount the shared volume. The volume definition in `spec.volumes` is not enough — each container that needs the socket must have a `volumeMount` entry. Easy to miss because the tailscaled container (which creates the socket) works fine; only the consumer (proxy) fails.
 
 ## Environment Notes

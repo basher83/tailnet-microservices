@@ -44,6 +44,9 @@ tailscale-localapi = "0.4"
 metrics = "0.24"
 metrics-exporter-prometheus = "0.16"
 
+# Middleware
+tower = { version = "0.5", features = ["limit"] }
+
 # Error handling
 thiserror = "2"
 anyhow = "1"

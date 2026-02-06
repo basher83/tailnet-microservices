@@ -265,7 +265,7 @@ hostname = "anthropic-oauth-proxy"
 state_dir = "/var/lib/anthropic-oauth-proxy/tailscale"
 
 [proxy]
-listen_addr = "0.0.0.0:443"
+listen_addr = "0.0.0.0:8080"
 upstream_url = "https://api.anthropic.com"
 timeout_secs = 60
 max_connections = 1000
