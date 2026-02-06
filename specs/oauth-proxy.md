@@ -155,7 +155,9 @@ The state machine drives the startup lifecycle (`Initializing` through `Running`
 | `Running` | `RequestReceived`/`RequestCompleted` | `Running` | (handled by proxy handler, not state machine) |
 | `Running` | `ShutdownSignal` | `Draining` | `None` |
 | `Draining` | `DrainTimeout` | `Stopped` | `Shutdown(0)` |
-| *any* | `ShutdownSignal` (if urgent) | `Stopped` | `Shutdown(0)` |
+| `Draining` | `ShutdownSignal` | `Stopped` | `Shutdown(0)` |
+| `Stopped` | *any* | `Stopped` | `None` (terminal, inert) |
+| *any non-Running* | `ShutdownSignal` | `Stopped` | `Shutdown(0)` |
 
 ---
 
@@ -209,23 +211,37 @@ te, trailer, transfer-encoding, upgrade
 
 Requests with bodies exceeding 10 MiB (10,485,760 bytes) are rejected with 400 Bad Request.
 
+### Response Streaming
+
+Response bodies are streamed from upstream to the client without buffering. This is critical for SSE (Server-Sent Events) where the Anthropic API streams Claude's responses in real-time. The proxy collects the upstream status code and headers before streaming begins, enabling metrics recording for all responses including long-lived SSE connections. Mid-stream errors result in connection closure (HTTP status already sent); SSE clients handle reconnection automatically.
+
 ---
 
 ## Error Handling
 
-### `ServiceError` Enum
+### Error Enum (service-level)
+
+The service-level `Error` enum in `error.rs` contains errors that flow through the state machine:
 
 | Variant | Description | Retryable |
 |---------|-------------|-----------|
-| `ConfigError` | Failed to load/parse config | No |
 | `TailnetAuth` | Invalid or expired auth key | No |
 | `TailnetMachineAuth` | Node needs admin approval in Tailscale console | No |
 | `TailnetConnect` | Network/coordination failure | Yes (backoff) |
 | `TailnetNotRunning` | Daemon not available or not configured | No |
-| `ListenerBindError` | Port in use | No |
-| `UpstreamTimeout` | Request to Anthropic timed out | Yes (per-request) |
-| `UpstreamError` | Non-2xx from upstream | No (pass through) |
-| `InvalidRequest` | Malformed client request | No |
+
+### Errors handled outside the state machine
+
+These errors are handled directly at the call site rather than through the `Error` enum:
+
+| Error | Handled by | HTTP Status |
+|-------|-----------|-------------|
+| `ConfigError` | `common::Error` in `Config::load()`, exits before state machine starts | N/A (process exits) |
+| `ListenerBindError` | `anyhow::Context` on `TcpListener::bind()`, exits before serving | N/A (process exits) |
+| `UpstreamTimeout` | `proxy.rs` retry loop, returns HTTP response directly | 504 Gateway Timeout |
+| `UpstreamError` (non-2xx) | `proxy.rs` passes upstream response through unchanged | Upstream status code |
+| `UpstreamError` (connection failure) | `proxy.rs` returns error response directly | 502 Bad Gateway |
+| `InvalidRequest` (body too large) | axum `DefaultBodyLimit` middleware | 400 Bad Request |
 
 ### Retry Strategy
 
@@ -447,6 +463,7 @@ panic = "abort"
 4. **State persistence** — Since Option B was chosen, `state_dir` is deserialized from TOML for schema compliance but the Rust service does not use it. `tailscaled` manages its own state externally.
 5. **Auth key usage** — Since Option B was chosen, `auth_key` and `auth_key_file` are loaded from config/env for schema compliance but are not passed to the tailnet module. The Rust service queries an already-authenticated `tailscaled`; authentication is the sidecar's responsibility.
 6. **Tailnet disconnect** — Spec lifecycle step 5 says "disconnect cleanly." With the sidecar model, the Rust service does not own the tailnet connection, so disconnect is a no-op. On shutdown, the `tailnet_connected` Prometheus gauge is set to 0 for observability. The `tailscaled` sidecar handles its own lifecycle via the pod termination signal.
+7. **Response streaming** — Response bodies are streamed using `reqwest::Response::bytes_stream()` converted to `axum::body::Body::from_stream()`. Metrics (status code, duration) are recorded before the stream begins since headers are available immediately. This avoids buffering entire responses in memory and enables real-time SSE forwarding for Claude API streaming responses.
 
 ---
 

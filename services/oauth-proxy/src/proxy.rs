@@ -169,57 +169,40 @@ pub async fn proxy_request(
 
         match req.send().await {
             Ok(upstream_response) => {
+                // Collect status and headers before consuming the body stream.
+                // This allows metrics recording even for streamed responses (SSE).
                 let status = upstream_response.status();
                 let resp_headers = upstream_response.headers().clone();
+                let elapsed = start.elapsed();
 
-                match upstream_response.bytes().await {
-                    Ok(resp_body) => {
-                        let elapsed = start.elapsed();
-                        crate::metrics::record_request(
-                            status.as_u16(),
-                            &method_str,
-                            elapsed.as_secs_f64(),
-                        );
-                        info!(
-                            status = status.as_u16(),
-                            latency_ms = elapsed.as_millis() as u64,
-                            "request completed"
-                        );
-                        let mut response = Response::builder().status(status);
-                        for (name, value) in &resp_headers {
-                            if !is_hop_by_hop(name.as_str()) {
-                                response = response.header(name, value);
-                            }
-                        }
-                        return response
-                            .body(axum::body::Body::from(resp_body))
-                            .unwrap_or_else(|e| {
-                                error_response(
-                                    StatusCode::INTERNAL_SERVER_ERROR,
-                                    &format!("response build error: {e}"),
-                                    &request_id,
-                                )
-                            });
-                    }
-                    Err(e) => {
-                        state
-                            .errors_total
-                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                        let err_status = StatusCode::BAD_GATEWAY;
-                        crate::metrics::record_request(
-                            err_status.as_u16(),
-                            &method_str,
-                            start.elapsed().as_secs_f64(),
-                        );
-                        crate::metrics::record_upstream_error("response_read");
-                        error!(error = %e, "failed to read upstream response body");
-                        return error_response(
-                            err_status,
-                            &format!("upstream response read error: {e}"),
-                            &request_id,
-                        );
+                crate::metrics::record_request(status.as_u16(), &method_str, elapsed.as_secs_f64());
+                info!(
+                    status = status.as_u16(),
+                    latency_ms = elapsed.as_millis() as u64,
+                    "request completed"
+                );
+
+                // Stream the response body instead of buffering it. This is
+                // critical for SSE (Server-Sent Events) from the Anthropic API
+                // where Claude responses are streamed in real-time. Buffering
+                // would break streaming semantics and use unbounded memory.
+                let mut response = Response::builder().status(status);
+                for (name, value) in &resp_headers {
+                    if !is_hop_by_hop(name.as_str()) {
+                        response = response.header(name, value);
                     }
                 }
+                return response
+                    .body(axum::body::Body::from_stream(
+                        upstream_response.bytes_stream(),
+                    ))
+                    .unwrap_or_else(|e| {
+                        error_response(
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            &format!("response build error: {e}"),
+                            &request_id,
+                        )
+                    });
             }
             Err(e) if e.is_timeout() && attempt < max_attempts - 1 => {
                 // Timeout and we have retries left — continue loop

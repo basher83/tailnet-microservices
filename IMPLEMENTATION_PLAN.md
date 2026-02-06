@@ -1,8 +1,8 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 71 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 77 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
-Tenth spec audit (v0.0.26): Fixed terminal state bug (Stopped + ShutdownSignal produced Shutdown instead of None), added ListenerBindError port-in-use test, corrected spec wording for TS_AUTHKEY precedence and body size unit (10 MiB).
+Thirteenth spec audit (v0.0.28): Close test gaps from twelfth audit — verify request_id and errors_total on timeout path, verify Prometheus metric label names in rendered output. Update spec error handling section to document the implementation's error handling split (state machine errors vs inline HTTP errors vs startup errors). Clarify shutdown state transitions: second SIGTERM during drain forces immediate exit, Stopped is terminal/inert. 7 positive deviations confirmed (InFlightGuard RAII, Secret extras, ConcurrencyLimitLayer, multi-value headers, config validation, macOS fallback, stream feature).
 
 ## Remaining Work (requires live infrastructure)
 
@@ -14,7 +14,7 @@ Tenth spec audit (v0.0.26): Fixed terminal state bug (Stopped + ShutdownSignal p
 ## Known Limitations
 
 - Health endpoint `tailnet` state is set once at startup and never updated during operation. If tailscaled drops during runtime, health still reports `"connected"`. Fixing this requires tailnet health monitoring (periodic polling of tailscaled), which is infrastructure work beyond the current spec. The `tailnet_connected` Prometheus gauge does get set to `false` during graceful shutdown.
-- `ConfigError` and `ListenerBindError` are not in the service's Rust error enum. Config errors use `common::Error` and listener bind errors use `anyhow`. These paths work correctly; the gap is only in enum naming, not behavior.
+- `ConfigError` and `ListenerBindError` are not in the service's Rust error enum. Config errors use `common::Error` and listener bind errors use `anyhow`. These paths work correctly; the spec now documents this split explicitly.
 
 ## Learnings
 
@@ -41,6 +41,8 @@ Tenth spec audit (v0.0.26): Fixed terminal state bug (Stopped + ShutdownSignal p
 - A spec-vs-implementation audit is valuable after completing major phases. Found 43+ discrepancies across ten audits including 5 bugs, spec documentation gaps, and positive deviations. The tenth audit found 1 state machine bug (terminal state not fully inert).
 - Terminal states in a state machine must be explicitly guarded before wildcard match arms. Without a `Stopped` guard before `(_, ShutdownSignal)`, the wildcard produces a `Shutdown` action from an already-stopped state, violating the "terminal means inert" invariant.
 - K8s sidecar pattern requires both containers to mount the shared volume. The volume definition in `spec.volumes` is not enough — each container that needs the socket must have a `volumeMount` entry. Easy to miss because the tailscaled container (which creates the socket) works fine; only the consumer (proxy) fails.
+- Response bodies must be streamed, not buffered, in a proxy targeting the Claude API. The Anthropic API uses SSE (Server-Sent Events) for streaming responses. Buffering breaks real-time delivery and uses unbounded memory. Use `reqwest::Response::bytes_stream()` with `axum::body::Body::from_stream()`. Metrics (status, duration) must be collected before consuming the stream since headers are available immediately.
+- Config validation at system boundaries catches misconfigurations early: `upstream_url` must have an http(s) scheme, `timeout_secs` and `max_connections` must be non-zero. Without URL scheme validation, reqwest fails at request time with a confusing error instead of at startup.
 
 ## Environment Notes
 

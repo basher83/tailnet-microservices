@@ -567,6 +567,35 @@ mod tests {
     }
 
     #[test]
+    fn initializing_ignores_unexpected_events() {
+        // Initializing should only respond to ConfigLoaded. All other events
+        // (except ShutdownSignal) should be silently ignored via the catch-all.
+        let (state, action) = handle_event(
+            ServiceState::Initializing,
+            ServiceEvent::TailnetConnected(dummy_tailnet_handle()),
+        );
+        assert!(
+            matches!(state, ServiceState::Initializing),
+            "Initializing must ignore TailnetConnected"
+        );
+        assert!(matches!(action, ServiceAction::None));
+
+        let (state, action) = handle_event(ServiceState::Initializing, ServiceEvent::ListenerReady);
+        assert!(
+            matches!(state, ServiceState::Initializing),
+            "Initializing must ignore ListenerReady"
+        );
+        assert!(matches!(action, ServiceAction::None));
+
+        let (state, action) = handle_event(ServiceState::Initializing, ServiceEvent::RetryTimer);
+        assert!(
+            matches!(state, ServiceState::Initializing),
+            "Initializing must ignore RetryTimer"
+        );
+        assert!(matches!(action, ServiceAction::None));
+    }
+
+    #[test]
     fn service_metrics_initializes_in_flight_at_zero() {
         let metrics = ServiceMetrics::new();
         assert_eq!(

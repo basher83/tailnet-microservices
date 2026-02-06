@@ -70,6 +70,30 @@ impl Config {
         let contents = std::fs::read_to_string(path)?;
         let mut config: Config = toml::from_str(&contents)?;
 
+        // Validate upstream_url is a valid URL with http(s) scheme
+        if !config.proxy.upstream_url.starts_with("http://")
+            && !config.proxy.upstream_url.starts_with("https://")
+        {
+            return Err(common::Error::Config(format!(
+                "upstream_url must start with http:// or https://, got: {}",
+                config.proxy.upstream_url
+            )));
+        }
+
+        // Validate timeout_secs is non-zero
+        if config.proxy.timeout_secs == 0 {
+            return Err(common::Error::Config(
+                "timeout_secs must be greater than 0".into(),
+            ));
+        }
+
+        // Validate max_connections is non-zero
+        if config.proxy.max_connections == 0 {
+            return Err(common::Error::Config(
+                "max_connections must be greater than 0".into(),
+            ));
+        }
+
         // Resolve auth key: env var takes precedence over file
         if let Ok(key) = std::env::var("TS_AUTHKEY") {
             config.tailscale.auth_key = Some(Secret::new(key));
@@ -342,6 +366,91 @@ upstream_url = "https://api.anthropic.com"
             config.tailscale.auth_key.is_none(),
             "empty/whitespace-only auth_key_file should result in no auth key"
         );
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_invalid_upstream_url_rejected() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-bad-url");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[tailscale]
+hostname = "test"
+state_dir = "/tmp"
+
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "api.anthropic.com"
+"#;
+        let config_path = dir.join("config.toml");
+        std::fs::write(&config_path, toml_content).unwrap();
+        unsafe { remove_env("TS_AUTHKEY") };
+
+        let result = Config::load(&config_path);
+        assert!(
+            result.is_err(),
+            "upstream_url without scheme must be rejected"
+        );
+        let err = format!("{}", result.unwrap_err());
+        assert!(
+            err.contains("upstream_url must start with http"),
+            "error message should explain the issue, got: {err}"
+        );
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_zero_timeout_rejected() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-zero-timeout");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[tailscale]
+hostname = "test"
+state_dir = "/tmp"
+
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+timeout_secs = 0
+"#;
+        let config_path = dir.join("config.toml");
+        std::fs::write(&config_path, toml_content).unwrap();
+        unsafe { remove_env("TS_AUTHKEY") };
+
+        let result = Config::load(&config_path);
+        assert!(result.is_err(), "timeout_secs = 0 must be rejected");
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_zero_max_connections_rejected() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-zero-maxconn");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[tailscale]
+hostname = "test"
+state_dir = "/tmp"
+
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+max_connections = 0
+"#;
+        let config_path = dir.join("config.toml");
+        std::fs::write(&config_path, toml_content).unwrap();
+        unsafe { remove_env("TS_AUTHKEY") };
+
+        let result = Config::load(&config_path);
+        assert!(result.is_err(), "max_connections = 0 must be rejected");
 
         std::fs::remove_dir_all(&dir).unwrap();
     }
