@@ -68,10 +68,10 @@ Rust binary that joins tailnet, injects required headers, proxies to Anthropic A
 | Type | Description | Fields |
 |------|-------------|--------|
 | `Config` | Service configuration | `tailscale: TailscaleConfig`, `proxy: ProxyConfig`, `headers: Vec<HeaderInjection>` |
-| `TailscaleConfig` | Tailnet connection settings | `hostname: String`, `auth_key: Option<Secret<String>>`, `state_dir: PathBuf` |
-| `ProxyConfig` | HTTP proxy settings | `listen_addr: SocketAddr`, `upstream_url: String`, `timeout: Duration` |
+| `TailscaleConfig` | Tailnet connection settings | `hostname: String`, `auth_key: Option<Secret<String>>`, `auth_key_file: Option<PathBuf>`, `state_dir: PathBuf` |
+| `ProxyConfig` | HTTP proxy settings | `listen_addr: SocketAddr`, `upstream_url: String`, `timeout_secs: u64`, `max_connections: usize` |
 | `HeaderInjection` | Header to inject | `name: String`, `value: String` (not sensitive; e.g. `anthropic-beta` value) |
-| `ServiceMetrics` | Runtime metrics | `requests_total: u64`, `errors_total: u64` |
+| `ServiceMetrics` | Runtime metrics | `requests_total: Arc<AtomicU64>`, `errors_total: Arc<AtomicU64>`, `in_flight: Arc<AtomicU64>`, `started_at: Instant` |
 
 ### Secret Wrapper
 
@@ -197,12 +197,16 @@ Client Request
 | `authorization` header | Pass through unchanged |
 | Hop-by-hop headers | Strip before forwarding |
 
-### Hop-by-hop Headers (strip)
+### Hop-by-hop Headers (strip from both request and response)
 
 ```
 connection, keep-alive, proxy-authenticate, proxy-authorization,
 te, trailer, transfer-encoding, upgrade
 ```
+
+### Body Size Limit
+
+Requests with bodies exceeding 10MB are rejected with 400 Bad Request.
 
 ---
 
@@ -213,8 +217,9 @@ te, trailer, transfer-encoding, upgrade
 | Variant | Description | Retryable |
 |---------|-------------|-----------|
 | `ConfigError` | Failed to load/parse config | No |
-| `TailnetAuthError` | Invalid auth key | No |
-| `TailnetConnectError` | Network/coordination failure | Yes (backoff) |
+| `TailnetAuth` | Invalid or expired auth key | No |
+| `TailnetMachineAuth` | Node needs admin approval in Tailscale console | No |
+| `TailnetConnect` | Network/coordination failure | Yes (backoff) |
 | `TailnetNotRunning` | Daemon not available or not configured | No |
 | `ListenerBindError` | Port in use | No |
 | `UpstreamTimeout` | Request to Anthropic timed out | Yes (per-request) |
@@ -312,12 +317,24 @@ async fn handle_request(id: RequestId, req: Request) {
 ```
 GET /health
 
-200 OK
+200 OK (tailnet connected)
 {
   "status": "healthy",
   "tailnet": "connected",
+  "tailnet_hostname": "anthropic-oauth-proxy",
+  "tailnet_ip": "100.64.0.1",
   "uptime_seconds": 3600,
-  "requests_served": 12345
+  "requests_served": 12345,
+  "errors_total": 0
+}
+
+503 Service Unavailable (tailnet not connected)
+{
+  "status": "degraded",
+  "tailnet": "not_connected",
+  "uptime_seconds": 3600,
+  "requests_served": 12345,
+  "errors_total": 0
 }
 ```
 
@@ -327,39 +344,25 @@ GET /health
 
 ### Cargo.toml
 
+Package name is `oauth-proxy` with binary name `anthropic-oauth-proxy` (via `[[bin]]` table). Dependencies are managed via workspace `Cargo.toml`:
+
 ```toml
-[package]
-name = "anthropic-oauth-proxy"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-# Async runtime
+# Key workspace dependencies
 tokio = { version = "1", features = ["full"] }
-
-# HTTP
 axum = "0.8"
-reqwest = { version = "0.12", features = ["rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "http2"] }
 hyper = "1"
-
-# Tailscale (evaluate options)
-# tsnet-rs = "0.1"  # If mature enough
-# OR embedded WireGuard:
-# defguard_boringtun = "0.6"
-# smoltcp = "0.11"
-
-# Config
+tailscale-localapi = "0.4"
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 toml = "0.8"
-
-# Observability
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["json"] }
-
-# Security
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+metrics = "0.24"
+metrics-exporter-prometheus = "0.16"
+tower = { version = "0.5", features = ["limit"] }
 zeroize = { version = "1", features = ["derive"] }
-
-# Error handling
+uuid = { version = "1", features = ["v4"] }
 thiserror = "2"
 anyhow = "1"
 ```
@@ -425,10 +428,13 @@ panic = "abort"
 - [x] Cross-compilation (macOS → Linux via cargo-zigbuild)
 - [x] Concurrency limiting via ConcurrencyLimitLayer
 
-### Phase 5: Deploy
-- [ ] Update Aperture config to route to proxy
-- [ ] Monitor production traffic
-- [ ] Document runbook
+### Phase 5: Deploy — PARTIALLY COMPLETE
+- [x] Dockerfile for containerized deployment
+- [x] GitHub Actions CI workflow
+- [x] Kubernetes manifests with tailscaled sidecar
+- [x] Operational runbook (RUNBOOK.md)
+- [ ] Update Aperture config to route to proxy (requires live tailnet)
+- [ ] Monitor production traffic (requires live infrastructure)
 
 ---
 

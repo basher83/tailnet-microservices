@@ -79,9 +79,10 @@ Already defined in `services/oauth-proxy/src/config.rs` as `TailscaleConfig`.
 
 | Error | Description | Retryable |
 |-------|-------------|-----------|
-| `TailnetAuthError` | Invalid or expired auth key | No |
-| `TailnetConnectError` | Cannot reach coordination server | Yes (5 retries, exponential backoff) |
-| `TailnetNotRunning` | Daemon not available or not configured; distinct from `TailnetConnectError` which is a transient network issue | No |
+| `TailnetAuth` | Invalid or expired auth key (NeedsLogin) | No |
+| `TailnetMachineAuth` | Node needs admin approval in Tailscale console (NeedsMachineAuth) | No |
+| `TailnetConnect` | Cannot reach coordination server or daemon still starting | Yes (5 retries, exponential backoff) |
+| `TailnetNotRunning` | Daemon not available or not configured (Stopped, NoState) | No |
 
 ---
 

@@ -118,9 +118,17 @@ async fn main() -> Result<()> {
         match tailnet::connect(&config.tailscale.hostname).await {
             Ok(handle) => break handle,
             Err(crate::error::Error::TailnetAuth) => {
-                // Auth errors are not retryable — bail immediately
                 let _ = handle_event(state, ServiceEvent::TailnetError("auth failed".into()));
                 anyhow::bail!("tailnet authentication failed — check TS_AUTHKEY or auth_key_file");
+            }
+            Err(crate::error::Error::TailnetMachineAuth) => {
+                let _ = handle_event(
+                    state,
+                    ServiceEvent::TailnetError("machine auth needed".into()),
+                );
+                anyhow::bail!(
+                    "tailnet needs machine authorization — approve this node in the admin console"
+                );
             }
             Err(crate::error::Error::TailnetNotRunning(msg)) => {
                 // tailscaled not running/installed is not retryable — bail immediately
@@ -257,32 +265,39 @@ async fn main() -> Result<()> {
 }
 
 /// Health endpoint per spec: returns JSON with status, tailnet state, uptime, requests served.
+/// Returns 200 when tailnet is connected, 503 when degraded (no tailnet).
 async fn health_handler(State(state): State<AppState>) -> impl IntoResponse {
     let uptime = state.metrics.started_at.elapsed().as_secs();
     let requests = state.metrics.requests_total.load(Ordering::Relaxed);
     let errors = state.metrics.errors_total.load(Ordering::Relaxed);
 
-    let body = match &state.tailnet {
-        Some(handle) => serde_json::json!({
-            "status": "healthy",
-            "tailnet": "connected",
-            "tailnet_hostname": handle.hostname,
-            "tailnet_ip": handle.ip.to_string(),
-            "uptime_seconds": uptime,
-            "requests_served": requests,
-            "errors_total": errors,
-        }),
-        None => serde_json::json!({
-            "status": "healthy",
-            "tailnet": "not_connected",
-            "uptime_seconds": uptime,
-            "requests_served": requests,
-            "errors_total": errors,
-        }),
+    let (status_code, body) = match &state.tailnet {
+        Some(handle) => (
+            axum::http::StatusCode::OK,
+            serde_json::json!({
+                "status": "healthy",
+                "tailnet": "connected",
+                "tailnet_hostname": handle.hostname,
+                "tailnet_ip": handle.ip.to_string(),
+                "uptime_seconds": uptime,
+                "requests_served": requests,
+                "errors_total": errors,
+            }),
+        ),
+        None => (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            serde_json::json!({
+                "status": "degraded",
+                "tailnet": "not_connected",
+                "uptime_seconds": uptime,
+                "requests_served": requests,
+                "errors_total": errors,
+            }),
+        ),
     };
 
     (
-        axum::http::StatusCode::OK,
+        status_code,
         [(axum::http::header::CONTENT_TYPE, "application/json")],
         body.to_string(),
     )
@@ -598,13 +613,17 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.status(),
+            StatusCode::SERVICE_UNAVAILABLE,
+            "health endpoint must return 503 when tailnet is not connected"
+        );
         let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
             .await
             .unwrap();
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
-        assert_eq!(json["status"], "healthy");
+        assert_eq!(json["status"], "degraded");
         assert_eq!(json["tailnet"], "not_connected");
         assert!(json.get("tailnet_hostname").is_none());
         assert!(json.get("tailnet_ip").is_none());
@@ -1227,9 +1246,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn concurrency_limit_rejects_excess_requests() {
-        // With max_connections=1, a second concurrent request should be rejected
-        // while the first is still in-flight.
+    async fn concurrency_limit_queues_excess_requests() {
+        // Tower's ConcurrencyLimitLayer queues (not rejects) excess requests.
+        // With max_connections=1, a second concurrent request is queued until
+        // the first completes — both eventually succeed.
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
         let upstream_url = format!("http://{addr}");

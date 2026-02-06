@@ -13,6 +13,9 @@ pub enum Error {
     #[error("Tailnet authentication failed")]
     TailnetAuth,
 
+    #[error("Tailnet needs machine authorization — approve this node in the admin console")]
+    TailnetMachineAuth,
+
     #[error("Tailnet connection failed: {0}")]
     TailnetConnect(String),
 
