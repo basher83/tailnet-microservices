@@ -97,6 +97,8 @@ spec:
               value: "true"
             - name: TS_SOCKET
               value: /var/run/tailscale/tailscaled.sock
+            - name: TS_KUBE_SECRET
+              value: ""
           volumeMounts:
             - name: tailscale-state
               mountPath: /var/lib/tailscale

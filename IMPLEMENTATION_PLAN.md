@@ -1,13 +1,17 @@
 # Implementation Plan
 
-Phases 1-5 complete. All 80 tests pass. Binary sizes well under 15MB target. Specs updated with resolved decisions.
+Phases 1-5 complete. All 83 tests pass (80 oauth-proxy + 3 common). Binary sizes well under 15MB target. Specs updated with resolved decisions.
 
 Audits 1-33: Found and fixed 55+ issues across 33 audits including 5 bugs, spec documentation gaps, K8s security context issues, state machine correctness, metrics configuration, RUNBOOK accuracy, and dependency upgrades (reqwest 0.12→0.13, toml 0.8→0.9, metrics-exporter-prometheus 0.16→0.18). Recent audits (29-33) found increasingly fewer issues as the codebase stabilized: startup probe gap (32nd), RUNBOOK inaccuracies (33rd), and clean results (29th, 30th, 31st).
 
 Thirty-fourth audit (v0.0.48): Comprehensive Opus-level audit across all 10 dimensions: 10 Rust source files, 2 specs, 7 K8s manifests, Dockerfile, CI workflow, RUNBOOK, and example config. 0 issues found. Cross-referenced every type, state transition, metric name/label, error type value, retry parameter, health endpoint field, config schema entry, PromQL query, K8s security context, and environment variable between specs, RUNBOOK, and implementation — all consistent. Lockfile at latest compatible versions (matchit 0.8.4 constrained by axum). All 80 tests pass, clippy clean, formatting clean.
 
-## Remaining Work (requires live infrastructure)
+Thirty-fifth audit (v0.0.51): Fixed two CI/CD blockers preventing Docker image push to GHCR. (1) Added `docker/setup-buildx-action@v3` — the `cache-from/cache-to: type=gha` options require a buildx docker-container driver, not the default docker driver. (2) Renamed Dockerfile user from `proxy` to `appuser` — `debian:bookworm-slim` now ships with a system user named `proxy` (UID 13), causing `useradd` to fail with "user already exists". Both fixes committed and pushed. Awaiting CI confirmation.
 
+## Remaining Work
+
+- [ ] GHCR package visibility — make the GHCR package public or provide a PAT with `read:packages` scope. The `gho_` OAuth token from `gh` CLI lacks packages scope and K8s nodes get 403 when pulling. Run: `gh auth refresh -h github.com -s read:packages` then update the K8s secret, or go to github.com Settings > Packages > Change visibility to Public.
+- [ ] Verify deployment after image pull is resolved — pod tailscaled sidecar also needs `TS_KUBE_SECRET=""` (added) to skip K8s secret storage
 - [ ] Aperture config update — route `http://ai/` to the proxy (requires live tailnet)
 - [ ] Production monitoring — observe live traffic
 - [ ] Test MagicDNS hostname resolution (requires live tailnet)
@@ -48,7 +52,7 @@ Thirty-fourth audit (v0.0.48): Comprehensive Opus-level audit across all 10 dime
 - `metrics-exporter-prometheus` renders `metrics::histogram!()` as a Prometheus summary (quantiles) by default. To get a true histogram (with `_bucket` lines needed by `histogram_quantile()` queries), you must configure explicit bucket boundaries via `set_buckets_for_metric()`. Without this, RUNBOOK PromQL queries referencing `_bucket` will fail silently.
 - In a sidecar pattern, secrets should only be mounted in the container that consumes them. `TS_AUTHKEY` belongs on the tailscaled sidecar, not the proxy container — the proxy queries tailnet state via the Unix socket and never authenticates directly.
 - Spec dependency lists can drift from the actual Cargo.toml when features are added during implementation. The `"stream"` feature on reqwest was added for response streaming but the spec's Build & Distribution section was not updated. Always update the spec when adding dependency features.
-- Dockerfiles for K8s pods with `runAsNonRoot: true` must create the non-root user in the image. `debian:bookworm-slim` only has root; use `useradd -u 1000 -r -s /sbin/nologin proxy` and `USER 1000` in the runtime stage. Without this, the pod crashes with `CreateContainerConfigError`.
+- Dockerfiles for K8s pods with `runAsNonRoot: true` must create the non-root user in the image. `debian:bookworm-slim` only has root; use `useradd -u 1000 -r -s /sbin/nologin appuser` and `USER 1000` in the runtime stage. Without this, the pod crashes with `CreateContainerConfigError`. Avoid the username `proxy` — it's a Debian standard system user (UID 13).
 - `reqwest::Client::new()` uses unbounded connection pool defaults. For a proxy with configurable `max_connections`, set `connect_timeout()` and `pool_max_idle_per_host()` on the builder to prevent unbounded TCP connections when upstream is slow to accept.
 - K8s Pod Security Standards (restricted profile) require `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`, and `capabilities: { drop: ["ALL"] }` on every container. Missing these can block deployment to hardened clusters.
 - Using `:latest` for sidecar images in K8s deployments breaks reproducibility and rollbacks. Pin to specific versions (e.g. `tailscale:v1.94.1`) so that `kubectl rollout undo` works predictably.
@@ -69,6 +73,11 @@ Thirty-fourth audit (v0.0.48): Comprehensive Opus-level audit across all 10 dime
 - K8s pods with sidecar dependencies need startup probes, not just liveness/readiness probes. Without a startup probe, the liveness probe's `initialDelaySeconds` is a fixed guess at how long startup takes. A startup probe with `failureThreshold * periodSeconds` provides a proper startup budget (e.g. 30 * 2s = 60s) and once it succeeds, liveness/readiness probes take over. This prevents premature restarts when the sidecar (tailscaled) takes longer than expected to authenticate.
 
 - RUNBOOK example responses must reflect actual runtime behavior, not idealized static values. The degraded health endpoint returns real `uptime_seconds`, `requests_served`, and `errors_total` values (not zeros), because these counters run regardless of tailnet connection state. Hardcoding zeros in documentation misleads operators into thinking these fields are meaningless when degraded.
+- `docker/build-push-action@v6` with `cache-from/cache-to: type=gha` requires `docker/setup-buildx-action@v3` in the workflow. The default docker driver does not support GHA cache export. Without the buildx setup step, the build fails with "Cache export is not supported for the docker driver."
+- `debian:bookworm-slim` includes a system user named `proxy` (UID 13). Creating a custom user with `useradd ... proxy` fails. Use a different username like `appuser` for application-specific non-root users to avoid conflicts with Debian standard system users.
+- Tailscale container image v1.94.1 has K8s-aware startup that tries to manage its own state via K8s secrets. If running as a sidecar without RBAC for secret access, set `TS_KUBE_SECRET=""` to disable K8s secret storage and fall back to filesystem state in the `TS_STATE_DIR` emptyDir volume. Without this, the sidecar fails with "missing get permission on secret tailscale".
+- Private GitHub repos produce private GHCR packages. The `GITHUB_TOKEN` in GitHub Actions has `packages:write` but cannot change package visibility. The `gh` CLI `gho_` OAuth token has `repo` scope but not `read:packages`. Despite `docker login` succeeding with the `gho_` token, K8s containerd gets 403 Forbidden. To fix: either make the package public via GitHub web UI, or run `gh auth refresh -h github.com -s read:packages` to add the packages scope and update the K8s imagePullSecret.
+- Tailscale auth keys for sidecar pods should be **reusable** and **ephemeral**. Single-use keys get consumed on the first pod creation and fail on restarts. Ephemeral keys auto-deregister the node when it goes offline, preventing stale device accumulation. Create via Tailscale API using the operator's OAuth credentials: exchange OAuth client credentials for an access token, then POST to `/api/v2/tailnet/-/keys`.
 
 ## Environment Notes
 
