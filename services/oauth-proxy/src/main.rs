@@ -45,14 +45,18 @@ struct AppState {
 
 /// Build the axum router with all routes and shared state.
 ///
-/// Applies a concurrency limit layer based on `max_connections` to enforce
-/// the spec's max concurrent request limit.
+/// Health and metrics endpoints are outside the concurrency limit so that
+/// Kubernetes probes and Prometheus scrapes are never blocked by slow proxy
+/// requests occupying all `max_connections` slots.
 fn build_router(state: AppState, max_connections: usize) -> Router {
+    let proxy_routes = Router::new()
+        .fallback(proxy_handler)
+        .layer(tower::limit::ConcurrencyLimitLayer::new(max_connections));
+
     Router::new()
         .route("/health", get(health_handler))
         .route("/metrics", get(metrics_handler))
-        .fallback(proxy_handler)
-        .layer(tower::limit::ConcurrencyLimitLayer::new(max_connections))
+        .merge(proxy_routes)
         .with_state(state)
 }
 
