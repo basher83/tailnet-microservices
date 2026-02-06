@@ -128,7 +128,7 @@ Scrape `GET /metrics` on port 8080. Four metrics are emitted:
 
 `proxy_request_duration_seconds` (histogram) with label `status` provides latency percentiles. The histogram automatically computes p50, p90, p99, and p999 quantiles.
 
-`proxy_upstream_errors_total` (counter) with label `error_type` tracks upstream failures. Error types include `timeout` (upstream did not respond within `timeout_secs`), `connection` (TCP connection to upstream failed), `invalid_request` (request body exceeded 10MB limit or malformed request), `response_read` (failed to read upstream response body), and `internal` (unexpected proxy error).
+`proxy_upstream_errors_total` (counter) with label `error_type` tracks upstream failures. Error types include `timeout` (upstream did not respond within `timeout_secs`), `connection` (TCP connection to upstream failed), `invalid_request` (request body exceeded 10MB limit or malformed request), and `internal` (unexpected proxy error).
 
 `tailnet_connected` (gauge) is 1 when the proxy has an active tailnet connection and 0 otherwise. Alert if this drops to 0 during normal operation.
 

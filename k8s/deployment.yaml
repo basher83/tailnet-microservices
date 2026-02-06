@@ -16,6 +16,7 @@ spec:
         app: anthropic-oauth-proxy
     spec:
       serviceAccountName: anthropic-oauth-proxy
+      terminationGracePeriodSeconds: 10
       containers:
         # --- oauth-proxy ---
         - name: proxy
@@ -25,11 +26,6 @@ spec:
               containerPort: 8080
               protocol: TCP
           env:
-            - name: TS_AUTHKEY
-              valueFrom:
-                secretKeyRef:
-                  name: tailscale-authkey
-                  key: TS_AUTHKEY
             - name: CONFIG_PATH
               value: /etc/anthropic-oauth-proxy/config.toml
             - name: LOG_LEVEL
