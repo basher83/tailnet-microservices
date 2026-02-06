@@ -6,6 +6,7 @@ metadata:
   labels:
     app: anthropic-oauth-proxy
 spec:
+  type: ClusterIP
   selector:
     app: anthropic-oauth-proxy
   ports:

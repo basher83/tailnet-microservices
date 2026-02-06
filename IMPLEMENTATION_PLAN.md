@@ -16,6 +16,8 @@ Audits 50-55: Deep cross-cutting audits found and fixed PromQL aggregation, K8s 
 
 60th audit (v0.0.82): Added startupProbe to the tailscaled sidecar container. The 59th audit added liveness and readiness probes using the `/healthz` endpoint but kept the legacy `initialDelaySeconds: 10` pattern on liveness instead of a proper startupProbe. The liveness probe could kill tailscaled during slow tailnet authentication (e.g. coordination server latency). The new startupProbe gives tailscaled a 60-second startup budget (`periodSeconds: 2` x `failureThreshold: 30`), matching the proxy container's pattern. Removed `initialDelaySeconds` from liveness since the startup probe handles the startup window. Updated RUNBOOK to document the new three-probe configuration. Full codebase audit (main.rs, proxy/service/config/error, K8s/CI/Docker, common crate) found no bugs. All dependencies at latest compatible versions. 109 tests pass.
 
+61st audit (v0.0.83): Infrastructure hardening. Full spec-vs-implementation audit confirmed 100% spec compliance — no code bugs found. Addressed CI and operational gaps: added `manifests` CI job that validates K8s manifests via `kubectl kustomize | kubectl apply --dry-run=client` to catch broken manifests before merge; added `if: github.event_name == 'push'` to Docker job to skip image builds on PRs (saves CI minutes since images are never pushed on PRs); added rollback procedure to RUNBOOK (`kubectl rollout undo`); clarified `ghcr-pull-secret` RUNBOOK wording to accurately describe Kubernetes warning behavior for missing `imagePullSecret` references; added explicit `type: ClusterIP` to service.yaml to document the deliberate choice. All 109 tests pass.
+
 ## Remaining Work
 
 All implementation items complete. Aperture integration verified with live E2E traffic on 2026-02-06. Spec updated to Complete status.
@@ -104,6 +106,9 @@ All implementation items complete. Aperture integration verified with live E2E t
 
 - `rustls-pemfile` v1.x is unmaintained (RUSTSEC-2025-0134). Its functionality was absorbed into `rustls-pki-types`. This crate enters the dependency tree via `tailscale-localapi` v0.4.2. No security vulnerability — purely a maintenance status advisory. The `cargo audit` CI job reports it as a warning, not a failure, because the `--deny warnings` flag is not set (advisories without CVSS scores are informational).
 - `rustsec/audit-check@v2.0.0` is the official GitHub Action for cargo-audit. It handles installation, advisory database fetching, and GitHub check creation automatically. Using `cargo install cargo-audit` in CI compiles from source on every run (2-4 minutes), which is wasteful since the action provides a pre-built binary. The action requires `token: ${{ secrets.GITHUB_TOKEN }}` for creating GitHub checks.
+- CI workflows should validate K8s manifests with `kubectl kustomize <dir> | kubectl apply --dry-run=client -f -`. This catches YAML syntax errors, invalid field names, and schema violations before merge. GitHub-hosted runners include `kubectl` by default, so no additional tooling setup is needed.
+- Docker build jobs that only push on `main` or tag refs should be gated with `if: github.event_name == 'push'` at the job level. On PRs, the build still runs through all steps (login, metadata, buildx, build) but the push condition evaluates to false — wasting 2-3 minutes of CI time per PR. Gating at the job level skips the entire job.
+- K8s Service `type` defaults to `ClusterIP` when omitted. While the default is correct for tailnet-only services, omitting it creates ambiguity for operators reading the manifest — they cannot distinguish "deliberately ClusterIP" from "forgot to set it." Explicit defaults communicate intent.
 
 ## Environment Notes
 

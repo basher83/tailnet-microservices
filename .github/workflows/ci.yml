@@ -68,8 +68,18 @@ jobs:
             exit 1
           fi
 
+  manifests:
+    name: Validate K8s Manifests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - run: kubectl kustomize k8s/ | kubectl apply --dry-run=client -f -
+
   docker:
     name: Docker
+    if: github.event_name == 'push'
     needs: [lint, audit, test, build]
     runs-on: ubuntu-latest
     permissions:
