@@ -256,6 +256,11 @@ pub fn handle_event(state: ServiceState, event: ServiceEvent) -> (ServiceState, 
             ServiceAction::Shutdown { exit_code: 0 },
         ),
 
+        // --- Stopped is terminal: all events are no-ops ---
+        (ServiceState::Stopped { exit_code }, _) => {
+            (ServiceState::Stopped { exit_code }, ServiceAction::None)
+        }
+
         // --- Any state + shutdown = stop ---
         (_, ServiceEvent::ShutdownSignal) => (
             ServiceState::Stopped { exit_code: 0 },
@@ -535,7 +540,8 @@ mod tests {
 
     #[test]
     fn stopped_state_is_terminal() {
-        // Sending any event to Stopped should leave it in Stopped with no action
+        // Stopped is a terminal state: all events (including ShutdownSignal) are no-ops.
+        // The exit_code is preserved and no further actions are produced.
         let events = vec![
             ServiceEvent::ConfigLoaded {
                 listen_addr: localhost_addr(),
@@ -545,6 +551,7 @@ mod tests {
             ServiceEvent::ListenerReady,
             ServiceEvent::RetryTimer,
             ServiceEvent::DrainTimeout,
+            ServiceEvent::ShutdownSignal,
         ];
         for event in events {
             let (state, action) = handle_event(ServiceState::Stopped { exit_code: 0 }, event);
@@ -552,19 +559,11 @@ mod tests {
                 matches!(state, ServiceState::Stopped { exit_code: 0 }),
                 "Stopped must remain terminal"
             );
-            assert!(matches!(action, ServiceAction::None));
+            assert!(
+                matches!(action, ServiceAction::None),
+                "Stopped must produce no action"
+            );
         }
-    }
-
-    #[test]
-    fn stopped_state_shutdown_signal_stays_stopped() {
-        // ShutdownSignal on Stopped hits the wildcard match arm (any + ShutdownSignal -> Stopped)
-        let (state, action) = handle_event(
-            ServiceState::Stopped { exit_code: 0 },
-            ServiceEvent::ShutdownSignal,
-        );
-        assert!(matches!(state, ServiceState::Stopped { .. }));
-        assert!(matches!(action, ServiceAction::Shutdown { exit_code: 0 }));
     }
 
     #[test]
