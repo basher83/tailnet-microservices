@@ -16,9 +16,12 @@ Thirty-eighth audit (v0.0.56): Comprehensive Opus-level audit of all source file
 
 GHCR access investigation: `gh auth` token lacks `read:packages`/`write:packages` scopes. `gh auth refresh -s read:packages,write:packages` requires interactive browser authentication. Alternative: make the package public via GitHub web UI (Settings → Packages → Change visibility), or use a classic PAT with `write:packages` scope.
 
+Thirty-ninth audit (v0.0.57): Updated CI workflow — actions/checkout v4→v6, added explicit least-privilege permissions blocks to all CI jobs. Dependencies audit: all 16 workspace dependencies match spec exactly, Cargo.lock at latest compatible versions. Comprehensive source file review found 0 bugs or spec discrepancies. K8s deployment confirmed stuck in ImagePullBackOff due to GHCR 403 (known blocker). ts-authkey secret missing from cluster — must be created imperatively after GHCR fix. All 88 tests pass, clippy clean, fmt clean.
+
 ## Remaining Work
 
 - [ ] **GHCR package visibility (BLOCKING)** — The GHCR package is private and K8s nodes get 403 Forbidden when pulling. **Fix options**: (1) GitHub web UI: Profile → Packages → `tailnet-microservices/anthropic-oauth-proxy` → Package settings → Danger Zone → Change visibility → Public. (2) Run `gh auth refresh -h github.com -s read:packages,write:packages` in a terminal with browser access, then `gh api --method PATCH /user/packages/container/tailnet-microservices%2Fanthropic-oauth-proxy -f visibility=public`.
+- [ ] Create ts-authkey K8s secret — `kubectl create secret generic ts-authkey -n anthropic-oauth-proxy --from-literal=TS_AUTHKEY=<reusable-ephemeral-key>` (key must be reusable + ephemeral per Learnings)
 - [ ] Verify deployment after GHCR fix — tailscaled `CAP_FOWNER` fix applied, `TS_KUBE_SECRET=""` set, need to confirm both containers start successfully
 - [ ] Aperture config update — route `http://ai/` to the proxy (requires live tailnet)
 - [ ] Production monitoring — observe live traffic
@@ -87,6 +90,7 @@ GHCR access investigation: `gh auth` token lacks `read:packages`/`write:packages
 - Private GitHub repos produce private GHCR packages. The `GITHUB_TOKEN` in GitHub Actions has `packages:write` for push/pull registry operations but fundamentally cannot change package visibility via the REST API — this is a long-standing GitHub limitation (since 2021, still unresolved). A CI step using `gh api --method PATCH /user/packages/... -f visibility=public` with `GITHUB_TOKEN` silently fails even with `|| true`. The only ways to change visibility are: (1) the GitHub web UI, (2) a classic PAT with `write:packages` scope, or (3) changing account-level default package visibility to "Public" in Settings → Packages. The `gh` CLI `gho_` OAuth token has `repo` scope but not `read:packages`, so even `gh api` calls to query packages fail with 403.
 - Tailscale auth keys for sidecar pods should be **reusable** and **ephemeral**. Single-use keys get consumed on the first pod creation and fail on restarts. Ephemeral keys auto-deregister the node when it goes offline, preventing stale device accumulation. Create via Tailscale API using the operator's OAuth credentials: exchange OAuth client credentials for an access token, then POST to `/api/v2/tailnet/-/keys`.
 - Tailscale v1.94.1 sidecar with `readOnlyRootFilesystem: true` and `capabilities: drop: ["ALL"]` fails with `chmod /var/lib/tailscale: operation not permitted` because `CAP_FOWNER` is required. The emptyDir volume mount is writable, but tailscale's state store initialization calls `chmod` on the directory which requires `CAP_FOWNER` (or the process to be the file owner). With `fsGroup` setting group ownership, the process UID (1000) is not the directory owner (root creates the mount). Fix: `capabilities: { drop: ["ALL"], add: ["FOWNER"] }` on the tailscaled container only. The proxy container keeps strict `drop: ["ALL"]`.
+- K8s deployment requires both GHCR package access AND Tailscale auth key secret. The ghcr-pull-secret exists but its token lacks `read:packages` scope. The ts-authkey secret is missing entirely. Both must be created before pods can start.
 
 ## Environment Notes
 
