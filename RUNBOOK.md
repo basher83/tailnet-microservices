@@ -72,12 +72,13 @@ kubectl -n anthropic-oauth-proxy rollout restart deployment/anthropic-oauth-prox
 
 ### Rotating the Tailscale Auth Key
 
-```bash
-kubectl -n anthropic-oauth-proxy delete secret tailscale-authkey
+Use `--dry-run=client` piped to `kubectl apply` for an atomic update that avoids the window of unavailability between delete and create:
 
+```bash
 kubectl create secret generic tailscale-authkey \
   --namespace=anthropic-oauth-proxy \
-  --from-literal=TS_AUTHKEY=tskey-auth-NEWKEY
+  --from-literal=TS_AUTHKEY=tskey-auth-NEWKEY \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl -n anthropic-oauth-proxy rollout restart deployment/anthropic-oauth-proxy
 ```
@@ -167,14 +168,14 @@ Check proxy container logs first. The three lifecycle errors that cause crashes:
 
 ### Proxy Returning 502 Bad Gateway
 
-The upstream at `https://api.anthropic.com` is unreachable or returning connection errors. Check:
+The upstream at `https://api.anthropic.com` is unreachable or returning connection errors. The proxy container is a minimal image without `curl`, so use port-forwarding to test from your workstation:
 
 ```bash
-kubectl -n anthropic-oauth-proxy exec -c proxy <pod-name> -- \
-  curl -s -o /dev/null -w '%{http_code}' https://api.anthropic.com/v1/messages
+kubectl -n anthropic-oauth-proxy port-forward deployment/anthropic-oauth-proxy 8080:8080 &
+curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health
 ```
 
-If DNS fails, check that the runtime image has `ca-certificates` installed (it does in the default Dockerfile) and that the pod has outbound internet access.
+If DNS or TLS fails inside the pod, check that the runtime image has `ca-certificates` installed (it does in the default Dockerfile) and that the pod has outbound internet access.
 
 ### Proxy Returning 504 Gateway Timeout
 
@@ -190,7 +191,7 @@ Either the request body exceeds the 10MB hardcoded limit, or the request is malf
 
 Check `proxy_request_duration_seconds` histogram percentiles. Latency is dominated by upstream response time. The proxy adds negligible overhead (header injection, hop-by-hop stripping).
 
-If latency correlates with high concurrency, check if `max_connections` (default: 1000) is being hit. The concurrency limiter queues excess requests rather than rejecting them, which manifests as increased latency rather than errors.
+If latency correlates with high concurrency, check if `max_connections` (default: 1000) is being hit. The concurrency limiter queues excess requests rather than rejecting them, which manifests as increased latency rather than errors. Health and metrics endpoints are outside the concurrency limit and remain responsive regardless of proxy load.
 
 ### Tailscaled Sidecar Issues
 

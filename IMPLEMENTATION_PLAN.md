@@ -10,6 +10,8 @@ Twenty-fourth audit (v0.0.37): Comprehensive cross-file audit using parallel sub
 
 Twenty-fifth audit (v0.0.38): Found 1 LOW issue. `zeroize` workspace dependency had `features = ["derive"]` enabled but `#[derive(Zeroize)]` is never used — `Secret<T>` uses `Zeroize` only as a trait bound and calls `.zeroize()` directly in `Drop`. The `derive` feature pulls in `syn`, `quote`, and `proc-macro2` as unnecessary build dependencies. Removed from both `Cargo.toml` and spec. All 83 tests pass, clippy clean, formatting clean.
 
+Twenty-sixth audit (v0.0.39): Comprehensive Opus-level audit of all source files, specs, K8s manifests, CI, Dockerfile, and RUNBOOK. Found 3 LOW issues, 0 HIGH/MEDIUM. (1) `ConcurrencyLimitLayer` applied to entire router including `/health` and `/metrics` — under sustained load at `max_connections`, K8s liveness probes could be queued behind slow proxy requests, triggering pod restarts. Fixed by nesting routes so health/metrics are outside the concurrency limit. (2) RUNBOOK troubleshooting referenced `curl` inside the proxy container, but the minimal Docker image only has `ca-certificates`. Fixed to use `kubectl port-forward` from workstation instead. (3) RUNBOOK secret rotation used `delete` then `create`, leaving a window where a rescheduled pod would hit `CreateContainerConfigError`. Fixed to use `--dry-run=client -o yaml | kubectl apply -f -` for atomic update. All 83 tests pass, clippy clean, formatting clean.
+
 ## Remaining Work (requires live infrastructure)
 
 - [ ] Aperture config update — route `http://ai/` to the proxy (requires live tailnet)
@@ -63,6 +65,9 @@ Twenty-fifth audit (v0.0.38): Found 1 LOW issue. `zeroize` workspace dependency 
 - Prometheus histograms and summaries are different metric types with different semantics. Histograms produce `_bucket`, `_sum`, and `_count` lines; quantiles are computed at query time via `histogram_quantile()`. Summaries compute quantiles client-side. Documentation must use precise terminology — saying a histogram "automatically computes quantiles" is misleading and confuses operators writing PromQL.
 - Undocumented environment variable overrides create debugging blind spots. If code reads an env var to override defaults (like `TAILSCALE_SOCKET` for the socket path), it must be documented in both the spec's environment variables table and the operational runbook's troubleshooting section.
 - Crate `derive` features (e.g. `zeroize = { features = ["derive"] }`) pull in proc-macro dependencies (`syn`, `quote`, `proc-macro2`). Only enable them if `#[derive(Trait)]` is actually used. Using a trait as a bound or calling methods directly does not require the derive feature.
+- Concurrency limits on a proxy must exclude observability endpoints. K8s liveness/readiness probes and Prometheus scrapes must always be responsive regardless of proxy load. In axum, use `Router::merge()` to nest a concurrency-limited sub-router (proxy routes) under an unlimited parent router (health/metrics routes).
+- K8s secret rotation should use `kubectl create --dry-run=client -o yaml | kubectl apply -f -` for atomic updates. A `delete` then `create` sequence leaves a window where pods rescheduled between the two commands fail with `CreateContainerConfigError`.
+- Minimal Docker images (debian-slim + ca-certificates only) don't have debugging tools like `curl`. RUNBOOK troubleshooting steps should use `kubectl port-forward` from the operator's workstation instead of `kubectl exec` with tools that aren't in the image.
 
 ## Environment Notes
 
