@@ -33,6 +33,19 @@ fi
 
 ITERATION=0
 CURRENT_BRANCH=$(git branch --show-current)
+CLAUDE_PID=""
+
+# Signal handler - kill claude process and exit
+cleanup() {
+    echo -e "\n\n⚠️  Caught signal, stopping..."
+    if [ -n "$CLAUDE_PID" ] && kill -0 "$CLAUDE_PID" 2>/dev/null; then
+        kill -TERM "$CLAUDE_PID" 2>/dev/null
+        sleep 0.5
+        kill -9 "$CLAUDE_PID" 2>/dev/null
+    fi
+    exit 130
+}
+trap cleanup SIGINT SIGTERM SIGQUIT
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🦀 Tailnet Microservices — Ralph Loop"
@@ -42,6 +55,7 @@ echo "Prompt: $PROMPT_FILE"
 echo "Output: ${OUTPUT_FORMAT:-human}"
 echo "Branch: $CURRENT_BRANCH"
 [ $MAX_ITERATIONS -gt 0 ] && echo "Max:    $MAX_ITERATIONS iterations"
+echo "Stop:   Ctrl+C"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Verify prompt file exists
@@ -56,12 +70,15 @@ while true; do
         break
     fi
 
-    # Run Ralph iteration
+    # Run Ralph iteration (background + wait to allow signal handling)
     cat "$PROMPT_FILE" | claude -p \
         --dangerously-skip-permissions \
         $OUTPUT_FORMAT \
         --model opus \
-        --verbose
+        --verbose &
+    CLAUDE_PID=$!
+    wait $CLAUDE_PID
+    CLAUDE_PID=""
 
     # Push changes after each iteration
     git push origin "$CURRENT_BRANCH" 2>/dev/null || {
