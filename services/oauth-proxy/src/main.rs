@@ -43,11 +43,15 @@ struct AppState {
 }
 
 /// Build the axum router with all routes and shared state.
-fn build_router(state: AppState) -> Router {
+///
+/// Applies a concurrency limit layer based on `max_connections` to enforce
+/// the spec's max concurrent request limit.
+fn build_router(state: AppState, max_connections: usize) -> Router {
     Router::new()
         .route("/health", get(health_handler))
         .route("/metrics", get(metrics_handler))
         .fallback(proxy_handler)
+        .layer(tower::limit::ConcurrencyLimitLayer::new(max_connections))
         .with_state(state)
 }
 
@@ -182,7 +186,7 @@ async fn main() -> Result<()> {
         prometheus: prometheus_handle,
     };
 
-    let app = build_router(app_state);
+    let app = build_router(app_state, config.proxy.max_connections);
 
     let listener = TcpListener::bind(listen_addr)
         .await
@@ -389,7 +393,7 @@ mod tests {
             prometheus: test_prometheus_handle(),
         };
 
-        let app = build_router(state);
+        let app = build_router(state, 1000);
         let response = app
             .oneshot(
                 Request::builder()
@@ -426,7 +430,7 @@ mod tests {
             }],
         );
 
-        let app = build_router(state);
+        let app = build_router(state, 1000);
         let response = app
             .oneshot(
                 Request::builder()
@@ -467,7 +471,7 @@ mod tests {
         tokio::time::sleep(Duration::from_millis(10)).await;
 
         let state = test_app_state(&upstream_url, vec![]);
-        let app = build_router(state);
+        let app = build_router(state, 1000);
 
         let response = app
             .oneshot(
@@ -500,7 +504,7 @@ mod tests {
     async fn proxy_returns_502_for_dead_upstream() {
         // Point at an unreachable upstream to trigger a connection error
         let state = test_app_state("http://127.0.0.1:1", vec![]);
-        let app = build_router(state);
+        let app = build_router(state, 1000);
 
         let response = app
             .oneshot(Request::builder().uri("/fail").body(Body::empty()).unwrap())
@@ -514,5 +518,196 @@ mod tests {
             .unwrap();
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(json["error"]["type"], "proxy_error");
+    }
+
+    #[tokio::test]
+    async fn health_endpoint_without_tailnet_returns_not_connected() {
+        let metrics = ServiceMetrics::new();
+        let state = AppState {
+            proxy: ProxyState {
+                client: reqwest::Client::new(),
+                upstream_url: "http://unused".into(),
+                headers_to_inject: vec![],
+                timeout: Duration::from_secs(5),
+                requests_total: metrics.requests_total.clone(),
+                errors_total: metrics.errors_total.clone(),
+                in_flight: Arc::new(AtomicU64::new(0)),
+            },
+            metrics,
+            tailnet: None,
+            prometheus: test_prometheus_handle(),
+        };
+
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(json["status"], "healthy");
+        assert_eq!(json["tailnet"], "not_connected");
+        assert!(json.get("tailnet_hostname").is_none());
+        assert!(json.get("tailnet_ip").is_none());
+    }
+
+    #[tokio::test]
+    async fn health_endpoint_includes_uptime_seconds() {
+        let state = test_app_state("http://unused", vec![]);
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        assert!(
+            json.get("uptime_seconds").is_some(),
+            "health response must include uptime_seconds"
+        );
+        assert!(json["uptime_seconds"].is_u64());
+    }
+
+    #[tokio::test]
+    async fn metrics_endpoint_returns_prometheus_format() {
+        let state = test_app_state("http://unused", vec![]);
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/metrics")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(
+            content_type.contains("text/plain"),
+            "metrics endpoint must return text/plain Prometheus format"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_error_response_includes_all_spec_fields() {
+        let state = test_app_state("http://127.0.0.1:1", vec![]);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(Request::builder().uri("/fail").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        let error = &json["error"];
+        assert_eq!(error["type"], "proxy_error");
+        assert!(
+            error.get("message").is_some(),
+            "error response must include message"
+        );
+        assert!(
+            error["message"].is_string(),
+            "error message must be a string"
+        );
+        assert!(
+            error.get("request_id").is_some(),
+            "error response must include request_id"
+        );
+        let request_id = error["request_id"].as_str().unwrap();
+        assert!(
+            request_id.starts_with("req_"),
+            "request_id must start with 'req_' prefix, got: {request_id}"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_timeout_returns_504_gateway_timeout() {
+        // Start a server that never responds (hangs for 10s)
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream_url = format!("http://{addr}");
+
+        let _server = tokio::spawn(async move {
+            loop {
+                let (socket, _) = listener.accept().await.unwrap();
+                tokio::spawn(async move {
+                    // Accept connection but never respond — simulates timeout
+                    tokio::time::sleep(Duration::from_secs(30)).await;
+                    drop(socket);
+                });
+            }
+        });
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let metrics = ServiceMetrics::new();
+        let state = AppState {
+            proxy: ProxyState {
+                client: reqwest::Client::new(),
+                upstream_url,
+                headers_to_inject: vec![],
+                timeout: Duration::from_millis(50), // Very short timeout to trigger quickly
+                requests_total: metrics.requests_total.clone(),
+                errors_total: metrics.errors_total.clone(),
+                in_flight: metrics.in_flight.clone(),
+            },
+            metrics,
+            tailnet: None,
+            prometheus: test_prometheus_handle(),
+        };
+
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/timeout")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        // Timeout after retries → 504 Gateway Timeout
+        assert_eq!(response.status(), StatusCode::GATEWAY_TIMEOUT);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["error"]["type"], "proxy_error");
+        assert!(
+            json["error"]["message"]
+                .as_str()
+                .unwrap()
+                .contains("timeout")
+        );
     }
 }
