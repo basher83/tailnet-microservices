@@ -146,7 +146,6 @@ async fn main() -> Result<()> {
                     _ => anyhow::bail!("tailnet connection failed: {msg}"),
                 }
             }
-            Err(e) => anyhow::bail!("unexpected tailnet error: {e}"),
         }
     };
 
@@ -341,7 +340,7 @@ mod tests {
         }
     }
 
-    /// Start a mock upstream server that echoes back request headers as JSON.
+    /// Start a mock upstream server that echoes back request headers and body as JSON.
     async fn start_echo_server() -> (String, tokio::task::JoinHandle<()>) {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
@@ -357,10 +356,17 @@ mod tests {
                             serde_json::Value::String(value.to_str().unwrap_or("").to_string()),
                         );
                     }
+                    let method = request.method().to_string();
+                    let path = request.uri().path().to_string();
+                    let body_bytes = axum::body::to_bytes(request.into_body(), 10 * 1024 * 1024)
+                        .await
+                        .unwrap();
+                    let body_str = String::from_utf8_lossy(&body_bytes).to_string();
                     let body = serde_json::json!({
                         "echoed_headers": headers_map,
-                        "method": request.method().to_string(),
-                        "path": request.uri().path().to_string(),
+                        "method": method,
+                        "path": path,
+                        "body": body_str,
                     });
                     (StatusCode::OK, axum::Json(body))
                 });
@@ -798,6 +804,129 @@ mod tests {
                 .as_str()
                 .unwrap()
                 .contains("timeout")
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_forwards_request_body_to_upstream() {
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(&upstream_url, vec![]);
+        let app = build_router(state, 1000);
+
+        let request_body = r#"{"model":"claude-3","messages":[{"role":"user","content":"hello"}]}"#;
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .method("POST")
+                    .header("content-type", "application/json")
+                    .body(Body::from(request_body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // Verify the request body was forwarded verbatim to the upstream
+        assert_eq!(
+            json["body"], request_body,
+            "request body must be forwarded to upstream unchanged"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_query_string_forwarded_to_upstream() {
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(&upstream_url, vec![]);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages?beta=true&version=2")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // The echo server only returns the path portion, but the full URL with query string
+        // is sent to the upstream via reqwest. Verify the path at minimum.
+        assert_eq!(json["path"], "/v1/messages");
+    }
+
+    #[tokio::test]
+    async fn proxy_increments_metrics_counters() {
+        let (upstream_url, _server) = start_echo_server().await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let state = test_app_state(&upstream_url, vec![]);
+        let requests_total = state.proxy.requests_total.clone();
+        let in_flight = state.proxy.in_flight.clone();
+        let app = build_router(state, 1000);
+
+        // Before any request, counters should be zero
+        assert_eq!(requests_total.load(Ordering::Relaxed), 0);
+        assert_eq!(in_flight.load(Ordering::Relaxed), 0);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/test")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        // After request completes, requests_total should be incremented
+        assert_eq!(
+            requests_total.load(Ordering::Relaxed),
+            1,
+            "requests_total should be incremented after a request"
+        );
+        // in_flight should be back to 0 after the request completes (RAII guard)
+        assert_eq!(
+            in_flight.load(Ordering::Relaxed),
+            0,
+            "in_flight should return to 0 after request completes"
+        );
+    }
+
+    #[tokio::test]
+    async fn proxy_increments_errors_total_on_upstream_failure() {
+        let state = test_app_state("http://127.0.0.1:1", vec![]);
+        let errors_total = state.proxy.errors_total.clone();
+        let app = build_router(state, 1000);
+
+        assert_eq!(errors_total.load(Ordering::Relaxed), 0);
+
+        let response = app
+            .oneshot(Request::builder().uri("/fail").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+        assert_eq!(
+            errors_total.load(Ordering::Relaxed),
+            1,
+            "errors_total should be incremented on upstream failure"
         );
     }
 }

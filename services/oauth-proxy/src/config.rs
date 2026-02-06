@@ -27,7 +27,10 @@ pub struct TailscaleConfig {
     /// Path to a file containing the auth key (alternative to TS_AUTHKEY env var)
     #[serde(default)]
     pub auth_key_file: Option<PathBuf>,
-    #[allow(dead_code)] // Used when tailnet integration is wired (Priority 6)
+    /// Required by spec TOML schema. The sidecar approach (Option B) manages
+    /// its own state via tailscaled, so this field is deserialized but not
+    /// used by the Rust service directly.
+    #[allow(dead_code)]
     pub state_dir: PathBuf,
 }
 
