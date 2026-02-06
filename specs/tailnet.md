@@ -14,13 +14,13 @@ The tailnet integration is a prerequisite for the service state machine's `Conne
 
 ---
 
-## Integration Strategy
+## Integration Strategy — DECIDED: Option B
 
-Two viable approaches exist. The chosen approach determines the `TailnetHandle` implementation.
+Two approaches were evaluated. **Option B was chosen** for production maturity and zero Go build dependencies.
 
-### Option A: libtailscale FFI (true single binary)
+### Option A: libtailscale FFI (not chosen)
 
-Embed Tailscale via `libtailscale-sys` / `libtailscale` Rust crates, which wrap the C API produced by `go build -buildmode=c-archive` from the Go `tsnet` package.
+Embed Tailscale via `libtailscale-sys` / `libtailscale` Rust crates. Not chosen due to experimental maturity and Go build dependency requirement.
 
 | Property | Value |
 |----------|-------|
@@ -30,9 +30,9 @@ Embed Tailscale via `libtailscale-sys` / `libtailscale` Rust crates, which wrap 
 | Crate | `libtailscale` (messense, v0.2.0) or `tsnet` (badboy, v0.1.0) |
 | Maturity | Experimental |
 
-### Option B: tailscaled sidecar (proven pattern)
+### Option B: tailscaled sidecar (chosen)
 
-Run `tailscaled` as a separate process. Rust service listens on localhost; `tailscaled` forwards tailnet traffic. Use `tailscale-localapi` crate for identity queries.
+Run `tailscaled` as an externally managed separate process. Rust service queries it via `tailscale-localapi` for identity (hostname, IP). On macOS, falls back to `tailscale status --json` CLI for the App Store variant.
 
 | Property | Value |
 |----------|-------|
@@ -85,8 +85,8 @@ Already defined in `services/oauth-proxy/src/config.rs` as `TailscaleConfig`.
 
 ---
 
-## Open Questions
+## Resolved Questions
 
-1. Which option (A or B) to implement first? Option B is lower risk for initial deployment.
-2. For Option B, should the Rust binary manage `tailscaled` as a child process, or expect it to be externally managed?
-3. Should the tailnet module live in `crates/common/` (reusable across services) or `services/oauth-proxy/src/tailnet.rs` (service-specific)?
+1. **Which option?** Option B (tailscaled sidecar) was chosen for production maturity and zero Go build dependencies. See `IMPLEMENTATION_PLAN.md` for rationale.
+2. **Child process vs external?** Externally managed. The Rust service queries an existing `tailscaled` daemon; it does not spawn or manage the process. This follows the standard sidecar pattern.
+3. **Module location?** `services/oauth-proxy/src/tailnet.rs` (service-specific). The integration is tightly coupled to the oauth-proxy's error types and state machine. If a second service is added, the module can be extracted to `crates/common/` at that point.
