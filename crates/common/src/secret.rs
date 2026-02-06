@@ -59,4 +59,12 @@ mod tests {
         let secret = Secret::new(String::from("my-api-key"));
         assert_eq!(secret.expose(), "my-api-key");
     }
+
+    #[test]
+    fn test_secret_redacts_display() {
+        let secret = Secret::new(String::from("super-secret-token"));
+        let display = format!("{}", secret);
+        assert_eq!(display, "[REDACTED]");
+        assert!(!display.contains("super-secret-token"));
+    }
 }

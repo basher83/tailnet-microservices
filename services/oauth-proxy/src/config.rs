@@ -311,4 +311,67 @@ max_connections = 500
 
         std::fs::remove_dir_all(&dir).unwrap();
     }
+
+    #[test]
+    fn test_auth_key_file_empty_content_yields_none() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-empty-keyfile");
+        std::fs::create_dir_all(&dir).unwrap();
+        let key_path = dir.join("auth_key");
+        std::fs::write(&key_path, "  \n  ").unwrap(); // whitespace only
+
+        let toml_content = format!(
+            r#"
+[tailscale]
+hostname = "test"
+state_dir = "/tmp"
+auth_key_file = "{}"
+
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+"#,
+            key_path.display()
+        );
+        let config_path = dir.join("config.toml");
+        std::fs::write(&config_path, &toml_content).unwrap();
+
+        unsafe { remove_env("TS_AUTHKEY") };
+        let config = Config::load(&config_path).unwrap();
+        assert!(
+            config.tailscale.auth_key.is_none(),
+            "empty/whitespace-only auth_key_file should result in no auth key"
+        );
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_auth_key_file_nonexistent_returns_error() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-missing-keyfile");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[tailscale]
+hostname = "test"
+state_dir = "/tmp"
+auth_key_file = "/nonexistent/path/auth_key"
+
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+"#;
+        let config_path = dir.join("config.toml");
+        std::fs::write(&config_path, toml_content).unwrap();
+
+        unsafe { remove_env("TS_AUTHKEY") };
+        let result = Config::load(&config_path);
+        assert!(
+            result.is_err(),
+            "nonexistent auth_key_file must return an error"
+        );
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
 }

@@ -275,9 +275,9 @@ value = "oauth-2025-04-20"
 
 ### Environment Variables
 
-| Variable | Description | Overrides |
-|----------|-------------|-----------|
-| `TS_AUTHKEY` | Tailscale auth key | `tailscale.auth_key` |
+| Variable | Description | Fallback for |
+|----------|-------------|--------------|
+| `TS_AUTHKEY` | Tailscale auth key | `tailscale.auth_key_file` |
 | `CONFIG_PATH` | Config file path | CLI `--config` |
 | `LOG_LEVEL` | Logging verbosity | `RUST_LOG` |
 

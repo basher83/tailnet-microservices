@@ -486,6 +486,88 @@ mod tests {
     }
 
     #[test]
+    fn shutdown_signal_from_initializing_stops() {
+        let (state, action) =
+            handle_event(ServiceState::Initializing, ServiceEvent::ShutdownSignal);
+        assert!(matches!(state, ServiceState::Stopped { exit_code: 0 }));
+        assert!(matches!(action, ServiceAction::Shutdown { exit_code: 0 }));
+    }
+
+    #[test]
+    fn shutdown_signal_from_starting_stops() {
+        let (state, action) = handle_event(
+            ServiceState::Starting {
+                tailnet: dummy_tailnet_handle(),
+                listen_addr: localhost_addr(),
+            },
+            ServiceEvent::ShutdownSignal,
+        );
+        assert!(matches!(state, ServiceState::Stopped { exit_code: 0 }));
+        assert!(matches!(action, ServiceAction::Shutdown { exit_code: 0 }));
+    }
+
+    #[test]
+    fn shutdown_signal_from_error_stops() {
+        let (state, action) = handle_event(
+            ServiceState::Error {
+                error: "timeout".into(),
+                origin: ErrorOrigin::Tailnet,
+                retries: 2,
+                listen_addr: localhost_addr(),
+            },
+            ServiceEvent::ShutdownSignal,
+        );
+        assert!(matches!(state, ServiceState::Stopped { exit_code: 0 }));
+        assert!(matches!(action, ServiceAction::Shutdown { exit_code: 0 }));
+    }
+
+    #[test]
+    fn shutdown_signal_from_draining_stops() {
+        let (state, action) = handle_event(
+            ServiceState::Draining {
+                deadline: Instant::now() + Duration::from_secs(5),
+            },
+            ServiceEvent::ShutdownSignal,
+        );
+        assert!(matches!(state, ServiceState::Stopped { exit_code: 0 }));
+        assert!(matches!(action, ServiceAction::Shutdown { exit_code: 0 }));
+    }
+
+    #[test]
+    fn stopped_state_is_terminal() {
+        // Sending any event to Stopped should leave it in Stopped with no action
+        let events = vec![
+            ServiceEvent::ConfigLoaded {
+                listen_addr: localhost_addr(),
+            },
+            ServiceEvent::TailnetConnected(dummy_tailnet_handle()),
+            ServiceEvent::TailnetError("test".into()),
+            ServiceEvent::ListenerReady,
+            ServiceEvent::RetryTimer,
+            ServiceEvent::DrainTimeout,
+        ];
+        for event in events {
+            let (state, action) = handle_event(ServiceState::Stopped { exit_code: 0 }, event);
+            assert!(
+                matches!(state, ServiceState::Stopped { exit_code: 0 }),
+                "Stopped must remain terminal"
+            );
+            assert!(matches!(action, ServiceAction::None));
+        }
+    }
+
+    #[test]
+    fn stopped_state_shutdown_signal_stays_stopped() {
+        // ShutdownSignal on Stopped hits the wildcard match arm (any + ShutdownSignal -> Stopped)
+        let (state, action) = handle_event(
+            ServiceState::Stopped { exit_code: 0 },
+            ServiceEvent::ShutdownSignal,
+        );
+        assert!(matches!(state, ServiceState::Stopped { .. }));
+        assert!(matches!(action, ServiceAction::Shutdown { exit_code: 0 }));
+    }
+
+    #[test]
     fn service_metrics_initializes_in_flight_at_zero() {
         let metrics = ServiceMetrics::new();
         assert_eq!(
