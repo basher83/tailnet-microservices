@@ -52,7 +52,7 @@ kubectl create secret docker-registry ghcr-pull-secret \
   --docker-password=<pat-with-read-packages>
 ```
 
-If the GHCR package is public, anonymous pulls succeed without this secret. Kubernetes tolerates a missing `imagePullSecret` reference — it emits a warning event on the pod but proceeds with the pull. These warnings are harmless and can be ignored.
+If the GHCR package is public, anonymous pulls succeed without this secret. Kubernetes emits a warning event when a referenced `imagePullSecret` does not exist, but proceeds with an anonymous pull. For public images this succeeds and the warnings are harmless. If the package is ever made private, pods will fail with `ErrImagePull` until the secret is created.
 
 ### Verify Deployment
 
@@ -152,7 +152,7 @@ Scrape `GET /metrics` on port 8080. Four metrics are emitted:
 
 `proxy_request_duration_seconds` (histogram) with label `status` and bucket boundaries from 5ms to 60s. Use `histogram_quantile()` in PromQL to compute latency percentiles (p50, p90, p99) from the histogram buckets at query time.
 
-`proxy_upstream_errors_total` (counter) with label `error_type` tracks upstream failures. Error types include `timeout` (upstream did not respond within `timeout_secs`), `connection` (TCP connection to upstream failed), `invalid_request` (request body exceeded 10 MiB limit or malformed request), and `internal` (unexpected proxy error).
+`proxy_upstream_errors_total` (counter) with label `error_type` tracks upstream failures. Error types: `timeout` (upstream did not respond within `timeout_secs`), `connection` (TCP connection to upstream failed), `invalid_request` (request body exceeded 10 MiB limit or malformed request).
 
 `tailnet_connected` (gauge) is 1 when the proxy has an active tailnet connection and 0 otherwise. Alert if this drops to 0 during normal operation.
 
