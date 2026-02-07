@@ -1704,10 +1704,11 @@ mod tests {
             .unwrap();
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
-        // The injected authorization value must not appear
+        // No authorization header should exist: the client sent none and the
+        // injected one must be blocked. A strict `.is_none()` check catches any
+        // regression where an authorization header leaks through from another source.
         assert!(
-            json["echoed_headers"].get("authorization").is_none()
-                || json["echoed_headers"]["authorization"] != "Bearer INJECTED-SHOULD-NOT-APPEAR",
+            json["echoed_headers"].get("authorization").is_none(),
             "authorization injection must be blocked even when client sends no auth header"
         );
         // The other injection should still work
