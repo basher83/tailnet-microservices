@@ -6,4 +6,4 @@
 
 IMPORTANT: Plan only. Do NOT implement anything. Do NOT assume functionality is missing; confirm with code search first. Prefer consolidated, idiomatic implementations in `crates/common/` over ad-hoc copies.
 
-ULTIMATE GOAL: We want to build single-binary Rust services that embed Tailscale connectivity directly. First target: Anthropic OAuth proxy that joins tailnet and injects required headers. Consider missing elements and plan accordingly. If an element is missing, search first to confirm it doesn't exist, then if needed author the specification at specs/FILENAME.md.
+ULTIMATE GOAL: Remove the tailscaled sidecar dependency from the Anthropic OAuth proxy. The proxy becomes a single-container pod with zero secrets — tailnet exposure is delegated to the Tailscale Operator via Service annotations. See specs/operator-migration.md for all requirements. Do NOT touch mothership-gitops — ArgoCD adoption is a separate spec.
