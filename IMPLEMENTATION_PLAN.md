@@ -4,11 +4,13 @@ Previous build history archived at IMPLEMENTATION_PLAN_v1.md (81 audits, 111 tes
 
 ## Status
 
-Tailscale Ingress manifests complete (operator-migration-addendum). Remaining success criteria require cluster deployment verification (Ingress resolution, health endpoint from tailnet, upstream proxy requests).
+Dual proxy conflict resolved (v0.0.114). Service annotations removed; Ingress handles tailnet exposure exclusively. Remaining success criteria require cluster deployment verification (single proxy pod, Ingress resolution, health endpoint from tailnet, upstream proxy requests).
 
 Verification: `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean, `cargo build --workspace` clean, `cargo test --workspace` 86 passed (82 oauth-proxy + 4 common) / 2 ignored (load test, memory soak). `kubectl kustomize k8s/` validates successfully.
 
 ## Audit Log
+
+**2026-02-08 (v0.0.114):** Fix dual proxy conflict (operator-migration-addendum). Service `tailscale.com/expose` and `tailscale.com/hostname` annotations created a separate Tailscale proxy pod that conflicted with the Ingress proxy pod — both claimed the `anthropic-oauth-proxy` hostname. Removed annotations from `k8s/service.yaml`; Service is now a plain ClusterIP. Tailnet exposure handled exclusively by the Ingress. Updated specs: `oauth-proxy.md` (Service annotations → Ingress-based exposure), `operator-migration.md` R3 note (superseded by Ingress), `operator-migration-addendum.md` (status and success criteria). 86 tests pass (82 oauth-proxy + 4 common), 2 ignored. Kustomize validates.
 
 **2026-02-08 (v0.0.113):** Tailscale Ingress for traffic routing (operator-migration-addendum). The `expose: "true"` Service annotation provides tailnet identity but not HTTP traffic routing. Created `k8s/ingress.yaml` with `ingressClassName: tailscale` and `tls.hosts: [anthropic-oauth-proxy]` to route tailnet HTTP traffic to the Service ClusterIP:80. Updated `k8s/kustomization.yaml` to include the new resource. Fixed spec inconsistencies: removed deprecated `kubernetes.io/ingress.class` annotation, added required `tls.hosts` field (Tailscale Operator derives hostname from `tls[0].hosts[0]`, not `rules[].host`). Kustomize build validates. 86 tests pass (82 oauth-proxy + 4 common), 2 ignored.
 

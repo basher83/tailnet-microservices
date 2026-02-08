@@ -9,7 +9,7 @@
 
 ## Overview
 
-Single-binary Rust service that injects OAuth headers and proxies requests to api.anthropic.com. Tailnet exposure is delegated to the Tailscale Operator via Kubernetes Service annotations. The proxy runs as a single-container pod with zero secrets.
+Single-binary Rust service that injects OAuth headers and proxies requests to api.anthropic.com. Tailnet exposure is delegated to the Tailscale Operator via a Tailscale Ingress resource. The proxy runs as a single-container pod with zero secrets.
 
 **Design Principles:**
 
@@ -64,7 +64,7 @@ Rust binary that injects required headers and proxies to Anthropic API. Tailnet 
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-Tailnet exposure is provided by the Tailscale Operator. The Kubernetes Service is annotated with `tailscale.com/expose: "true"` and `tailscale.com/hostname: "anthropic-oauth-proxy"`. The Operator creates a StatefulSet that proxies from the tailnet to the ClusterIP Service. The Rust binary has no tailnet code.
+Tailnet exposure is provided by the Tailscale Operator via a Tailscale Ingress (`ingressClassName: tailscale`). The Ingress routes tailnet HTTP traffic to the ClusterIP Service. The MagicDNS hostname `anthropic-oauth-proxy` is derived from `tls[0].hosts[0]`. The Rust binary has no tailnet code.
 
 ---
 
@@ -378,21 +378,17 @@ Multi-stage Dockerfile: `rust:1-bookworm` builder, `debian:bookworm-slim` runtim
 
 ### Kubernetes Manifests (`k8s/`)
 
-Single-container Deployment with zero secrets. Tailnet exposure via Tailscale Operator Service annotations.
+Single-container Deployment with zero secrets. Tailnet exposure via Tailscale Operator Ingress.
 
 **Deployment:** Single `proxy` container from `ghcr.io/basher83/tailnet-microservices/anthropic-oauth-proxy:main`. Config mounted from ConfigMap at `/etc/anthropic-oauth-proxy/config.toml`. `terminationGracePeriodSeconds: 6` (DRAIN_TIMEOUT + 1s buffer). Startup, liveness, and readiness probes on `/health`. Security context: non-root, read-only root filesystem, all capabilities dropped. Resources: 50m/500m CPU, 32Mi/128Mi memory.
 
-**Service:** ClusterIP with Tailscale Operator annotations:
+**Service:** Plain ClusterIP (no annotations). Tailnet exposure is handled exclusively by the Ingress.
 
-```yaml
-annotations:
-  tailscale.com/expose: "true"
-  tailscale.com/hostname: "anthropic-oauth-proxy"
-```
+**Ingress:** Tailscale Ingress (`ingressClassName: tailscale`) with `tls.hosts: [anthropic-oauth-proxy]`. Routes tailnet HTTP traffic to the Service ClusterIP:80.
 
 **ConfigMap:** Contains the TOML config per the Configuration section above.
 
-**Kustomization:** namespace, serviceaccount, configmap, deployment, service.
+**Kustomization:** namespace, serviceaccount, configmap, deployment, service, ingress.
 
 ---
 

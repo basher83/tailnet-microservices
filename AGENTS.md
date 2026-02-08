@@ -2,7 +2,7 @@
 
 ## Current Work
 
-**Ingress manifests complete (v0.0.113).** Tailscale Ingress routes tailnet HTTP traffic to the proxy. Remaining: cluster deployment verification (Ingress resolution, health from tailnet, upstream proxy). See `specs/operator-migration-addendum.md`.
+Remaining success criteria require cluster deployment verification (Ingress resolution, health endpoint from tailnet, upstream proxy requests). See `specs/operator-migration-addendum.md`.
 
 **Do NOT** modify anything in mothership-gitops. ArgoCD syncs this repo via wave 8.
 
