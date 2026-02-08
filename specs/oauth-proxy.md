@@ -1,23 +1,23 @@
-# Spec: Tailnet Microservices in Rust
+# Spec: Anthropic OAuth Proxy
 
-**Status:** Complete — Phase 3 (Tailnet Integration) superseded by specs/operator-migration.md
+**Status:** Complete
 **Created:** 2026-02-05
-**Updated:** 2026-02-06
+**Updated:** 2026-02-08
 **Author:** Astrogator + Brent
 
 ---
 
 ## Overview
 
-Single-binary Rust service with a `tailscaled` sidecar for tailnet connectivity. The sidecar approach (Option B from `specs/tailnet.md`) was chosen over libtailscale FFI for production maturity and zero Go build dependencies.
+Single-binary Rust service that injects OAuth headers and proxies requests to api.anthropic.com. Tailnet exposure is delegated to the Tailscale Operator via Kubernetes Service annotations. The proxy runs as a single-container pod with zero secrets.
 
 **Design Principles:**
 
 | Principle | Implementation |
 |-----------|----------------|
 | Single responsibility | One binary, one function |
-| Minimal external deps | Static binary, requires only `tailscaled` sidecar |
-| Tailnet-native | MagicDNS identity, ACL-controlled |
+| Minimal external deps | Static binary, no sidecar, no secrets |
+| Tailnet-native | MagicDNS identity via Tailscale Operator |
 | Pure state machines | Event → Action, caller handles I/O |
 | Type-safe | Rust compiler catches spec deviations |
 
@@ -26,10 +26,10 @@ Single-binary Rust service with a `tailscaled` sidecar for tailnet connectivity.
 - `services/oauth-proxy/src/main.rs` — Entry point, CLI parsing, axum server
 - `services/oauth-proxy/src/config.rs` — Configuration types and loading
 - `services/oauth-proxy/src/service.rs` — Service state machine
-- `services/oauth-proxy/src/tailnet.rs` — Tailscale integration (tailscale-localapi)
 - `services/oauth-proxy/src/proxy.rs` — HTTP proxy logic
 - `services/oauth-proxy/src/metrics.rs` — Prometheus metrics exposition
-- `services/oauth-proxy/src/error.rs` — Error types
+- `crates/common/src/error.rs` — Common error types
+- `crates/common/src/lib.rs` — Re-exports
 
 ---
 
@@ -39,25 +39,32 @@ Single-binary Rust service with a `tailscaled` sidecar for tailnet connectivity.
 Aperture lacks custom header injection. Claude Max OAuth tokens require the `anthropic-beta: oauth-2025-04-20` header.
 
 ### Solution
-Rust binary that joins tailnet, injects required headers, proxies to Anthropic API.
+Rust binary that injects required headers and proxies to Anthropic API. Tailnet exposure is handled externally by the Tailscale Operator.
 
 ---
 
 ## Architecture
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────┐
 │                           Tailnet                                │
 │                                                                  │
-│  ┌─────────┐      ┌──────────────────────────┐      ┌─────────┐ │
-│  │ Aperture│ ───► │  anthropic-oauth-proxy    │ ───► │External │ │
-│  │ (http://ai/)   │  (Rust + tailscaled       │      │Anthropic│ │
-│  └─────────┘      │   sidecar)                │      │   API   │ │
-│                    └──────────────────────────┘      └─────────┘ │
-│                           │                                      │
+│  ┌─────────┐      ┌──────────────────┐                           │
+│  │ Aperture│ ───► │  Tailscale       │                           │
+│  │ (http://ai/)   │  Operator proxy  │                           │
+│  └─────────┘      └────────┬─────────┘                           │
+│                            │                                     │
+│                            ▼                                     │
+│                    ┌──────────────────────────┐      ┌─────────┐ │
+│                    │  anthropic-oauth-proxy    │ ───► │External │ │
+│                    │  (single container)       │      │Anthropic│ │
+│                    └──────────────────────────┘      │   API   │ │
+│                                                      └─────────┘ │
 │                    MagicDNS: anthropic-oauth-proxy                │
 └──────────────────────────────────────────────────────────────────┘
 ```
+
+Tailnet exposure is provided by the Tailscale Operator. The Kubernetes Service is annotated with `tailscale.com/expose: "true"` and `tailscale.com/hostname: "anthropic-oauth-proxy"`. The Operator creates a StatefulSet that proxies from the tailnet to the ClusterIP Service. The Rust binary has no tailnet code.
 
 ---
 
@@ -67,30 +74,10 @@ Rust binary that joins tailnet, injects required headers, proxies to Anthropic A
 
 | Type | Description | Fields |
 |------|-------------|--------|
-| `Config` | Service configuration | `tailscale: TailscaleConfig`, `proxy: ProxyConfig`, `headers: Vec<HeaderInjection>` |
-| `TailscaleConfig` | Tailnet connection settings | `hostname: String`, `auth_key: Option<Secret<String>>`, `auth_key_file: Option<PathBuf>`, `state_dir: PathBuf` |
+| `Config` | Service configuration | `proxy: ProxyConfig`, `headers: Vec<HeaderInjection>` |
 | `ProxyConfig` | HTTP proxy settings | `listen_addr: SocketAddr`, `upstream_url: String`, `timeout_secs: u64`, `max_connections: usize` |
 | `HeaderInjection` | Header to inject | `name: String`, `value: String` (not sensitive; e.g. `anthropic-beta` value) |
 | `ServiceMetrics` | Runtime metrics | `requests_total: Arc<AtomicU64>`, `errors_total: Arc<AtomicU64>`, `in_flight: Arc<AtomicU64>`, `started_at: Instant` |
-
-### Secret Wrapper
-
-```rust
-use zeroize::Zeroize;
-
-/// Sensitive value - redacted in Debug/Display/logs
-pub struct Secret<T: Zeroize>(T);
-
-impl<T: Zeroize> Secret<T> {
-    pub fn expose(&self) -> &T { &self.0 }
-}
-
-impl<T: Zeroize> std::fmt::Debug for Secret<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[REDACTED]")
-    }
-}
-```
 
 ---
 
@@ -103,34 +90,27 @@ The service uses an explicit state machine for lifecycle management.
 | State | Description | Fields |
 |-------|-------------|--------|
 | `Initializing` | Loading config, setting up resources | (no data) |
-| `ConnectingTailnet` | Joining the tailnet | `retries: u32`, `listen_addr: SocketAddr` |
-| `Starting` | Starting HTTP listener | `tailnet: TailnetHandle`, `listen_addr: SocketAddr` |
-| `Running` | Accepting and proxying requests | `tailnet: TailnetHandle`, `listen_addr: SocketAddr` |
+| `Starting` | Starting HTTP listener | `listen_addr: SocketAddr` |
+| `Running` | Accepting and proxying requests | `listen_addr: SocketAddr` |
 | `Draining` | Graceful shutdown, finishing in-flight | `deadline: Instant` (drain coordination handled by axum's graceful shutdown and the `in_flight` atomic counter) |
 | `Stopped` | Terminal state | `exit_code: i32` |
-| `Error` | Recoverable error with retry | `error: String`, `origin: ErrorOrigin`, `retries: u32`, `listen_addr: SocketAddr` |
 
 ### `ServiceEvent` Enum
 
 | Event | Description | Payload |
 |-------|-------------|---------|
 | `ConfigLoaded` | Configuration parsed successfully | `listen_addr: SocketAddr` |
-| `TailnetConnected` | Joined tailnet, got identity | `TailnetHandle` |
-| `TailnetError` | Failed to connect to tailnet | `String` (error message; type discrimination happens in the caller before feeding events) |
 | `ListenerReady` | HTTP listener bound | (no data) |
 | `RequestReceived` | Incoming HTTP request | `request_id: String` (request object handled directly by proxy handler) |
-| `RequestCompleted` | Request finished (success or error) | `request_id: String`, `duration: Duration`, `error: Option<ServiceError>` |
+| `RequestCompleted` | Request finished (success or error) | `request_id: String`, `duration: Duration`, `error: Option<String>` |
 | `ShutdownSignal` | SIGTERM/SIGINT received | — |
 | `DrainTimeout` | Drain deadline exceeded | — |
-| `RetryTimer` | Retry backoff expired | — |
 
 ### `ServiceAction` Enum
 
 | Action | Description | Payload |
 |--------|-------------|---------|
-| `ConnectTailnet` | Initiate tailnet connection | (no data) |
 | `StartListener` | Bind HTTP listener | `addr: SocketAddr` |
-| `ScheduleRetry` | Set retry timer | `delay: Duration` |
 | `Shutdown` | Exit process | `exit_code: i32` |
 | `None` | No-op | — |
 
@@ -146,13 +126,9 @@ The state machine drives the startup lifecycle (`Initializing` through `Running`
 
 | Current State | Event | New State | Action |
 |---------------|-------|-----------|--------|
-| `Initializing` | `ConfigLoaded(cfg)` | `ConnectingTailnet` | `ConnectTailnet` |
-| `ConnectingTailnet` | `TailnetConnected(h)` | `Starting` | `StartListener` |
-| `ConnectingTailnet` | `TailnetError` (retries < 5) | `Error` | `ScheduleRetry(backoff)` |
-| `ConnectingTailnet` | `TailnetError` (retries >= 5) | `Stopped` | `Shutdown(1)` |
-| `Error` (origin=Tailnet) | `RetryTimer` | `ConnectingTailnet` | `ConnectTailnet` |
+| `Initializing` | `ConfigLoaded(cfg)` | `Starting` | `StartListener(addr)` |
 | `Starting` | `ListenerReady` | `Running` | `None` |
-| `Running` | `RequestReceived`/`RequestCompleted` | `Running` | (handled by proxy handler, not state machine) |
+| `Running` | `RequestReceived`/`RequestCompleted` | `Running` | `None` (defensive no-op; handled by proxy handler) |
 | `Running` | `ShutdownSignal` | `Draining` | `None` |
 | `Draining` | `DrainTimeout` | `Stopped` | `Shutdown(0)` |
 | `Draining` | `ShutdownSignal` | `Stopped` | `Shutdown(0)` |
@@ -165,7 +141,7 @@ The state machine drives the startup lifecycle (`Initializing` through `Running`
 
 ### Request Flow
 
-```
+```text
 Client Request
       │
       ▼
@@ -202,7 +178,7 @@ Client Request
 
 ### Hop-by-hop Headers (strip from both request and response)
 
-```
+```text
 connection, keep-alive, proxy-authenticate, proxy-authorization,
 te, trailer, transfer-encoding, upgrade
 ```
@@ -219,20 +195,19 @@ Response bodies are streamed from upstream to the client without buffering. This
 
 ## Error Handling
 
-### Error Enum (service-level)
+### Common error types (`common::Error`)
 
-The service-level `Error` enum in `error.rs` contains errors that flow through the state machine:
+The `common` crate defines errors used during startup (config loading). These cause process exit before the state machine reaches `Running`:
 
-| Variant | Description | Retryable |
-|---------|-------------|-----------|
-| `TailnetAuth` | Invalid or expired auth key | No |
-| `TailnetMachineAuth` | Node needs admin approval in Tailscale console | No |
-| `TailnetConnect` | Network/coordination failure | Yes (backoff) |
-| `TailnetNotRunning` | Daemon not available or not configured | No |
+| Variant | Description |
+|---------|-------------|
+| `Config(String)` | Configuration validation failure |
+| `Io(io::Error)` | File system errors (config file not found, etc.) |
+| `Toml(toml::de::Error)` | TOML parse errors |
 
-### Errors handled outside the state machine
+### Errors handled inline
 
-These errors are handled directly at the call site rather than through the `Error` enum:
+These errors are handled directly in `proxy.rs` and `main.rs` rather than through a centralized error type:
 
 | Error | Handled by | HTTP Status |
 |-------|-----------|-------------|
@@ -247,8 +222,7 @@ These errors are handled directly at the call site rather than through the `Erro
 
 | Error Type | Max Retries | Backoff |
 |------------|-------------|---------|
-| `TailnetConnectError` | 5 | Exponential: 1s, 2s, 4s, 8s, 16s |
-| `UpstreamTimeout` | 2 | Fixed: 100ms |
+| `UpstreamTimeout` | 2 (3 total attempts) | Fixed: 100ms |
 
 ### Error Response Format
 
@@ -256,7 +230,7 @@ These errors are handled directly at the call site rather than through the `Erro
 {
   "error": {
     "type": "proxy_error",
-    "message": "Upstream timeout after 30s",
+    "message": "Upstream timeout after 60s (3 attempts)",
     "request_id": "req_abc123"
   }
 }
@@ -270,13 +244,6 @@ These errors are handled directly at the call site rather than through the `Erro
 
 ```toml
 # anthropic-oauth-proxy.toml
-
-[tailscale]
-hostname = "anthropic-oauth-proxy"
-# Auth key from environment: TS_AUTHKEY
-# Or specify path to file:
-# auth_key_file = "/run/secrets/ts-authkey"
-state_dir = "/var/lib/ts-state"
 
 [proxy]
 listen_addr = "0.0.0.0:8080"
@@ -293,16 +260,22 @@ value = "oauth-2025-04-20"
 
 | Variable | Description | Precedence |
 |----------|-------------|------------|
-| `TS_AUTHKEY` | Tailscale auth key | Sets `auth_key` directly; `auth_key_file` is not read when set |
 | `CONFIG_PATH` | Config file path | Fallback when CLI `--config` is not provided |
 | `LOG_LEVEL` | Logging verbosity | Checked first; falls back to `RUST_LOG` |
-| `TAILSCALE_SOCKET` | Override tailscaled Unix socket path | Defaults to `/var/run/tailscale/tailscaled.sock` |
 
 ### Precedence
 
-```
+```text
 CLI args > Environment vars > Config file > Defaults
 ```
+
+### Defaults
+
+| Field | Default |
+|-------|---------|
+| `timeout_secs` | 60 |
+| `max_connections` | 1000 |
+| `headers` | `[]` (empty) |
 
 ---
 
@@ -313,48 +286,43 @@ CLI args > Environment vars > Config file > Defaults
 ```rust
 use tracing::{info, warn, error, instrument};
 
-#[instrument(skip(req), fields(request_id = %id))]
-async fn handle_request(id: RequestId, req: Request) {
+#[instrument(skip_all, fields(request_id = %request_id, method = %request.method(), path = %request.uri().path()))]
+async fn proxy_request(state: &ProxyState, request: Request, request_id: String) {
     info!("received request");
     // ...
-    info!(latency_ms = ?elapsed.as_millis(), "request completed");
+    info!(latency_ms = elapsed.as_millis() as u64, "request completed");
 }
 ```
 
-### Metrics (stdout JSON or Prometheus)
+Logging is initialized with JSON output via `tracing-subscriber`. The `LOG_LEVEL` env var is checked first, falling back to `RUST_LOG`, with a final default of `info`.
+
+### Metrics (Prometheus)
 
 | Metric | Type | Labels |
 |--------|------|--------|
 | `proxy_requests_total` | Counter | `status`, `method` |
 | `proxy_request_duration_seconds` | Histogram | `status` |
 | `proxy_upstream_errors_total` | Counter | `error_type` |
-| `tailnet_connected` | Gauge | — |
+
+Histogram buckets for `proxy_request_duration_seconds`: 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s, 30s, 60s.
+
+Metrics are served on `GET /metrics` in Prometheus text exposition format. The metrics endpoint is outside the concurrency limit so Prometheus scrapes are never blocked.
 
 ### Health Endpoint
 
-```
+```text
 GET /health
 
-200 OK (tailnet connected)
+200 OK
 {
   "status": "healthy",
-  "tailnet": "connected",
-  "tailnet_hostname": "anthropic-oauth-proxy",
-  "tailnet_ip": "100.64.0.1",
-  "uptime_seconds": 3600,
-  "requests_served": 12345,
-  "errors_total": 0
-}
-
-503 Service Unavailable (tailnet not connected)
-{
-  "status": "degraded",
-  "tailnet": "not_connected",
   "uptime_seconds": 3600,
   "requests_served": 12345,
   "errors_total": 0
 }
 ```
+
+The health endpoint always returns 200 when the HTTP listener is bound. There is no degraded state. The health endpoint is outside the concurrency limit so Kubernetes probes are never blocked.
 
 ---
 
@@ -369,7 +337,6 @@ Package name is `oauth-proxy` with binary name `anthropic-oauth-proxy` (via `[[b
 tokio = { version = "1", features = ["full"] }
 axum = "0.8"
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "http2", "stream"] }
-tailscale-localapi = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.9"
@@ -378,7 +345,6 @@ tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 metrics = "0.24"
 metrics-exporter-prometheus = "0.18"
 tower = { version = "0.5", features = ["limit"] }
-zeroize = "1"
 uuid = { version = "1", features = ["v4"] }
 thiserror = "2"
 anyhow = "1"
@@ -402,18 +368,44 @@ strip = true
 panic = "abort"
 ```
 
+### Container Image
+
+Multi-stage Dockerfile: `rust:1-bookworm` builder, `debian:bookworm-slim` runtime. The builder uses cargo cache mounts for registry and target directory. The runtime image includes only `ca-certificates` and the binary, running as non-root user 1000. Published to GHCR as a public package (no `imagePullSecrets` required).
+
+---
+
+## Deployment
+
+### Kubernetes Manifests (`k8s/`)
+
+Single-container Deployment with zero secrets. Tailnet exposure via Tailscale Operator Service annotations.
+
+**Deployment:** Single `proxy` container from `ghcr.io/basher83/tailnet-microservices/anthropic-oauth-proxy:main`. Config mounted from ConfigMap at `/etc/anthropic-oauth-proxy/config.toml`. `terminationGracePeriodSeconds: 6` (DRAIN_TIMEOUT + 1s buffer). Startup, liveness, and readiness probes on `/health`. Security context: non-root, read-only root filesystem, all capabilities dropped. Resources: 50m/500m CPU, 32Mi/128Mi memory.
+
+**Service:** ClusterIP with Tailscale Operator annotations:
+
+```yaml
+annotations:
+  tailscale.com/expose: "true"
+  tailscale.com/hostname: "anthropic-oauth-proxy"
+```
+
+**ConfigMap:** Contains the TOML config per the Configuration section above.
+
+**Kustomization:** namespace, serviceaccount, configmap, deployment, service.
+
 ---
 
 ## Success Criteria
 
 - [x] Single binary, <15MB (macOS 4.4MB, Linux x86_64 5.4MB, Linux aarch64 4.7MB)
-- [x] Joins tailnet in <5s on startup (verified in production deployment 2026-02-06)
 - [x] Handles 100+ req/s sustained (~2400 req/s measured via `load_test_sustains_100_rps`)
 - [x] Zero memory growth over 24h (validated via compressed soak: 20K requests, <5 MiB growth threshold, `memory_soak_test_zero_growth`)
 - [x] Works on macOS (arm64) and Linux (amd64/arm64)
 - [x] Aperture routes to it successfully (Metric ID 235, verified 2026-02-06)
 - [x] Claude Max OAuth tokens work end-to-end (Claude API responses confirmed with header injection, 2026-02-06)
 - [x] Graceful shutdown <5s on SIGTERM (DRAIN_TIMEOUT=5s, tested via state machine)
+- [x] Single-container pod, zero secrets, no sidecar (operator migration, 2026-02-08)
 
 ---
 
@@ -426,54 +418,53 @@ panic = "abort"
 - [x] Stub state machine with all states/events
 
 ### Phase 2: HTTP Proxy — COMPLETE
-- [x] Implement proxy logic without tailnet
+- [x] Implement proxy logic
 - [x] Header injection (add + replace)
 - [x] Hop-by-hop header stripping
 - [x] Add health endpoint
 - [x] Add Prometheus metrics endpoint
 
-### Phase 3: Tailnet Integration — COMPLETE
-- [x] Chose Option B (tailscaled sidecar + `tailscale-localapi`)
-- [x] Implement `ConnectingTailnet` → `Running` flow
-- [x] Test MagicDNS resolution (verified in production 2026-02-06)
-- [x] ACL verification (Aperture→proxy connectivity confirmed, Metric ID 235)
-
-### Phase 4: Hardening — COMPLETE
-- [x] Full state machine with error recovery
-- [x] Graceful shutdown / drain
+### Phase 3: Hardening — COMPLETE
+- [x] Full state machine with lifecycle transitions
+- [x] Graceful shutdown / drain with timeout enforcement
 - [x] Prometheus metrics + structured JSON logging
 - [x] Cross-compilation (macOS → Linux via cargo-zigbuild)
 - [x] Concurrency limiting via ConcurrencyLimitLayer
 
-### Phase 5: Deploy — COMPLETE
+### Phase 4: Deploy — COMPLETE
 - [x] Dockerfile for containerized deployment
 - [x] GitHub Actions CI workflow
-- [x] Kubernetes manifests with tailscaled sidecar
+- [x] Kubernetes manifests with Tailscale Operator annotations
 - [x] Operational runbook (RUNBOOK.md)
 - [x] Update Aperture config to route to proxy (`anthropic-oauth` provider, `tailnet: true`)
 - [x] Monitor production traffic (live E2E traffic verified 2026-02-06)
+
+### Phase 5: Operator Migration — COMPLETE
+- [x] Remove `tailscaled` sidecar and `tailscale-localapi` dependency
+- [x] Simplify state machine (remove tailnet states, errors, retry logic)
+- [x] Simplify config (remove `[tailscale]` section, auth key resolution)
+- [x] Update health endpoint (remove tailnet fields, always 200)
+- [x] Remove `tailnet_connected` metric
+- [x] Update K8s manifests (single container, operator annotations, zero secrets)
+- [x] See `specs/operator-migration.md` for full requirements
 
 ---
 
 ## Resolved Questions
 
-1. **tsnet-rs maturity** — Chose Option B (`tailscaled` sidecar + `tailscale-localapi` v0.4.2) over libtailscale FFI. The sidecar pattern avoids Go build dependencies and uses a production-grade crate. See `IMPLEMENTATION_PLAN.md` for details.
-2. **TLS termination** — Inbound TLS is handled by Aperture / tailnet WireGuard encryption. The proxy listens on plain TCP. Outbound to upstream uses `reqwest` with `rustls`.
-3. **Multi-tenant** — Single-tenant: one proxy instance injects a fixed set of headers from `[[headers]]` config. Deploy separate instances for different header sets.
-4. **State persistence** — Since Option B was chosen, `state_dir` is deserialized from TOML for schema compliance but the Rust service does not use it. `tailscaled` manages its own state externally.
-5. **Auth key usage** — Since Option B was chosen, `auth_key` and `auth_key_file` are loaded from config/env for schema compliance but are not passed to the tailnet module. The Rust service queries an already-authenticated `tailscaled`; authentication is the sidecar's responsibility.
-6. **Tailnet disconnect** — Spec lifecycle step 5 says "disconnect cleanly." With the sidecar model, the Rust service does not own the tailnet connection, so disconnect is a no-op. On shutdown, the `tailnet_connected` Prometheus gauge is set to 0 for observability. The `tailscaled` sidecar handles its own lifecycle via the pod termination signal.
-7. **Response streaming** — Response bodies are streamed using `reqwest::Response::bytes_stream()` converted to `axum::body::Body::from_stream()`. Metrics (status code, duration) are recorded before the stream begins since headers are available immediately. This avoids buffering entire responses in memory and enables real-time SSE forwarding for Claude API streaming responses.
+1. **TLS termination** — Inbound TLS is handled by Aperture / tailnet WireGuard encryption. The proxy listens on plain TCP. Outbound to upstream uses `reqwest` with `rustls`.
+2. **Multi-tenant** — Single-tenant: one proxy instance injects a fixed set of headers from `[[headers]]` config. Deploy separate instances for different header sets.
+3. **Response streaming** — Response bodies are streamed using `reqwest::Response::bytes_stream()` converted to `axum::body::Body::from_stream()`. Metrics (status code, duration) are recorded before the stream begins since headers are available immediately. This avoids buffering entire responses in memory and enables real-time SSE forwarding for Claude API streaming responses.
+4. **Tailnet integration** — Originally implemented as a `tailscaled` sidecar with `tailscale-localapi` (Option B from `specs/tailnet.md`). Superseded by the Tailscale Operator via `specs/operator-migration.md`. The Rust binary no longer contains any tailnet code. The Operator handles tailnet authentication, identity, and connectivity externally via Service annotations.
 
 ---
 
 ## References
 
-- [ghuntley/loom/specs/wgtunnel-system.md](https://github.com/ghuntley/loom) — WireGuard stack reference
-- [Tailscale tsnet docs](https://tailscale.com/kb/1244/tsnet) — Embedded tailnet library
 - [Anthropic OAuth spec](https://docs.anthropic.com/en/docs/authentication#oauth) — Header requirements
-- [Teardown: ghuntley's Vibe Coding](../Areas/recon/Teardown-Ghuntley-Vibe-Coding.md) — Methodology reference
+- `specs/operator-migration.md` — Operator migration spec (tailscaled sidecar removal)
+- `specs/tailnet.md` — Original tailnet integration strategy (superseded)
 
 ---
 
-*Spec-first. Types define contract. State machine is the program.* 🦀
+*Spec-first. Types define contract. State machine is the program.*

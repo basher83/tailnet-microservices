@@ -6,8 +6,8 @@
 //! Spec reference: specs/operator-migration.md "R6: State Machine Simplification".
 
 use std::net::SocketAddr;
-use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
+use std::sync::atomic::AtomicU64;
 use std::time::{Duration, Instant};
 
 /// Runtime metrics tracked while the service is running
