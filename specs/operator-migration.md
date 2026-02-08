@@ -1,6 +1,6 @@
 # Spec: Operator Migration
 
-**Status:** Draft
+**Status:** Complete
 **Created:** 2026-02-07
 **Author:** Brent + Claude
 **Scope:** tailnet-microservices repo only
@@ -197,18 +197,18 @@ The macOS-specific code paths in `tailnet.rs` (CLI fallback, socket discovery) a
 
 ## Success Criteria
 
-- [ ] Single-container pod (no sidecar) in `k8s/deployment.yaml`
-- [ ] Zero secrets in the deployment
-- [ ] Service annotated for Tailscale Operator exposure with hostname `anthropic-oauth-proxy`
-- [ ] `tailscale-localapi` removed from `Cargo.toml`
-- [ ] `tailnet.rs` deleted
-- [ ] State machine has no tailnet states (no `ConnectingTailnet`, no `Error`, no retry logic)
-- [ ] Health endpoint returns 200 with no tailnet fields
-- [ ] `tailnet_connected` metric removed
-- [ ] Config has no `[tailscale]` section
-- [ ] All tests pass (`cargo test --workspace`)
-- [ ] `cargo clippy --workspace -- -D warnings` clean
-- [ ] Local `cargo run` works on macOS without tailscaled
+- [x] Single-container pod (no sidecar) in `k8s/deployment.yaml`
+- [x] Zero secrets in the deployment
+- [x] Service annotated for Tailscale Operator exposure with hostname `anthropic-oauth-proxy`
+- [x] `tailscale-localapi` removed from `Cargo.toml`
+- [x] `tailnet.rs` deleted
+- [x] State machine has no tailnet states (no `ConnectingTailnet`, no `Error`, no retry logic)
+- [x] Health endpoint returns 200 with no tailnet fields
+- [x] `tailnet_connected` metric removed
+- [x] Config has no `[tailscale]` section
+- [x] All tests pass (`cargo test --workspace`)
+- [x] `cargo clippy --workspace -- -D warnings` clean
+- [x] Local `cargo run` works on macOS without tailscaled
 
 ---
 
