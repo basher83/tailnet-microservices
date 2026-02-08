@@ -1,6 +1,6 @@
 # Spec Addendum: Operator Migration — Traffic Routing
 
-**Status:** Manifests complete (awaiting cluster deployment verification)
+**Status:** Manifests complete — dual proxy conflict resolved
 **Created:** 2026-02-08
 **Relates to:** Spec A (operator-migration.md v0.0.112)
 **Scope:** k8s/ directory only (one new resource)
@@ -113,9 +113,39 @@ Tailnet client → Tailscale Operator pod (Serve rule) → K8s Ingress controlle
 
 ---
 
+## Additional Fix: Remove Service Expose Annotations
+
+**Problem discovered during cluster deployment:** The `tailscale.com/expose: "true"` annotation on `k8s/service.yaml` creates its own Tailscale proxy pod (dm75l). The Ingress also creates a Tailscale proxy pod (mrcz2). Both claim the same `anthropic-oauth-proxy` hostname, causing a dual-proxy conflict.
+
+**Fix:** Remove `tailscale.com/expose` and `tailscale.com/hostname` annotations from `k8s/service.yaml`. The Ingress now handles tailnet exposure — the Service annotations are redundant and create a conflicting device.
+
+### Updated: k8s/service.yaml
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: anthropic-oauth-proxy
+  namespace: anthropic-oauth-proxy
+  labels:
+    app: anthropic-oauth-proxy
+spec:
+  type: ClusterIP
+  selector:
+    app: anthropic-oauth-proxy
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+```
+
+The annotations block is removed entirely. The Service remains a plain ClusterIP service; tailnet exposure is handled exclusively by the Ingress.
+
+---
+
 ## Out of Scope
 
-- Changes to Service (remains `expose: "true"`)
 - Changes to Deployment or config
 - Aperture routing (unchanged)
 - ArgoCD Application or sync waves
@@ -128,6 +158,8 @@ Tailnet client → Tailscale Operator pod (Serve rule) → K8s Ingress controlle
 - [x] `k8s/ingress.yaml` created with Tailscale Ingress definition
 - [x] `k8s/kustomization.yaml` updated to include ingress.yaml
 - [x] `kubectl kustomize k8s/` validates successfully
+- [x] `k8s/service.yaml` — remove `tailscale.com/expose` and `tailscale.com/hostname` annotations
+- [ ] Only one Tailscale proxy pod exists for `anthropic-oauth-proxy` (the Ingress one)
 - [ ] Ingress resolves to the Service ClusterIP (requires cluster deployment)
 - [ ] HTTP GET to `https://anthropic-oauth-proxy/health` from tailnet returns 200 (requires cluster deployment)
 - [ ] Upstream proxy requests (to api.anthropic.com) complete successfully (requires cluster deployment)
