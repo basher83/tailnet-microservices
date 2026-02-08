@@ -7,10 +7,6 @@ metadata:
     app: anthropic-oauth-proxy
 data:
   config.toml: |
-    [tailscale]
-    hostname = "anthropic-oauth-proxy"
-    state_dir = "/var/lib/ts-state"
-
     [proxy]
     listen_addr = "0.0.0.0:8080"
     upstream_url = "https://api.anthropic.com"

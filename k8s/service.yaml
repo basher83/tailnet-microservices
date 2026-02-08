@@ -5,6 +5,9 @@ metadata:
   namespace: anthropic-oauth-proxy
   labels:
     app: anthropic-oauth-proxy
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: "anthropic-oauth-proxy"
 spec:
   type: ClusterIP
   selector:

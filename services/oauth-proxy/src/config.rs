@@ -1,10 +1,7 @@
 //! Configuration types and loading
 //!
 //! Config precedence: CLI args > env vars > config file > defaults.
-//! The auth_key is loaded from TS_AUTHKEY env var or auth_key_file,
-//! never stored in the TOML directly to avoid leaking secrets.
 
-use common::Secret;
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
@@ -12,26 +9,9 @@ use std::path::{Path, PathBuf};
 /// Root configuration
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub tailscale: TailscaleConfig,
     pub proxy: ProxyConfig,
     #[serde(default)]
     pub headers: Vec<HeaderInjection>,
-}
-
-/// Tailnet connection settings
-#[derive(Debug, Deserialize)]
-pub struct TailscaleConfig {
-    pub hostname: String,
-    #[serde(skip)]
-    pub auth_key: Option<Secret<String>>,
-    /// Path to a file containing the auth key (alternative to TS_AUTHKEY env var)
-    #[serde(default)]
-    pub auth_key_file: Option<PathBuf>,
-    /// Required by spec TOML schema. The sidecar approach (Option B) manages
-    /// its own state via tailscaled, so this field is deserialized but not
-    /// used by the Rust service directly.
-    #[allow(dead_code)]
-    pub state_dir: PathBuf,
 }
 
 /// HTTP proxy settings
@@ -61,14 +41,10 @@ fn default_max_connections() -> usize {
 }
 
 impl Config {
-    /// Load configuration from a TOML file, then overlay environment variables.
-    ///
-    /// Auth key resolution order:
-    /// 1. TS_AUTHKEY env var
-    /// 2. auth_key_file path from config
+    /// Load configuration from a TOML file, then validate.
     pub fn load(path: &Path) -> common::Result<Self> {
         let contents = std::fs::read_to_string(path)?;
-        let mut config: Config = toml::from_str(&contents)?;
+        let config: Config = toml::from_str(&contents)?;
 
         // Validate upstream_url is a valid URL with http(s) scheme
         if !config.proxy.upstream_url.starts_with("http://")
@@ -92,22 +68,6 @@ impl Config {
             return Err(common::Error::Config(
                 "max_connections must be greater than 0".into(),
             ));
-        }
-
-        // Resolve auth key: env var takes precedence over file
-        if let Ok(key) = std::env::var("TS_AUTHKEY") {
-            config.tailscale.auth_key = Some(Secret::new(key));
-        } else if let Some(ref key_file) = config.tailscale.auth_key_file {
-            let key = std::fs::read_to_string(key_file).map_err(|e| {
-                common::Error::Config(format!(
-                    "failed to read auth_key_file {}: {e}",
-                    key_file.display()
-                ))
-            })?;
-            let key = key.trim().to_owned();
-            if !key.is_empty() {
-                config.tailscale.auth_key = Some(Secret::new(key));
-            }
         }
 
         Ok(config)
@@ -145,10 +105,6 @@ mod tests {
 
     fn valid_toml() -> &'static str {
         r#"
-[tailscale]
-hostname = "anthropic-oauth-proxy"
-state_dir = "/var/lib/ts-state"
-
 [proxy]
 listen_addr = "127.0.0.1:8080"
 upstream_url = "https://api.anthropic.com"
@@ -167,16 +123,12 @@ value = "oauth-2025-04-20"
         let path = dir.join("config.toml");
         std::fs::write(&path, valid_toml()).unwrap();
 
-        unsafe { remove_env("TS_AUTHKEY") };
-
         let config = Config::load(&path).unwrap();
-        assert_eq!(config.tailscale.hostname, "anthropic-oauth-proxy");
         assert_eq!(config.proxy.upstream_url, "https://api.anthropic.com");
         assert_eq!(config.proxy.timeout_secs, 60);
         assert_eq!(config.proxy.max_connections, 1000);
         assert_eq!(config.headers.len(), 1);
         assert_eq!(config.headers[0].name, "anthropic-beta");
-        assert!(config.tailscale.auth_key.is_none());
 
         std::fs::remove_dir_all(&dir).unwrap();
     }
@@ -196,94 +148,6 @@ value = "oauth-2025-04-20"
 
         let result = Config::load(&path);
         assert!(result.is_err());
-
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
-    #[test]
-    fn test_auth_key_from_env() {
-        let _lock = ENV_MUTEX.lock().unwrap();
-        let dir = std::env::temp_dir().join("oauth-proxy-test-env");
-        std::fs::create_dir_all(&dir).unwrap();
-        let path = dir.join("config.toml");
-        std::fs::write(&path, valid_toml()).unwrap();
-
-        unsafe { set_env("TS_AUTHKEY", "tskey-test-123") };
-        let config = Config::load(&path).unwrap();
-        assert_eq!(
-            config.tailscale.auth_key.as_ref().unwrap().expose(),
-            "tskey-test-123"
-        );
-        unsafe { remove_env("TS_AUTHKEY") };
-
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
-    #[test]
-    fn test_auth_key_from_file() {
-        let _lock = ENV_MUTEX.lock().unwrap();
-        let dir = std::env::temp_dir().join("oauth-proxy-test-keyfile");
-        std::fs::create_dir_all(&dir).unwrap();
-        let key_path = dir.join("auth_key");
-        std::fs::write(&key_path, "tskey-file-456\n").unwrap();
-
-        let toml_content = format!(
-            r#"
-[tailscale]
-hostname = "test"
-state_dir = "/tmp"
-auth_key_file = "{}"
-
-[proxy]
-listen_addr = "127.0.0.1:8080"
-upstream_url = "https://api.anthropic.com"
-"#,
-            key_path.display()
-        );
-        let config_path = dir.join("config.toml");
-        std::fs::write(&config_path, &toml_content).unwrap();
-
-        unsafe { remove_env("TS_AUTHKEY") };
-        let config = Config::load(&config_path).unwrap();
-        assert_eq!(
-            config.tailscale.auth_key.as_ref().unwrap().expose(),
-            "tskey-file-456"
-        );
-
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
-    #[test]
-    fn test_auth_key_env_overrides_file() {
-        let _lock = ENV_MUTEX.lock().unwrap();
-        let dir = std::env::temp_dir().join("oauth-proxy-test-override");
-        std::fs::create_dir_all(&dir).unwrap();
-        let key_path = dir.join("auth_key");
-        std::fs::write(&key_path, "tskey-file-value").unwrap();
-
-        let toml_content = format!(
-            r#"
-[tailscale]
-hostname = "test"
-state_dir = "/tmp"
-auth_key_file = "{}"
-
-[proxy]
-listen_addr = "127.0.0.1:8080"
-upstream_url = "https://api.anthropic.com"
-"#,
-            key_path.display()
-        );
-        let config_path = dir.join("config.toml");
-        std::fs::write(&config_path, &toml_content).unwrap();
-
-        unsafe { set_env("TS_AUTHKEY", "tskey-env-value") };
-        let config = Config::load(&config_path).unwrap();
-        assert_eq!(
-            config.tailscale.auth_key.as_ref().unwrap().expose(),
-            "tskey-env-value"
-        );
-        unsafe { remove_env("TS_AUTHKEY") };
 
         std::fs::remove_dir_all(&dir).unwrap();
     }
@@ -328,10 +192,6 @@ upstream_url = "https://api.anthropic.com"
     fn test_max_connections_custom() {
         let _lock = ENV_MUTEX.lock().unwrap();
         let toml_content = r#"
-[tailscale]
-hostname = "test"
-state_dir = "/tmp"
-
 [proxy]
 listen_addr = "127.0.0.1:8080"
 upstream_url = "https://api.anthropic.com"
@@ -341,44 +201,9 @@ max_connections = 500
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("config.toml");
         std::fs::write(&path, toml_content).unwrap();
-        unsafe { remove_env("TS_AUTHKEY") };
 
         let config = Config::load(&path).unwrap();
         assert_eq!(config.proxy.max_connections, 500);
-
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
-    #[test]
-    fn test_auth_key_file_empty_content_yields_none() {
-        let _lock = ENV_MUTEX.lock().unwrap();
-        let dir = std::env::temp_dir().join("oauth-proxy-test-empty-keyfile");
-        std::fs::create_dir_all(&dir).unwrap();
-        let key_path = dir.join("auth_key");
-        std::fs::write(&key_path, "  \n  ").unwrap(); // whitespace only
-
-        let toml_content = format!(
-            r#"
-[tailscale]
-hostname = "test"
-state_dir = "/tmp"
-auth_key_file = "{}"
-
-[proxy]
-listen_addr = "127.0.0.1:8080"
-upstream_url = "https://api.anthropic.com"
-"#,
-            key_path.display()
-        );
-        let config_path = dir.join("config.toml");
-        std::fs::write(&config_path, &toml_content).unwrap();
-
-        unsafe { remove_env("TS_AUTHKEY") };
-        let config = Config::load(&config_path).unwrap();
-        assert!(
-            config.tailscale.auth_key.is_none(),
-            "empty/whitespace-only auth_key_file should result in no auth key"
-        );
 
         std::fs::remove_dir_all(&dir).unwrap();
     }
@@ -390,17 +215,12 @@ upstream_url = "https://api.anthropic.com"
         std::fs::create_dir_all(&dir).unwrap();
 
         let toml_content = r#"
-[tailscale]
-hostname = "test"
-state_dir = "/tmp"
-
 [proxy]
 listen_addr = "127.0.0.1:8080"
 upstream_url = "api.anthropic.com"
 "#;
         let config_path = dir.join("config.toml");
         std::fs::write(&config_path, toml_content).unwrap();
-        unsafe { remove_env("TS_AUTHKEY") };
 
         let result = Config::load(&config_path);
         assert!(
@@ -423,10 +243,6 @@ upstream_url = "api.anthropic.com"
         std::fs::create_dir_all(&dir).unwrap();
 
         let toml_content = r#"
-[tailscale]
-hostname = "test"
-state_dir = "/tmp"
-
 [proxy]
 listen_addr = "127.0.0.1:8080"
 upstream_url = "https://api.anthropic.com"
@@ -434,7 +250,6 @@ timeout_secs = 0
 "#;
         let config_path = dir.join("config.toml");
         std::fs::write(&config_path, toml_content).unwrap();
-        unsafe { remove_env("TS_AUTHKEY") };
 
         let result = Config::load(&config_path);
         assert!(result.is_err(), "timeout_secs = 0 must be rejected");
@@ -449,10 +264,6 @@ timeout_secs = 0
         std::fs::create_dir_all(&dir).unwrap();
 
         let toml_content = r#"
-[tailscale]
-hostname = "test"
-state_dir = "/tmp"
-
 [proxy]
 listen_addr = "127.0.0.1:8080"
 upstream_url = "https://api.anthropic.com"
@@ -460,41 +271,9 @@ max_connections = 0
 "#;
         let config_path = dir.join("config.toml");
         std::fs::write(&config_path, toml_content).unwrap();
-        unsafe { remove_env("TS_AUTHKEY") };
 
         let result = Config::load(&config_path);
         assert!(result.is_err(), "max_connections = 0 must be rejected");
-
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
-    #[test]
-    fn test_auth_key_env_overrides_nonexistent_file() {
-        let _lock = ENV_MUTEX.lock().unwrap();
-        let dir = std::env::temp_dir().join("oauth-proxy-test-env-over-missing");
-        std::fs::create_dir_all(&dir).unwrap();
-
-        let toml_content = r#"
-[tailscale]
-hostname = "test"
-state_dir = "/tmp"
-auth_key_file = "/nonexistent/path/auth_key"
-
-[proxy]
-listen_addr = "127.0.0.1:8080"
-upstream_url = "https://api.anthropic.com"
-"#;
-        let config_path = dir.join("config.toml");
-        std::fs::write(&config_path, toml_content).unwrap();
-
-        unsafe { set_env("TS_AUTHKEY", "tskey-env-wins") };
-        let config = Config::load(&config_path).unwrap();
-        assert_eq!(
-            config.tailscale.auth_key.as_ref().unwrap().expose(),
-            "tskey-env-wins",
-            "TS_AUTHKEY env var must take precedence over nonexistent auth_key_file"
-        );
-        unsafe { remove_env("TS_AUTHKEY") };
 
         std::fs::remove_dir_all(&dir).unwrap();
     }
@@ -510,13 +289,11 @@ upstream_url = "https://api.anthropic.com"
 
         // Missing [proxy] section entirely
         let toml_no_proxy = r#"
-[tailscale]
-hostname = "test"
-state_dir = "/tmp"
+[other]
+key = "value"
 "#;
         let config_path = dir.join("no_proxy.toml");
         std::fs::write(&config_path, toml_no_proxy).unwrap();
-        unsafe { remove_env("TS_AUTHKEY") };
 
         let result = Config::load(&config_path);
         assert!(
@@ -531,10 +308,6 @@ state_dir = "/tmp"
 
         // Has [proxy] but missing listen_addr
         let toml_no_addr = r#"
-[tailscale]
-hostname = "test"
-state_dir = "/tmp"
-
 [proxy]
 upstream_url = "https://api.anthropic.com"
 "#;
@@ -550,58 +323,6 @@ upstream_url = "https://api.anthropic.com"
         assert!(
             err2.contains("listen_addr"),
             "error should mention the missing 'listen_addr' field, got: {err2}"
-        );
-
-        // Has [proxy] but missing hostname in [tailscale]
-        let toml_no_hostname = r#"
-[tailscale]
-state_dir = "/tmp"
-
-[proxy]
-listen_addr = "127.0.0.1:8080"
-upstream_url = "https://api.anthropic.com"
-"#;
-        let config_path3 = dir.join("no_hostname.toml");
-        std::fs::write(&config_path3, toml_no_hostname).unwrap();
-
-        let result3 = Config::load(&config_path3);
-        assert!(
-            result3.is_err(),
-            "config missing hostname must fail deserialization"
-        );
-        let err3 = format!("{}", result3.unwrap_err());
-        assert!(
-            err3.contains("hostname"),
-            "error should mention the missing 'hostname' field, got: {err3}"
-        );
-
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
-    #[test]
-    fn test_auth_key_file_nonexistent_returns_error() {
-        let _lock = ENV_MUTEX.lock().unwrap();
-        let dir = std::env::temp_dir().join("oauth-proxy-test-missing-keyfile");
-        std::fs::create_dir_all(&dir).unwrap();
-
-        let toml_content = r#"
-[tailscale]
-hostname = "test"
-state_dir = "/tmp"
-auth_key_file = "/nonexistent/path/auth_key"
-
-[proxy]
-listen_addr = "127.0.0.1:8080"
-upstream_url = "https://api.anthropic.com"
-"#;
-        let config_path = dir.join("config.toml");
-        std::fs::write(&config_path, toml_content).unwrap();
-
-        unsafe { remove_env("TS_AUTHKEY") };
-        let result = Config::load(&config_path);
-        assert!(
-            result.is_err(),
-            "nonexistent auth_key_file must return an error"
         );
 
         std::fs::remove_dir_all(&dir).unwrap();

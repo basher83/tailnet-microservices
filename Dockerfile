@@ -4,8 +4,8 @@
 # from Cargo.toml (LTO, single codegen-unit, strip, panic=abort) for
 # minimal binary size (~5 MB).
 #
-# Runtime: the service requires a tailscaled sidecar in the same pod.
-# It is NOT bundled in this image.  See specs/oauth-proxy.md.
+# Runtime: standalone container. Tailnet exposure is handled by the
+# Tailscale Operator via Service annotations (not a sidecar).
 
 # ---------- builder ----------
 FROM rust:1-bookworm AS builder

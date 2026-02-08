@@ -1,17 +1,16 @@
 //! Anthropic OAuth Proxy
 //!
 //! Single-binary Rust service that:
-//! 1. Joins tailnet with its own identity
-//! 2. Listens for incoming requests
-//! 3. Injects required headers (anthropic-beta: oauth-2025-04-20)
-//! 4. Proxies to api.anthropic.com
+//! 1. Listens for incoming requests
+//! 2. Injects required headers (anthropic-beta: oauth-2025-04-20)
+//! 3. Proxies to api.anthropic.com
+//!
+//! Tailnet exposure is handled externally by the Tailscale Operator.
 
 mod config;
-mod error;
 mod metrics;
 mod proxy;
 mod service;
-mod tailnet;
 
 use anyhow::{Context, Result};
 use axum::Router;
@@ -30,8 +29,7 @@ use metrics_exporter_prometheus::PrometheusHandle;
 use crate::config::Config;
 use crate::proxy::ProxyState;
 use crate::service::{
-    DRAIN_TIMEOUT, ServiceAction, ServiceEvent, ServiceMetrics, ServiceState, TailnetHandle,
-    handle_event,
+    DRAIN_TIMEOUT, ServiceAction, ServiceEvent, ServiceMetrics, ServiceState, handle_event,
 };
 
 /// TCP connect timeout for the upstream HTTP client (distinct from per-request timeout)
@@ -45,7 +43,6 @@ const POOL_MAX_IDLE_PER_HOST: usize = 100;
 struct AppState {
     proxy: ProxyState,
     metrics: ServiceMetrics,
-    tailnet: Option<TailnetHandle>,
     prometheus: PrometheusHandle,
 }
 
@@ -103,83 +100,16 @@ async fn main() -> Result<()> {
     info!(
         listen_addr = %config.proxy.listen_addr,
         upstream_url = %config.proxy.upstream_url,
-        hostname = %config.tailscale.hostname,
         headers = config.headers.len(),
         "configuration loaded"
     );
 
-    // Transition: Initializing -> ConnectingTailnet
+    // Transition: Initializing -> Starting
     let (new_state, action) = handle_event(
         state,
         ServiceEvent::ConfigLoaded {
             listen_addr: config.proxy.listen_addr,
         },
-    );
-    state = new_state;
-    info!(?action, "state: ConnectingTailnet");
-
-    // Execute ConnectTailnet action with retry loop per state machine spec
-    match action {
-        ServiceAction::ConnectTailnet => {}
-        _ => anyhow::bail!("unexpected action after ConfigLoaded: {action:?}"),
-    };
-
-    let tailnet_handle = loop {
-        match tailnet::connect(&config.tailscale.hostname).await {
-            Ok(handle) => break handle,
-            Err(crate::error::Error::TailnetAuth) => {
-                let _ = handle_event(state, ServiceEvent::TailnetError("auth failed".into()));
-                anyhow::bail!("tailnet authentication failed — check TS_AUTHKEY or auth_key_file");
-            }
-            Err(crate::error::Error::TailnetMachineAuth) => {
-                let _ = handle_event(
-                    state,
-                    ServiceEvent::TailnetError("machine auth needed".into()),
-                );
-                anyhow::bail!(
-                    "tailnet needs machine authorization — approve this node in the admin console"
-                );
-            }
-            Err(crate::error::Error::TailnetNotRunning(msg)) => {
-                // tailscaled not running/installed is not retryable — bail immediately
-                let _ = handle_event(state, ServiceEvent::TailnetError(msg.clone()));
-                anyhow::bail!("tailscaled not running: {msg}");
-            }
-            Err(crate::error::Error::TailnetConnect(msg)) => {
-                let (new_state, action) =
-                    handle_event(state, ServiceEvent::TailnetError(msg.clone()));
-                state = new_state;
-
-                match action {
-                    ServiceAction::ScheduleRetry { delay } => {
-                        warn!(
-                            error = %msg,
-                            retry_in_secs = delay.as_secs(),
-                            "tailnet connection failed, retrying"
-                        );
-                        tokio::time::sleep(delay).await;
-
-                        // RetryTimer transitions Error -> ConnectingTailnet
-                        let (new_state, _) = handle_event(state, ServiceEvent::RetryTimer);
-                        state = new_state;
-                    }
-                    ServiceAction::Shutdown { exit_code } => {
-                        error!(error = %msg, "tailnet connection failed after max retries");
-                        std::process::exit(exit_code);
-                    }
-                    _ => anyhow::bail!("tailnet connection failed: {msg}"),
-                }
-            }
-        }
-    };
-
-    // Record tailnet connection in Prometheus
-    metrics::set_tailnet_connected(true);
-
-    // Transition: ConnectingTailnet -> Starting
-    let (new_state, action) = handle_event(
-        state,
-        ServiceEvent::TailnetConnected(tailnet_handle.clone()),
     );
     state = new_state;
     info!(?action, "state: Starting");
@@ -211,7 +141,6 @@ async fn main() -> Result<()> {
     let app_state = AppState {
         proxy: proxy_state,
         metrics: metrics.clone(),
-        tailnet: Some(tailnet_handle),
         prometheus: prometheus_handle,
     };
 
@@ -273,47 +202,26 @@ async fn main() -> Result<()> {
         }
     }
 
-    // Mark tailnet as disconnected in Prometheus before shutting down
-    metrics::set_tailnet_connected(false);
-
     info!("shutdown complete");
     Ok(())
 }
 
-/// Health endpoint per spec: returns JSON with status, tailnet state, uptime, requests served.
-/// Returns 200 when tailnet is connected, 503 when degraded (no tailnet).
+/// Health endpoint per spec R5: returns 200 with status, uptime, requests served.
+/// No tailnet fields — the Tailscale Operator handles tailnet exposure externally.
 async fn health_handler(State(state): State<AppState>) -> impl IntoResponse {
     let uptime = state.metrics.started_at.elapsed().as_secs();
     let requests = state.metrics.requests_total.load(Ordering::Relaxed);
     let errors = state.metrics.errors_total.load(Ordering::Relaxed);
 
-    let (status_code, body) = match &state.tailnet {
-        Some(handle) => (
-            axum::http::StatusCode::OK,
-            serde_json::json!({
-                "status": "healthy",
-                "tailnet": "connected",
-                "tailnet_hostname": handle.hostname,
-                "tailnet_ip": handle.ip.to_string(),
-                "uptime_seconds": uptime,
-                "requests_served": requests,
-                "errors_total": errors,
-            }),
-        ),
-        None => (
-            axum::http::StatusCode::SERVICE_UNAVAILABLE,
-            serde_json::json!({
-                "status": "degraded",
-                "tailnet": "not_connected",
-                "uptime_seconds": uptime,
-                "requests_served": requests,
-                "errors_total": errors,
-            }),
-        ),
-    };
+    let body = serde_json::json!({
+        "status": "healthy",
+        "uptime_seconds": uptime,
+        "requests_served": requests,
+        "errors_total": errors,
+    });
 
     (
-        status_code,
+        axum::http::StatusCode::OK,
         [(axum::http::header::CONTENT_TYPE, "application/json")],
         body.to_string(),
     )
@@ -412,10 +320,6 @@ mod tests {
                 in_flight: metrics.in_flight.clone(),
             },
             metrics,
-            tailnet: Some(TailnetHandle {
-                hostname: "test-proxy".into(),
-                ip: "100.64.0.1".parse().unwrap(),
-            }),
             prometheus: test_prometheus_handle(),
         }
     }
@@ -482,10 +386,6 @@ mod tests {
                 in_flight: Arc::new(AtomicU64::new(0)),
             },
             metrics,
-            tailnet: Some(TailnetHandle {
-                hostname: "test-node".into(),
-                ip: "100.64.0.1".parse().unwrap(),
-            }),
             prometheus: test_prometheus_handle(),
         };
 
@@ -507,11 +407,12 @@ mod tests {
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
         assert_eq!(json["status"], "healthy");
-        assert_eq!(json["tailnet"], "connected");
-        assert_eq!(json["tailnet_hostname"], "test-node");
-        assert_eq!(json["tailnet_ip"], "100.64.0.1");
         assert_eq!(json["requests_served"], 5);
         assert_eq!(json["errors_total"], 0);
+        assert!(
+            json.get("tailnet").is_none(),
+            "health must not include tailnet fields"
+        );
     }
 
     #[tokio::test]
@@ -616,73 +517,6 @@ mod tests {
             .unwrap();
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(json["error"]["type"], "proxy_error");
-    }
-
-    #[tokio::test]
-    async fn health_endpoint_without_tailnet_returns_not_connected() {
-        let metrics = ServiceMetrics::new();
-        let state = AppState {
-            proxy: ProxyState {
-                client: reqwest::Client::new(),
-                upstream_url: "http://unused".into(),
-                headers_to_inject: vec![],
-                timeout: Duration::from_secs(5),
-                requests_total: metrics.requests_total.clone(),
-                errors_total: metrics.errors_total.clone(),
-                in_flight: Arc::new(AtomicU64::new(0)),
-            },
-            metrics,
-            tailnet: None,
-            prometheus: test_prometheus_handle(),
-        };
-
-        let app = build_router(state, 1000);
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/health")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(
-            response.status(),
-            StatusCode::SERVICE_UNAVAILABLE,
-            "health endpoint must return 503 when tailnet is not connected"
-        );
-        let content_type = response
-            .headers()
-            .get("content-type")
-            .unwrap()
-            .to_str()
-            .unwrap();
-        assert_eq!(
-            content_type, "application/json",
-            "503 health response must return application/json Content-Type"
-        );
-        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
-            .await
-            .unwrap();
-        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-
-        assert_eq!(json["status"], "degraded");
-        assert_eq!(json["tailnet"], "not_connected");
-        assert!(json.get("tailnet_hostname").is_none());
-        assert!(json.get("tailnet_ip").is_none());
-        assert!(
-            json.get("uptime_seconds").is_some(),
-            "503 health response must include uptime_seconds"
-        );
-        assert!(
-            json.get("requests_served").is_some(),
-            "503 health response must include requests_served"
-        );
-        assert!(
-            json.get("errors_total").is_some(),
-            "503 health response must include errors_total"
-        );
     }
 
     #[tokio::test]
@@ -893,7 +727,7 @@ mod tests {
                 in_flight: metrics.in_flight.clone(),
             },
             metrics,
-            tailnet: None,
+
             prometheus: test_prometheus_handle(),
         };
 
@@ -1201,7 +1035,7 @@ mod tests {
                 in_flight: metrics.in_flight.clone(),
             },
             metrics,
-            tailnet: None,
+
             prometheus: handle,
         };
 
@@ -1233,7 +1067,7 @@ mod tests {
                 in_flight: metrics_err.in_flight.clone(),
             },
             metrics: metrics_err,
-            tailnet: None,
+
             prometheus: handle_err,
         };
         let app_err = build_router(state_err, 1000);
@@ -1241,9 +1075,6 @@ mod tests {
             .oneshot(Request::builder().uri("/fail").body(Body::empty()).unwrap())
             .await
             .unwrap();
-
-        // Set tailnet_connected gauge so it appears in output
-        crate::metrics::set_tailnet_connected(true);
 
         // Now check the /metrics endpoint output contains spec-defined metric names.
         // Rebuild the router to hit /metrics (oneshot consumes the service).
@@ -1260,7 +1091,7 @@ mod tests {
                 in_flight: metrics2.in_flight.clone(),
             },
             metrics: metrics2,
-            tailnet: None,
+
             prometheus: handle2,
         };
         let app2 = build_router(state2, 1000);
@@ -1279,7 +1110,7 @@ mod tests {
             .unwrap();
         let rendered = String::from_utf8(body.to_vec()).unwrap();
 
-        // Verify all four spec-defined metric names appear in the Prometheus output
+        // Verify all three spec-defined metric names appear in the Prometheus output
         assert!(
             rendered.contains("proxy_requests_total"),
             "/metrics must contain proxy_requests_total.\nRendered:\n{rendered}"
@@ -1291,10 +1122,6 @@ mod tests {
         assert!(
             rendered.contains("proxy_upstream_errors_total"),
             "/metrics must contain proxy_upstream_errors_total.\nRendered:\n{rendered}"
-        );
-        assert!(
-            rendered.contains("tailnet_connected"),
-            "/metrics must contain tailnet_connected.\nRendered:\n{rendered}"
         );
 
         // Verify spec-mandated label names appear alongside their metrics.
@@ -1464,7 +1291,7 @@ mod tests {
                 in_flight: metrics.in_flight.clone(),
             },
             metrics,
-            tailnet: None,
+
             prometheus: test_prometheus_handle(),
         };
 
@@ -1934,7 +1761,7 @@ mod tests {
                 in_flight: metrics.in_flight.clone(),
             },
             metrics,
-            tailnet: None,
+
             prometheus: handle.clone(),
         };
         let app = build_router(state, 1000);
@@ -1972,7 +1799,7 @@ mod tests {
                 in_flight: metrics.in_flight.clone(),
             },
             metrics,
-            tailnet: None,
+
             prometheus: handle.clone(),
         };
         let app = build_router(state, 1000);
@@ -2017,7 +1844,7 @@ mod tests {
                 in_flight: metrics.in_flight.clone(),
             },
             metrics,
-            tailnet: None,
+
             prometheus: handle.clone(),
         };
         let app = build_router(state, 1000);
@@ -2338,7 +2165,7 @@ mod tests {
                 in_flight: metrics.in_flight.clone(),
             },
             metrics,
-            tailnet: None,
+
             prometheus: test_prometheus_handle(),
         };
 
@@ -2437,10 +2264,6 @@ mod tests {
                 in_flight: metrics.in_flight.clone(),
             },
             metrics: metrics.clone(),
-            tailnet: Some(TailnetHandle {
-                hostname: "load-test-proxy".into(),
-                ip: "100.64.0.1".parse().unwrap(),
-            }),
             prometheus: test_prometheus_handle(),
         };
 
@@ -2635,10 +2458,6 @@ mod tests {
                 in_flight: metrics.in_flight.clone(),
             },
             metrics,
-            tailnet: Some(TailnetHandle {
-                hostname: "soak-test-proxy".into(),
-                ip: "100.64.0.1".parse().unwrap(),
-            }),
             prometheus: test_prometheus_handle(),
         };
 

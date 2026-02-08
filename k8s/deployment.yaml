@@ -20,8 +20,6 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: anthropic-oauth-proxy
-      imagePullSecrets:
-        - name: ghcr-pull-secret
       terminationGracePeriodSeconds: 6
       securityContext:
         runAsNonRoot: true
@@ -29,9 +27,6 @@ spec:
           type: RuntimeDefault
         fsGroup: 1000
       containers:
-        # --- oauth-proxy ---
-        # For production, pin to a specific SHA or semver tag (e.g. :sha-abc1234)
-        # instead of the mutable :main branch tag.
         - name: proxy
           image: ghcr.io/basher83/tailnet-microservices/anthropic-oauth-proxy:main
           imagePullPolicy: Always
@@ -44,14 +39,9 @@ spec:
               value: /etc/anthropic-oauth-proxy/config.toml
             - name: LOG_LEVEL
               value: info
-            - name: TAILSCALE_SOCKET
-              value: /var/run/tailscale/tailscaled.sock
           volumeMounts:
             - name: config
               mountPath: /etc/anthropic-oauth-proxy
-              readOnly: true
-            - name: tailscale-socket
-              mountPath: /var/run/tailscale
               readOnly: true
           startupProbe:
             httpGet:
@@ -86,74 +76,7 @@ spec:
             limits:
               cpu: 500m
               memory: 128Mi
-
-        # --- tailscaled sidecar ---
-        # The proxy queries tailscaled via the Unix socket at
-        # /var/run/tailscale/tailscaled.sock for tailnet identity.
-        - name: tailscaled
-          image: ghcr.io/tailscale/tailscale:v1.94.1
-          env:
-            - name: TS_AUTHKEY
-              valueFrom:
-                secretKeyRef:
-                  name: tailscale-authkey
-                  key: TS_AUTHKEY
-            - name: TS_HOSTNAME
-              value: anthropic-oauth-proxy
-            - name: TS_STATE_DIR
-              value: /var/lib/ts-state
-            - name: TS_USERSPACE
-              value: "true"
-            - name: TS_SOCKET
-              value: /var/run/tailscale/tailscaled.sock
-            - name: TS_KUBE_SECRET
-              value: ""
-            - name: TS_HEALTHCHECK_ADDR_PORT
-              value: "127.0.0.1:9002"
-          startupProbe:
-            httpGet:
-              path: /healthz
-              port: 9002
-            periodSeconds: 2
-            failureThreshold: 30
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 9002
-            periodSeconds: 30
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 9002
-            periodSeconds: 5
-            failureThreshold: 3
-          volumeMounts:
-            - name: tailscale-state
-              mountPath: /var/lib/ts-state
-            - name: tailscale-socket
-              mountPath: /var/run/tailscale
-          securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: ["ALL"]
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 250m
-              memory: 256Mi
-
       volumes:
         - name: config
           configMap:
             name: anthropic-oauth-proxy
-        - name: tailscale-state
-          emptyDir: {}
-        - name: tailscale-socket
-          emptyDir: {}
