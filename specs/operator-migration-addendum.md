@@ -1,6 +1,6 @@
 # Spec Addendum: Operator Migration — Traffic Routing
 
-**Status:** Pending
+**Status:** Manifests complete (awaiting cluster deployment verification)
 **Created:** 2026-02-08
 **Relates to:** Spec A (operator-migration.md v0.0.112)
 **Scope:** k8s/ directory only (one new resource)
@@ -56,19 +56,21 @@ All use `ingressClassName: tailscale` + Service exposure for browser-accessible 
 
 ### New Resource: k8s/ingress.yaml
 
+The Tailscale Operator derives the MagicDNS hostname from `tls[0].hosts[0]`, not from `rules[].host`. The deprecated `kubernetes.io/ingress.class` annotation is omitted in favor of `ingressClassName`.
+
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: anthropic-oauth-proxy
   namespace: anthropic-oauth-proxy
-  annotations:
-    kubernetes.io/ingress.class: tailscale
 spec:
   ingressClassName: tailscale
+  tls:
+    - hosts:
+        - anthropic-oauth-proxy
   rules:
-    - host: anthropic-oauth-proxy
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix
@@ -102,7 +104,7 @@ resources:
 1. **Service (existing):** ClusterIP `anthropic-oauth-proxy:80` → Pod port 8080
 2. **Ingress (new):** Tailnet hostname `anthropic-oauth-proxy` → Service ClusterIP:80
 3. **Tailscale Operator:** Creates or updates Serve rules to forward tailnet HTTP traffic to the Ingress controller
-4. **Result:** Callers on the tailnet can reach the proxy via `http://anthropic-oauth-proxy`
+4. **Result:** Callers on the tailnet can reach the proxy via `https://anthropic-oauth-proxy`
 
 Traffic path:
 ```
@@ -125,9 +127,10 @@ Tailnet client → Tailscale Operator pod (Serve rule) → K8s Ingress controlle
 
 - [x] `k8s/ingress.yaml` created with Tailscale Ingress definition
 - [x] `k8s/kustomization.yaml` updated to include ingress.yaml
-- [x] Ingress resolves to the Service ClusterIP
-- [x] HTTP GET to `http://anthropic-oauth-proxy/health` from tailnet returns 200
-- [x] Upstream proxy requests (to api.anthropic.com) complete successfully
+- [x] `kubectl kustomize k8s/` validates successfully
+- [ ] Ingress resolves to the Service ClusterIP (requires cluster deployment)
+- [ ] HTTP GET to `https://anthropic-oauth-proxy/health` from tailnet returns 200 (requires cluster deployment)
+- [ ] Upstream proxy requests (to api.anthropic.com) complete successfully (requires cluster deployment)
 
 ---
 
