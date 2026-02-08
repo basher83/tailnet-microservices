@@ -4,11 +4,13 @@ Previous build history archived at IMPLEMENTATION_PLAN_v1.md (81 audits, 111 tes
 
 ## Status
 
-All work complete. Operator migration deployed. Specs synchronized with codebase.
+Tailscale Ingress manifests complete (operator-migration-addendum). Remaining success criteria require cluster deployment verification (Ingress resolution, health endpoint from tailnet, upstream proxy requests).
 
-Verification: `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean, `cargo build --workspace` clean, `cargo test --workspace` 86 passed (82 oauth-proxy + 4 common) / 2 ignored (load test, memory soak).
+Verification: `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean, `cargo build --workspace` clean, `cargo test --workspace` 86 passed (82 oauth-proxy + 4 common) / 2 ignored (load test, memory soak). `kubectl kustomize k8s/` validates successfully.
 
 ## Audit Log
+
+**2026-02-08 (v0.0.113):** Tailscale Ingress for traffic routing (operator-migration-addendum). The `expose: "true"` Service annotation provides tailnet identity but not HTTP traffic routing. Created `k8s/ingress.yaml` with `ingressClassName: tailscale` and `tls.hosts: [anthropic-oauth-proxy]` to route tailnet HTTP traffic to the Service ClusterIP:80. Updated `k8s/kustomization.yaml` to include the new resource. Fixed spec inconsistencies: removed deprecated `kubernetes.io/ingress.class` annotation, added required `tls.hosts` field (Tailscale Operator derives hostname from `tls[0].hosts[0]`, not `rules[].host`). Kustomize build validates. 86 tests pass (82 oauth-proxy + 4 common), 2 ignored.
 
 **2026-02-08 (v0.0.112):** README.md post-migration sync. Opus audit across all 22 project files found the only remaining stale references were in README.md: (1) overview said services "join a Tailscale tailnet" — rewritten for Operator-delegated architecture, (2) service description referenced "tailscaled sidecar sharing a Unix socket" — corrected to single-container pod, (3) project structure listed `Secret<T>` in common crate — removed (type deleted during migration), (4) configuration section referenced `TS_AUTHKEY` — removed (no secrets required), (5) deployment section said "after creating the required secrets" — corrected. All Rust code, specs, K8s manifests, Dockerfile, CI, RUNBOOK, and example config verified fully synchronized. 86 tests pass (82 oauth-proxy + 4 common), 2 ignored (load test, memory soak). Pipeline clean.
 

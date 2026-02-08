@@ -2,9 +2,9 @@
 
 ## Current Work
 
-**Operator Migration complete.** The tailscaled sidecar has been removed. Tailnet exposure is delegated to the Tailscale Operator via Service annotations. The proxy is a single-container pod with zero secrets.
+**Ingress manifests complete (v0.0.113).** Tailscale Ingress routes tailnet HTTP traffic to the proxy. Remaining: cluster deployment verification (Ingress resolution, health from tailnet, upstream proxy). See `specs/operator-migration-addendum.md`.
 
-**Do NOT** modify anything in mothership-gitops. ArgoCD adoption is a separate spec executed after this migration is deployed and verified.
+**Do NOT** modify anything in mothership-gitops. ArgoCD syncs this repo via wave 8.
 
 ---
 
