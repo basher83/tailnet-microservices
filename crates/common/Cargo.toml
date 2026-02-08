@@ -5,5 +5,4 @@ edition.workspace = true
 
 [dependencies]
 toml = { workspace = true }
-zeroize = { workspace = true }
 thiserror = { workspace = true }

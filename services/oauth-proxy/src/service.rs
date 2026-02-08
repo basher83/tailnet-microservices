@@ -3,27 +3,12 @@
 //! Pure state machine: receives events, returns (new_state, action).
 //! Caller (main.rs) executes the I/O implied by each action.
 //!
-//! Spec reference: specs/oauth-proxy.md "State Machine" section.
+//! Spec reference: specs/operator-migration.md "R6: State Machine Simplification".
 
 use std::net::SocketAddr;
-use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
-
-use crate::error::Error as ServiceError;
-
-/// Origin of an error for retry decisions
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ErrorOrigin {
-    Tailnet,
-}
-
-/// Opaque handle representing an active tailnet connection.
-#[derive(Debug, Clone)]
-pub struct TailnetHandle {
-    pub hostname: String,
-    pub ip: std::net::IpAddr,
-}
 
 /// Runtime metrics tracked while the service is running
 #[derive(Debug, Clone)]
@@ -50,30 +35,18 @@ impl ServiceMetrics {
 
 /// Service states per spec.
 ///
-/// Fields marked `dead_code` are structurally required by state transitions
-/// (used in match arms for destructuring/reconstruction) but never read
-/// independently. They exist because the spec defines them as state data.
+/// Simplified for operator migration: no tailnet connection states.
+/// The Tailscale Operator handles tailnet exposure externally.
 #[derive(Debug)]
 #[allow(dead_code)]
 pub enum ServiceState {
     /// Loading config, setting up resources
     Initializing,
-    /// Joining the tailnet
-    ConnectingTailnet {
-        retries: u32,
-        listen_addr: SocketAddr,
-    },
-    /// Starting HTTP listener after tailnet connected
-    Starting {
-        tailnet: TailnetHandle,
-        listen_addr: SocketAddr,
-    },
+    /// Starting HTTP listener
+    Starting { listen_addr: SocketAddr },
     /// Accepting and proxying requests.
     /// Metrics are owned by `ProxyState` in main.rs, not the state machine.
-    Running {
-        tailnet: TailnetHandle,
-        listen_addr: SocketAddr,
-    },
+    Running { listen_addr: SocketAddr },
     /// Graceful shutdown, finishing in-flight requests.
     /// Actual drain coordination is handled by axum's `with_graceful_shutdown`
     /// and the `in_flight` atomic counter in `ProxyState`. The state machine
@@ -81,13 +54,6 @@ pub enum ServiceState {
     Draining { deadline: Instant },
     /// Terminal state
     Stopped { exit_code: i32 },
-    /// Recoverable error with retry
-    Error {
-        error: String,
-        origin: ErrorOrigin,
-        retries: u32,
-        listen_addr: SocketAddr,
-    },
 }
 
 /// Events that drive state transitions.
@@ -101,10 +67,6 @@ pub enum ServiceState {
 pub enum ServiceEvent {
     /// Configuration parsed successfully
     ConfigLoaded { listen_addr: SocketAddr },
-    /// Joined tailnet, got identity
-    TailnetConnected(TailnetHandle),
-    /// Failed to connect to tailnet
-    TailnetError(String),
     /// HTTP listener bound and ready
     ListenerReady,
     /// Incoming HTTP request
@@ -113,33 +75,25 @@ pub enum ServiceEvent {
     RequestCompleted {
         request_id: String,
         duration: Duration,
-        error: Option<ServiceError>,
+        error: Option<String>,
     },
     /// SIGTERM/SIGINT received
     ShutdownSignal,
     /// Drain deadline exceeded
     DrainTimeout,
-    /// Retry backoff expired
-    RetryTimer,
 }
 
 /// Actions the caller should execute after a state transition
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum ServiceAction {
-    /// Initiate tailnet connection
-    ConnectTailnet,
     /// Bind HTTP listener on the given address
     StartListener { addr: SocketAddr },
-    /// Set retry timer
-    ScheduleRetry { delay: Duration },
     /// Exit the process
     Shutdown { exit_code: i32 },
     /// No-op
     None,
 }
-
-/// Maximum tailnet connection retries before giving up
-const MAX_TAILNET_RETRIES: u32 = 5;
 
 /// Drain timeout duration (spec: graceful shutdown <5s).
 /// Used by the state machine for transition deadlines and by main.rs
@@ -151,100 +105,25 @@ pub fn handle_event(state: ServiceState, event: ServiceEvent) -> (ServiceState, 
     match (state, event) {
         // --- Initializing ---
         (ServiceState::Initializing, ServiceEvent::ConfigLoaded { listen_addr }) => (
-            ServiceState::ConnectingTailnet {
-                retries: 0,
-                listen_addr,
-            },
-            ServiceAction::ConnectTailnet,
-        ),
-
-        // --- ConnectingTailnet ---
-        (
-            ServiceState::ConnectingTailnet { listen_addr, .. },
-            ServiceEvent::TailnetConnected(handle),
-        ) => (
-            ServiceState::Starting {
-                tailnet: handle,
-                listen_addr,
-            },
+            ServiceState::Starting { listen_addr },
             ServiceAction::StartListener { addr: listen_addr },
         ),
 
-        (
-            ServiceState::ConnectingTailnet {
-                retries,
-                listen_addr,
-            },
-            ServiceEvent::TailnetError(e),
-        ) if retries < MAX_TAILNET_RETRIES => {
-            let delay = Duration::from_secs(2u64.pow(retries));
-            (
-                ServiceState::Error {
-                    error: e,
-                    origin: ErrorOrigin::Tailnet,
-                    retries,
-                    listen_addr,
-                },
-                ServiceAction::ScheduleRetry { delay },
-            )
-        }
-
-        (ServiceState::ConnectingTailnet { .. }, ServiceEvent::TailnetError(_)) => (
-            ServiceState::Stopped { exit_code: 1 },
-            ServiceAction::Shutdown { exit_code: 1 },
-        ),
-
-        // --- Error recovery ---
-        (
-            ServiceState::Error {
-                retries,
-                origin: ErrorOrigin::Tailnet,
-                listen_addr,
-                ..
-            },
-            ServiceEvent::RetryTimer,
-        ) => (
-            ServiceState::ConnectingTailnet {
-                retries: retries + 1,
-                listen_addr,
-            },
-            ServiceAction::ConnectTailnet,
-        ),
-
         // --- Starting ---
-        (
-            ServiceState::Starting {
-                tailnet,
-                listen_addr,
-            },
-            ServiceEvent::ListenerReady,
-        ) => (
-            ServiceState::Running {
-                tailnet,
-                listen_addr,
-            },
-            ServiceAction::None,
-        ),
+        (ServiceState::Starting { listen_addr }, ServiceEvent::ListenerReady) => {
+            (ServiceState::Running { listen_addr }, ServiceAction::None)
+        }
 
         // --- Running ---
         (
-            ServiceState::Running {
-                tailnet,
-                listen_addr,
-            },
+            ServiceState::Running { listen_addr },
             ServiceEvent::RequestReceived { .. } | ServiceEvent::RequestCompleted { .. },
         ) => {
             // Request tracking is handled by ProxyState's atomic counters,
             // not through the state machine. The caller (main.rs) should never
             // send these events. This arm returns a defensive no-op instead of
             // unreachable!() to avoid aborting the process if triggered accidentally.
-            (
-                ServiceState::Running {
-                    tailnet,
-                    listen_addr,
-                },
-                ServiceAction::None,
-            )
+            (ServiceState::Running { listen_addr }, ServiceAction::None)
         }
 
         (ServiceState::Running { .. }, ServiceEvent::ShutdownSignal) => {
@@ -288,36 +167,13 @@ mod tests {
         "127.0.0.1:8080".parse().unwrap()
     }
 
-    fn dummy_tailnet_handle() -> TailnetHandle {
-        TailnetHandle {
-            hostname: "test-node".into(),
-            ip: "100.64.0.1".parse().unwrap(),
-        }
-    }
-
     #[test]
-    fn init_to_connecting_on_config_loaded() {
+    fn init_to_starting_on_config_loaded() {
         let (state, action) = handle_event(
             ServiceState::Initializing,
             ServiceEvent::ConfigLoaded {
                 listen_addr: localhost_addr(),
             },
-        );
-        assert!(matches!(
-            state,
-            ServiceState::ConnectingTailnet { retries: 0, .. }
-        ));
-        assert!(matches!(action, ServiceAction::ConnectTailnet));
-    }
-
-    #[test]
-    fn connecting_to_starting_on_tailnet_connected() {
-        let (state, action) = handle_event(
-            ServiceState::ConnectingTailnet {
-                retries: 0,
-                listen_addr: localhost_addr(),
-            },
-            ServiceEvent::TailnetConnected(dummy_tailnet_handle()),
         );
         assert!(matches!(state, ServiceState::Starting { .. }));
         assert!(matches!(action, ServiceAction::StartListener { .. }));
@@ -325,9 +181,9 @@ mod tests {
 
     #[test]
     fn non_default_listen_addr_preserved_through_transitions() {
-        // Verify a non-default address flows through ConfigLoaded -> TailnetConnected -> StartListener
+        // Verify a non-default address flows through ConfigLoaded -> Starting -> Running
         let custom_addr: SocketAddr = "0.0.0.0:9090".parse().unwrap();
-        let (state, _) = handle_event(
+        let (state, action) = handle_event(
             ServiceState::Initializing,
             ServiceEvent::ConfigLoaded {
                 listen_addr: custom_addr,
@@ -335,16 +191,7 @@ mod tests {
         );
         assert!(matches!(
             state,
-            ServiceState::ConnectingTailnet { listen_addr, .. } if listen_addr == custom_addr
-        ));
-
-        let (state, action) = handle_event(
-            state,
-            ServiceEvent::TailnetConnected(dummy_tailnet_handle()),
-        );
-        assert!(matches!(
-            state,
-            ServiceState::Starting { listen_addr, .. } if listen_addr == custom_addr
+            ServiceState::Starting { listen_addr } if listen_addr == custom_addr
         ));
         assert!(matches!(
             action,
@@ -354,69 +201,14 @@ mod tests {
         let (state, _) = handle_event(state, ServiceEvent::ListenerReady);
         assert!(matches!(
             state,
-            ServiceState::Running { listen_addr, .. } if listen_addr == custom_addr
+            ServiceState::Running { listen_addr } if listen_addr == custom_addr
         ));
-    }
-
-    #[test]
-    fn connecting_error_triggers_retry_with_backoff() {
-        let (state, action) = handle_event(
-            ServiceState::ConnectingTailnet {
-                retries: 2,
-                listen_addr: localhost_addr(),
-            },
-            ServiceEvent::TailnetError("timeout".into()),
-        );
-        assert!(matches!(
-            state,
-            ServiceState::Error {
-                retries: 2,
-                origin: ErrorOrigin::Tailnet,
-                ..
-            }
-        ));
-        // 2^2 = 4 seconds
-        assert!(
-            matches!(action, ServiceAction::ScheduleRetry { delay } if delay == Duration::from_secs(4))
-        );
-    }
-
-    #[test]
-    fn max_retries_stops_service() {
-        let (state, action) = handle_event(
-            ServiceState::ConnectingTailnet {
-                retries: MAX_TAILNET_RETRIES,
-                listen_addr: localhost_addr(),
-            },
-            ServiceEvent::TailnetError("timeout".into()),
-        );
-        assert!(matches!(state, ServiceState::Stopped { exit_code: 1 }));
-        assert!(matches!(action, ServiceAction::Shutdown { exit_code: 1 }));
-    }
-
-    #[test]
-    fn error_retry_timer_returns_to_connecting() {
-        let (state, action) = handle_event(
-            ServiceState::Error {
-                error: "timeout".into(),
-                origin: ErrorOrigin::Tailnet,
-                retries: 1,
-                listen_addr: localhost_addr(),
-            },
-            ServiceEvent::RetryTimer,
-        );
-        assert!(matches!(
-            state,
-            ServiceState::ConnectingTailnet { retries: 2, .. }
-        ));
-        assert!(matches!(action, ServiceAction::ConnectTailnet));
     }
 
     #[test]
     fn starting_to_running_on_listener_ready() {
         let (state, action) = handle_event(
             ServiceState::Starting {
-                tailnet: dummy_tailnet_handle(),
                 listen_addr: localhost_addr(),
             },
             ServiceEvent::ListenerReady,
@@ -429,7 +221,6 @@ mod tests {
     fn running_to_draining_on_shutdown() {
         let (state, action) = handle_event(
             ServiceState::Running {
-                tailnet: dummy_tailnet_handle(),
                 listen_addr: localhost_addr(),
             },
             ServiceEvent::ShutdownSignal,
@@ -453,68 +244,13 @@ mod tests {
     #[test]
     fn any_state_shutdown_signal_stops() {
         let (state, action) = handle_event(
-            ServiceState::ConnectingTailnet {
-                retries: 0,
+            ServiceState::Starting {
                 listen_addr: localhost_addr(),
             },
             ServiceEvent::ShutdownSignal,
         );
         assert!(matches!(state, ServiceState::Stopped { exit_code: 0 }));
         assert!(matches!(action, ServiceAction::Shutdown { exit_code: 0 }));
-    }
-
-    #[test]
-    fn connecting_error_backoff_values_match_spec() {
-        // Spec: "Exponential: 1s, 2s, 4s, 8s, 16s"
-        let expected = [1, 2, 4, 8, 16];
-        for (retry, &expected_secs) in expected.iter().enumerate() {
-            let (_, action) = handle_event(
-                ServiceState::ConnectingTailnet {
-                    retries: retry as u32,
-                    listen_addr: localhost_addr(),
-                },
-                ServiceEvent::TailnetError("test".into()),
-            );
-            match action {
-                ServiceAction::ScheduleRetry { delay } => {
-                    assert_eq!(
-                        delay,
-                        Duration::from_secs(expected_secs),
-                        "retry {retry}: expected {expected_secs}s backoff"
-                    );
-                }
-                ServiceAction::Shutdown { .. } => {
-                    // retry 5 (index 4 is 16s, retry 5 triggers shutdown)
-                    // but we only iterate 0..5, so all should be ScheduleRetry
-                    panic!("unexpected shutdown at retry {retry}");
-                }
-                _ => panic!("unexpected action at retry {retry}: {action:?}"),
-            }
-        }
-    }
-
-    #[test]
-    fn error_state_ignores_irrelevant_events() {
-        // An Error state receiving ListenerReady (which makes no sense) should
-        // stay in Error with no action — not panic or corrupt state.
-        let (state, action) = handle_event(
-            ServiceState::Error {
-                error: "timeout".into(),
-                origin: ErrorOrigin::Tailnet,
-                retries: 1,
-                listen_addr: localhost_addr(),
-            },
-            ServiceEvent::ListenerReady,
-        );
-        assert!(matches!(
-            state,
-            ServiceState::Error {
-                retries: 1,
-                origin: ErrorOrigin::Tailnet,
-                ..
-            }
-        ));
-        assert!(matches!(action, ServiceAction::None));
     }
 
     #[test]
@@ -544,22 +280,6 @@ mod tests {
     fn shutdown_signal_from_starting_stops() {
         let (state, action) = handle_event(
             ServiceState::Starting {
-                tailnet: dummy_tailnet_handle(),
-                listen_addr: localhost_addr(),
-            },
-            ServiceEvent::ShutdownSignal,
-        );
-        assert!(matches!(state, ServiceState::Stopped { exit_code: 0 }));
-        assert!(matches!(action, ServiceAction::Shutdown { exit_code: 0 }));
-    }
-
-    #[test]
-    fn shutdown_signal_from_error_stops() {
-        let (state, action) = handle_event(
-            ServiceState::Error {
-                error: "timeout".into(),
-                origin: ErrorOrigin::Tailnet,
-                retries: 2,
                 listen_addr: localhost_addr(),
             },
             ServiceEvent::ShutdownSignal,
@@ -588,10 +308,7 @@ mod tests {
             ServiceEvent::ConfigLoaded {
                 listen_addr: localhost_addr(),
             },
-            ServiceEvent::TailnetConnected(dummy_tailnet_handle()),
-            ServiceEvent::TailnetError("test".into()),
             ServiceEvent::ListenerReady,
-            ServiceEvent::RetryTimer,
             ServiceEvent::DrainTimeout,
             ServiceEvent::ShutdownSignal,
         ];
@@ -617,10 +334,7 @@ mod tests {
             ServiceEvent::ConfigLoaded {
                 listen_addr: localhost_addr(),
             },
-            ServiceEvent::TailnetConnected(dummy_tailnet_handle()),
-            ServiceEvent::TailnetError("test".into()),
             ServiceEvent::ListenerReady,
-            ServiceEvent::RetryTimer,
             ServiceEvent::DrainTimeout,
             ServiceEvent::ShutdownSignal,
         ];
@@ -641,27 +355,10 @@ mod tests {
     fn initializing_ignores_unexpected_events() {
         // Initializing should only respond to ConfigLoaded. All other events
         // (except ShutdownSignal) should be silently ignored via the catch-all.
-        let (state, action) = handle_event(
-            ServiceState::Initializing,
-            ServiceEvent::TailnetConnected(dummy_tailnet_handle()),
-        );
-        assert!(
-            matches!(state, ServiceState::Initializing),
-            "Initializing must ignore TailnetConnected"
-        );
-        assert!(matches!(action, ServiceAction::None));
-
         let (state, action) = handle_event(ServiceState::Initializing, ServiceEvent::ListenerReady);
         assert!(
             matches!(state, ServiceState::Initializing),
             "Initializing must ignore ListenerReady"
-        );
-        assert!(matches!(action, ServiceAction::None));
-
-        let (state, action) = handle_event(ServiceState::Initializing, ServiceEvent::RetryTimer);
-        assert!(
-            matches!(state, ServiceState::Initializing),
-            "Initializing must ignore RetryTimer"
         );
         assert!(matches!(action, ServiceAction::None));
     }
@@ -704,7 +401,6 @@ mod tests {
         // stays Running and no action is produced.
         let (state, action) = handle_event(
             ServiceState::Running {
-                tailnet: dummy_tailnet_handle(),
                 listen_addr: localhost_addr(),
             },
             ServiceEvent::RequestReceived {
@@ -719,7 +415,6 @@ mod tests {
 
         let (state, action) = handle_event(
             ServiceState::Running {
-                tailnet: dummy_tailnet_handle(),
                 listen_addr: localhost_addr(),
             },
             ServiceEvent::RequestCompleted {
@@ -741,33 +436,6 @@ mod tests {
         // All other events should be silently ignored via the catch-all.
         let (state, action) = handle_event(
             ServiceState::Starting {
-                tailnet: dummy_tailnet_handle(),
-                listen_addr: localhost_addr(),
-            },
-            ServiceEvent::TailnetError("late error".into()),
-        );
-        assert!(
-            matches!(state, ServiceState::Starting { .. }),
-            "Starting must ignore TailnetError"
-        );
-        assert!(matches!(action, ServiceAction::None));
-
-        let (state, action) = handle_event(
-            ServiceState::Starting {
-                tailnet: dummy_tailnet_handle(),
-                listen_addr: localhost_addr(),
-            },
-            ServiceEvent::RetryTimer,
-        );
-        assert!(
-            matches!(state, ServiceState::Starting { .. }),
-            "Starting must ignore RetryTimer"
-        );
-        assert!(matches!(action, ServiceAction::None));
-
-        let (state, action) = handle_event(
-            ServiceState::Starting {
-                tailnet: dummy_tailnet_handle(),
                 listen_addr: localhost_addr(),
             },
             ServiceEvent::ConfigLoaded {
@@ -782,56 +450,20 @@ mod tests {
     }
 
     #[test]
-    fn connecting_ignores_unexpected_events() {
-        // ConnectingTailnet should only respond to TailnetConnected, TailnetError,
-        // and ShutdownSignal. All other events must be ignored via the catch-all.
-        let unexpected_events = vec![
-            ServiceEvent::ListenerReady,
-            ServiceEvent::ConfigLoaded {
-                listen_addr: "0.0.0.0:9090".parse().unwrap(),
-            },
-            ServiceEvent::RetryTimer,
-            ServiceEvent::DrainTimeout,
-            ServiceEvent::RequestReceived {
-                request_id: "req_test".into(),
-            },
-        ];
-        for event in unexpected_events {
-            let (state, action) = handle_event(
-                ServiceState::ConnectingTailnet {
-                    retries: 0,
-                    listen_addr: localhost_addr(),
-                },
-                event,
-            );
-            assert!(
-                matches!(state, ServiceState::ConnectingTailnet { retries: 0, .. }),
-                "ConnectingTailnet must ignore unexpected events"
-            );
-            assert!(matches!(action, ServiceAction::None));
-        }
-    }
-
-    #[test]
     fn running_ignores_lifecycle_events() {
         // Running should only respond to RequestReceived/RequestCompleted (no-op)
         // and ShutdownSignal. Events from earlier lifecycle stages (ConfigLoaded,
-        // TailnetConnected, TailnetError, ListenerReady, RetryTimer, DrainTimeout)
-        // must be silently ignored via the catch-all.
+        // ListenerReady, DrainTimeout) must be silently ignored via the catch-all.
         let lifecycle_events = vec![
             ServiceEvent::ConfigLoaded {
                 listen_addr: localhost_addr(),
             },
-            ServiceEvent::TailnetConnected(dummy_tailnet_handle()),
-            ServiceEvent::TailnetError("late error".into()),
             ServiceEvent::ListenerReady,
-            ServiceEvent::RetryTimer,
             ServiceEvent::DrainTimeout,
         ];
         for event in lifecycle_events {
             let (state, action) = handle_event(
                 ServiceState::Running {
-                    tailnet: dummy_tailnet_handle(),
                     listen_addr: localhost_addr(),
                 },
                 event,

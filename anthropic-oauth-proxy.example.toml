@@ -1,12 +1,7 @@
 # Anthropic OAuth Proxy — Example Configuration
 #
 # Copy to anthropic-oauth-proxy.toml and adjust values for your environment.
-# Auth key: set TS_AUTHKEY env var or use auth_key_file below.
-
-[tailscale]
-hostname = "anthropic-oauth-proxy"
-state_dir = "/var/lib/ts-state"
-# auth_key_file = "/run/secrets/ts-authkey"
+# Tailnet exposure is handled by the Tailscale Operator (not the binary).
 
 [proxy]
 listen_addr = "0.0.0.0:8080"

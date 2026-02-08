@@ -27,17 +27,11 @@ toml = "0.9"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 
-# Security
-zeroize = "1"
-
 # Serialization
 serde_json = "1"
 
 # Identifiers
 uuid = { version = "1", features = ["v4"] }
-
-# Tailscale local API client
-tailscale-localapi = "0.4"
 
 # Metrics
 metrics = "0.24"

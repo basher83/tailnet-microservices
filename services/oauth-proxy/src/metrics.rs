@@ -5,7 +5,6 @@
 //! - `proxy_requests_total` (counter): labels `status`, `method`
 //! - `proxy_request_duration_seconds` (histogram): label `status`
 //! - `proxy_upstream_errors_total` (counter): label `error_type`
-//! - `tailnet_connected` (gauge): 1 when connected, 0 otherwise
 
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 
@@ -48,11 +47,6 @@ pub fn record_upstream_error(error_type: &str) {
         .increment(1);
 }
 
-/// Set the tailnet connection gauge (1 = connected, 0 = disconnected).
-pub fn set_tailnet_connected(connected: bool) {
-    metrics::gauge!("tailnet_connected").set(if connected { 1.0 } else { 0.0 });
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -64,8 +58,6 @@ mod tests {
         // This verifies the functions don't panic in test environments.
         record_request(200, "GET", 0.05);
         record_upstream_error("timeout");
-        set_tailnet_connected(true);
-        set_tailnet_connected(false);
     }
 
     /// Create an isolated recorder/handle pair for unit tests.
@@ -150,32 +142,6 @@ mod tests {
         assert!(
             output.contains("error_type=\"connection\""),
             "distinct error_type values must appear separately"
-        );
-    }
-
-    #[test]
-    fn set_tailnet_connected_updates_gauge() {
-        // The tailnet_connected gauge drives the health endpoint status code
-        // (200 vs 503) and Prometheus alerts. Verify it toggles between 1 and 0.
-        let (recorder, handle) = isolated_recorder();
-        let _guard = metrics::set_default_local_recorder(&recorder);
-
-        set_tailnet_connected(true);
-        let output = handle.render();
-        assert!(
-            output.contains("tailnet_connected"),
-            "rendered output must contain tailnet_connected gauge"
-        );
-        assert!(
-            output.contains("tailnet_connected 1"),
-            "gauge must be 1 when connected"
-        );
-
-        set_tailnet_connected(false);
-        let output = handle.render();
-        assert!(
-            output.contains("tailnet_connected 0"),
-            "gauge must be 0 when disconnected"
         );
     }
 

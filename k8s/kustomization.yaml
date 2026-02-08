@@ -6,7 +6,3 @@ resources:
   - configmap.yaml
   - deployment.yaml
   - service.yaml
-# secret.yaml is excluded — create the secret imperatively:
-#   kubectl create secret generic tailscale-authkey \
-#     --namespace=anthropic-oauth-proxy \
-#     --from-literal=TS_AUTHKEY=tskey-auth-XXXXX

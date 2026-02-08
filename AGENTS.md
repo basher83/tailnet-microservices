@@ -2,7 +2,7 @@
 
 ## Current Work
 
-**Operator Migration:** Remove the tailscaled sidecar and delegate tailnet exposure to the Tailscale Operator. See `specs/operator-migration.md` for full requirements. The proxy becomes a single-container pod with zero secrets.
+**Operator Migration complete.** The tailscaled sidecar has been removed. Tailnet exposure is delegated to the Tailscale Operator via Service annotations. The proxy is a single-container pod with zero secrets.
 
 **Do NOT** modify anything in mothership-gitops. ArgoCD adoption is a separate spec executed after this migration is deployed and verified.
 
