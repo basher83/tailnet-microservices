@@ -117,7 +117,7 @@ async fn main() -> Result<()> {
     // Execute StartListener action
     let listen_addr = match action {
         ServiceAction::StartListener { addr } => addr,
-        _ => anyhow::bail!("unexpected action after TailnetConnected: {action:?}"),
+        _ => anyhow::bail!("unexpected action after ConfigLoaded: {action:?}"),
     };
 
     let metrics = ServiceMetrics::new();
