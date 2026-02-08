@@ -25,4 +25,4 @@ tower = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
-libc = "0.2"
+libc = "=0.2.180"
