@@ -1,76 +1,61 @@
 # Anthropic OAuth Proxy — Operational Runbook
 
-This runbook covers deployment, operation, monitoring, and troubleshooting of the anthropic-oauth-proxy service running as a Kubernetes pod with a tailscaled sidecar.
+This runbook covers deployment, operation, monitoring, and troubleshooting of the anthropic-oauth-proxy service running as a single-container Kubernetes pod. Tailnet exposure is delegated to the Tailscale Operator via Service annotations.
 
 ## Architecture
 
-The pod contains two containers sharing a Unix socket volume:
+The pod contains a single container. The Tailscale Operator manages tailnet connectivity externally via a StatefulSet it creates from the annotated Service.
 
 ```text
-                           Pod
-              +-----------+----------+
-              |  proxy    | tailscaled|
-              |  (Rust)   | (sidecar) |
-              |           |           |
-              | port 8080 | userspace |
-              +-----+-----+-----+----+
-                    |           |
-                    +-----------+
-                   /var/run/tailscale/
-                   tailscaled.sock
+                    Tailnet
+      +----------+         +---------------------+
+      | Aperture | ------> | Tailscale Operator   |
+      | (http://ai/)       | proxy (StatefulSet)  |
+      +----------+         +----------+----------+
+                                      |
+                                      v
+                           +---------------------+       +-----------+
+                           | anthropic-oauth-proxy| ----> | Anthropic |
+                           | (single container)   |      | API       |
+                           +---------------------+       +-----------+
+                            MagicDNS: anthropic-oauth-proxy
 ```
 
-The proxy queries tailscaled via the Unix socket for tailnet identity (hostname, IP), then listens on port 8080 and proxies all non-health/metrics requests to `https://api.anthropic.com`, injecting the `anthropic-beta: oauth-2025-04-20` header. TLS termination is handled by the tailnet WireGuard encryption, not the proxy itself.
+The proxy listens on port 8080 and forwards all non-health/metrics requests to `https://api.anthropic.com`, injecting the `anthropic-beta: oauth-2025-04-20` header. TLS termination for inbound traffic is handled by the tailnet WireGuard encryption, not the proxy itself. Outbound TLS to Anthropic uses `reqwest` with `rustls`.
 
 ## Deployment
 
-### Prerequisites
-
-A Tailscale auth key with appropriate ACL permissions. Generate one from the Tailscale admin console. Reusable, ephemeral keys are recommended for Kubernetes deployments.
-
 ### Initial Deploy
 
-Apply the manifests first (creates the namespace), then create the secrets imperatively:
+No secrets are required. The container image is public on GHCR (anonymous pull). Tailnet authentication is handled by the Tailscale Operator.
 
 ```bash
 kubectl apply -k k8s/
-
-kubectl create secret generic tailscale-authkey \
-  --namespace=anthropic-oauth-proxy \
-  --from-literal=TS_AUTHKEY=tskey-auth-XXXXX
 ```
 
-The tailscale-authkey secret is not included in `kustomization.yaml` because it contains a real auth key. The `k8s/secret.yaml` file documents the expected schema but is not applied by Kustomize. The deployment pod will be in `CreateContainerConfigError` until the secret is created.
-
-If the GHCR package is private, pods also need a `ghcr-pull-secret` for image pulls. Create it with a GitHub personal access token that has `read:packages` scope:
-
-```bash
-kubectl create secret docker-registry ghcr-pull-secret \
-  --namespace=anthropic-oauth-proxy \
-  --docker-server=ghcr.io \
-  --docker-username=<github-username> \
-  --docker-password=<pat-with-read-packages>
-```
-
-If the GHCR package is public, anonymous pulls succeed without this secret. Kubernetes emits a warning event when a referenced `imagePullSecret` does not exist, but proceeds with an anonymous pull. For public images this succeeds and the warnings are harmless. If the package is ever made private, pods will fail with `ErrImagePull` until the secret is created.
+This creates the namespace, ServiceAccount, ConfigMap, Deployment, and Service. The Tailscale Operator detects the `tailscale.com/expose: "true"` annotation on the Service and creates a StatefulSet to proxy from the tailnet to the ClusterIP.
 
 ### Verify Deployment
 
 ```bash
 kubectl -n anthropic-oauth-proxy get pods
-kubectl -n anthropic-oauth-proxy logs -c proxy <pod-name>
-kubectl -n anthropic-oauth-proxy logs -c tailscaled <pod-name>
+kubectl -n anthropic-oauth-proxy logs deployment/anthropic-oauth-proxy
 ```
 
-A healthy startup sequence in the proxy container logs (JSON structured):
+A healthy startup sequence in the logs (JSON structured):
 
 ```text
 {"message":"starting anthropic-oauth-proxy",...}
 {"message":"loading configuration","path":"/etc/anthropic-oauth-proxy/config.toml",...}
 {"message":"configuration loaded","listen_addr":"0.0.0.0:8080",...}
-{"message":"state: ConnectingTailnet",...}
 {"message":"state: Starting",...}
 {"message":"state: Running — accepting requests","addr":"0.0.0.0:8080",...}
+```
+
+Verify the Tailscale Operator created its proxy StatefulSet:
+
+```bash
+kubectl -n anthropic-oauth-proxy get statefulset
 ```
 
 ### Updating Configuration
@@ -79,19 +64,6 @@ The ConfigMap at `k8s/configmap.yaml` holds the TOML configuration. After editin
 
 ```bash
 kubectl apply -k k8s/
-kubectl -n anthropic-oauth-proxy rollout restart deployment/anthropic-oauth-proxy
-```
-
-### Rotating the Tailscale Auth Key
-
-Use `--dry-run=client` piped to `kubectl apply` for an atomic update that avoids the window of unavailability between delete and create:
-
-```bash
-kubectl create secret generic tailscale-authkey \
-  --namespace=anthropic-oauth-proxy \
-  --from-literal=TS_AUTHKEY=tskey-auth-NEWKEY \
-  --dry-run=client -o yaml | kubectl apply -f -
-
 kubectl -n anthropic-oauth-proxy rollout restart deployment/anthropic-oauth-proxy
 ```
 
@@ -110,32 +82,17 @@ Kubernetes retains the previous ReplicaSet by default, so `rollout undo` restore
 
 | Path | Purpose | Response |
 |------|---------|----------|
-| `GET /health` | Startup, liveness, and readiness probe | JSON with status, tailnet state, uptime, request count |
+| `GET /health` | Startup, liveness, and readiness probe | JSON with status, uptime, request count |
 | `GET /metrics` | Prometheus scrape target | Text exposition format |
 | `* /*` | Proxy fallback | Forwards to upstream with header injection |
 
 ### Health Endpoint Response
 
-When connected to tailnet:
+The health endpoint always returns 200 when the HTTP listener is bound. There is no degraded state.
 
 ```json
 {
   "status": "healthy",
-  "tailnet": "connected",
-  "tailnet_hostname": "anthropic-oauth-proxy",
-  "tailnet_ip": "100.x.y.z",
-  "uptime_seconds": 3600,
-  "requests_served": 12345,
-  "errors_total": 0
-}
-```
-
-When tailnet is not connected (returns 503 Service Unavailable, should not happen in steady state):
-
-```json
-{
-  "status": "degraded",
-  "tailnet": "not_connected",
   "uptime_seconds": 3600,
   "requests_served": 12345,
   "errors_total": 0
@@ -146,7 +103,7 @@ When tailnet is not connected (returns 503 Service Unavailable, should not happe
 
 ### Prometheus Metrics
 
-Scrape `GET /metrics` on port 8080. Four metrics are emitted:
+Scrape `GET /metrics` on port 8080. Three metrics are emitted:
 
 `proxy_requests_total` (counter) with labels `status` and `method` tracks completed proxy requests. Use this for request rate and error rate calculations.
 
@@ -154,11 +111,7 @@ Scrape `GET /metrics` on port 8080. Four metrics are emitted:
 
 `proxy_upstream_errors_total` (counter) with label `error_type` tracks upstream failures. Error types: `timeout` (upstream did not respond within `timeout_secs`), `connection` (TCP connection to upstream failed), `invalid_request` (request body exceeded 10 MiB limit or malformed request).
 
-`tailnet_connected` (gauge) is 1 when the proxy has an active tailnet connection and 0 otherwise. Alert if this drops to 0 during normal operation.
-
 ### Key Alerts to Configure
-
-Alert on `tailnet_connected == 0` for more than 60 seconds. The proxy cannot serve traffic without a tailnet identity.
 
 Alert on `rate(proxy_upstream_errors_total[5m]) > 0.1` to catch sustained upstream failures.
 
@@ -171,25 +124,33 @@ All log output is JSON. Key fields to filter on:
 - `message`: human-readable event description
 - `request_id`: `req_<uuid>` correlating a proxy request through its lifecycle
 - `error`: error message when something fails
-- `retry_in_secs`: seconds until next retry (tailnet connection failures)
 
 Set log verbosity via the `LOG_LEVEL` environment variable in the deployment. Accepts standard tracing directives: `error`, `warn`, `info`, `debug`, `trace`. Defaults to `info`.
 
 ## Troubleshooting
 
-### Pod CrashLoopBackOff
+### Pod Not Starting
 
-The proxy container has a startup probe that allows up to 60 seconds (30 failures × 2-second period) for the initial tailnet connection. During this window, Kubernetes suppresses liveness and readiness probes entirely. If the proxy reaches the `Running` state within 60 seconds, the startup probe succeeds and liveness/readiness probes take over. If the startup probe exhausts its budget, Kubernetes restarts the container — this typically means tailscaled failed to authenticate or the coordination server is unreachable.
+The startup probe allows up to 60 seconds (30 failures x 2-second period) for the proxy to bind its listener and respond to `/health`. This should happen within seconds under normal conditions. If the startup probe exhausts its budget, Kubernetes restarts the container.
 
-Check proxy container logs first. The four lifecycle errors that cause crashes:
+Check container logs for configuration errors. Common causes: missing or malformed ConfigMap, invalid `upstream_url`, or `listen_addr` already in use.
 
-`TailnetAuth` ("Tailnet authentication failed") means the `TS_AUTHKEY` secret is invalid or expired. Generate a new auth key from the Tailscale admin console and rotate the secret (see Rotating the Tailscale Auth Key above).
+### Tailnet Not Reachable
 
-`TailnetMachineAuth` ("Tailnet needs machine authorization") means the node requires admin approval in the Tailscale admin console. Navigate to the Tailscale admin console, find the pending node, and approve it. Then restart the pod.
+If the proxy pod is running but not reachable via MagicDNS (`anthropic-oauth-proxy`), the issue is with the Tailscale Operator, not the proxy. Check that the Operator created its proxy StatefulSet and that it is healthy:
 
-`TailnetNotRunning` ("Tailnet daemon not running") means the tailscaled sidecar is not running or the Unix socket at `/var/run/tailscale/tailscaled.sock` is not reachable. Check the tailscaled container logs. Verify both containers share the `tailscale-socket` volume.
+```bash
+kubectl -n anthropic-oauth-proxy get statefulset
+kubectl -n anthropic-oauth-proxy get pods -l app=tailscale
+```
 
-`TailnetConnect` ("Tailnet connection failed") is a transient error. The proxy retries up to 5 times with exponential backoff (1s, 2s, 4s, 8s, 16s). If all 5 retries fail, the process exits with code 1 and Kubernetes restarts it. Check network connectivity to the Tailscale coordination server.
+Verify the Service annotations are correct:
+
+```bash
+kubectl -n anthropic-oauth-proxy get svc anthropic-oauth-proxy -o yaml | grep tailscale
+```
+
+Expected annotations: `tailscale.com/expose: "true"` and `tailscale.com/hostname: "anthropic-oauth-proxy"`.
 
 ### Proxy Returning 502 Bad Gateway
 
@@ -218,16 +179,6 @@ Check `proxy_request_duration_seconds` histogram percentiles. Latency is dominat
 
 If latency correlates with high concurrency, check if `max_connections` (default: 1000) is being hit. The concurrency limiter queues excess requests rather than rejecting them, which manifests as increased latency rather than errors. Health and metrics endpoints are outside the concurrency limit and remain responsive regardless of proxy load.
 
-### Tailscaled Sidecar Issues
-
-The tailscaled container runs in userspace mode (`TS_USERSPACE=true`) to avoid requiring `NET_ADMIN` capabilities. Containerboot's built-in `/healthz` HTTP endpoint is enabled via `TS_HEALTHCHECK_ADDR_PORT=127.0.0.1:9002`. A startup probe queries this endpoint every 2 seconds with up to 30 failures (60-second startup budget), allowing time for initial tailnet authentication. Once the startup probe passes, a liveness probe queries the same endpoint every 30 seconds, returning 200 when the node has tailnet IPs and 503 otherwise. A readiness probe queries the endpoint every 5 seconds, preventing the pod from receiving traffic until tailscaled has fully authenticated and received its tailnet IP assignment. If the liveness probe fails 3 consecutive times (90 seconds total tolerance), Kubernetes restarts the sidecar. Common issues:
-
-`TS_AUTHKEY` expired or revoked: the sidecar will fail to authenticate. Rotate the secret.
-
-State directory corruption: the sidecar stores state in `/var/lib/ts-state` (an `emptyDir` volume). Deleting the pod clears this state and forces re-authentication.
-
-Socket path override: the proxy reads the tailscaled Unix socket from the `TAILSCALE_SOCKET` environment variable, defaulting to `/var/run/tailscale/tailscaled.sock`. If the sidecar writes the socket to a non-standard path, set `TAILSCALE_SOCKET` in the proxy container's env to match.
-
 ## Graceful Shutdown
 
 On SIGTERM (Kubernetes pod termination), the proxy stops accepting new connections and waits for in-flight requests to complete. The `in_flight` atomic counter tracks active requests. The proxy enforces a 5-second `DRAIN_TIMEOUT` starting from when it receives the signal. If in-flight requests complete within 5 seconds, shutdown is clean. If not, the proxy force-exits after 5 seconds regardless of the Kubernetes `terminationGracePeriodSeconds`.
@@ -253,6 +204,5 @@ Default resource configuration from `k8s/deployment.yaml`:
 | Container | CPU request | CPU limit | Memory request | Memory limit |
 |-----------|-------------|-----------|----------------|--------------|
 | proxy | 50m | 500m | 32Mi | 128Mi |
-| tailscaled | 50m | 250m | 64Mi | 256Mi |
 
 The proxy binary is approximately 5MB and has minimal memory overhead. Increase memory limits if serving large request/response bodies concurrently, though the 10 MiB body size limit provides a natural ceiling.
