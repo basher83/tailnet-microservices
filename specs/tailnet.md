@@ -1,6 +1,6 @@
 # Spec: Tailnet Integration Layer
 
-**Status:** Complete
+**Status:** Superseded by specs/operator-migration.md
 **Created:** 2026-02-06
 **Author:** Astrogator + Brent
 

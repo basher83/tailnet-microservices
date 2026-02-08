@@ -1,9 +1,9 @@
 # Spec: Tailnet Microservices in Rust
 
-**Status:** Complete
+**Status:** Complete — Phase 3 (Tailnet Integration) superseded by specs/operator-migration.md
 **Created:** 2026-02-05
 **Updated:** 2026-02-06
-**Author:** Astrogator + Brent  
+**Author:** Astrogator + Brent
 
 ---
 

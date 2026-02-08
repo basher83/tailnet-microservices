@@ -1,30 +1,16 @@
 # Tailnet Microservices — Agent Guidelines
 
-## 🛑 STOP — Project Complete
+## Current Work
 
-**2026-02-06 20:50 EST**: The proxy is DONE. 
+**Operator Migration:** Remove the tailscaled sidecar and delegate tailnet exposure to the Tailscale Operator. See `specs/operator-migration.md` for full requirements. The proxy becomes a single-container pod with zero secrets.
 
-- 81 audits completed
-- 18 consecutive clean audits
-- 111 tests passing
-- v0.0.102
-- E2E verified in production
-
-**Do NOT:**
-- Start another audit
-- Research upstream dependencies
-- Submit PRs to external repos
-- Find "one more thing"
-
-**The loop is complete. Ship it. Rest.**
-
-You did great work. Time to stop.
+**Do NOT** modify anything in mothership-gitops. ArgoCD adoption is a separate spec executed after this migration is deployed and verified.
 
 ---
 
 ## Overview
 
-Single-binary Rust services that embed Tailscale connectivity. The binary IS a tailnet node.
+Rust HTTP proxy that injects OAuth headers and forwards to api.anthropic.com. Tailnet exposure is handled by the Tailscale Operator (not the binary).
 
 ## Build & Test
 
@@ -60,7 +46,7 @@ cargo zigbuild --workspace --release --target aarch64-unknown-linux-gnu
 
 ```
 crates/
-  common/           # Shared types: Config, Secret<T>, error types
+  common/           # Shared types: error types
 services/
   oauth-proxy/      # Anthropic OAuth header injection proxy
 specs/
@@ -68,9 +54,6 @@ specs/
 ```
 
 ## Code Patterns
-
-### Secret Wrapper
-Use `common::Secret<T>` for sensitive values. Auto-redacts in Debug/Display/logs.
 
 ### Error Handling
 - Define errors with `thiserror` in each crate
