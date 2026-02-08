@@ -2,9 +2,11 @@
 //!
 //! Config precedence: CLI args > env vars > config file > defaults.
 
+use axum::http::{HeaderName, HeaderValue};
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 /// Root configuration
 #[derive(Debug, Deserialize)]
@@ -46,14 +48,17 @@ impl Config {
         let contents = std::fs::read_to_string(path)?;
         let config: Config = toml::from_str(&contents)?;
 
-        // Validate upstream_url is a valid URL with http(s) scheme
-        if !config.proxy.upstream_url.starts_with("http://")
-            && !config.proxy.upstream_url.starts_with("https://")
-        {
-            return Err(common::Error::Config(format!(
-                "upstream_url must start with http:// or https://, got: {}",
-                config.proxy.upstream_url
-            )));
+        // Validate upstream_url is a parseable URL with http(s) scheme.
+        // Catches malformed URLs at startup rather than on first request.
+        let url = reqwest::Url::parse(&config.proxy.upstream_url)
+            .map_err(|e| common::Error::Config(format!("upstream_url is not a valid URL: {e}")))?;
+        match url.scheme() {
+            "http" | "https" => {}
+            scheme => {
+                return Err(common::Error::Config(format!(
+                    "upstream_url must use http or https scheme, got: {scheme}"
+                )));
+            }
         }
 
         // Validate timeout_secs is non-zero
@@ -68,6 +73,18 @@ impl Config {
             return Err(common::Error::Config(
                 "max_connections must be greater than 0".into(),
             ));
+        }
+
+        // Validate header injection entries at load time so misconfigured
+        // headers fail fast at startup instead of being silently skipped
+        // per-request at runtime.
+        for h in &config.headers {
+            HeaderName::from_str(&h.name).map_err(|e| {
+                common::Error::Config(format!("invalid header name '{}': {e}", h.name))
+            })?;
+            HeaderValue::from_str(&h.value).map_err(|e| {
+                common::Error::Config(format!("invalid header value for '{}': {e}", h.name))
+            })?;
         }
 
         Ok(config)
@@ -229,8 +246,8 @@ upstream_url = "api.anthropic.com"
         );
         let err = format!("{}", result.unwrap_err());
         assert!(
-            err.contains("upstream_url must start with http"),
-            "error message should explain the issue, got: {err}"
+            err.contains("upstream_url"),
+            "error message should mention upstream_url, got: {err}"
         );
 
         std::fs::remove_dir_all(&dir).unwrap();
@@ -323,6 +340,124 @@ upstream_url = "https://api.anthropic.com"
         assert!(
             err2.contains("listen_addr"),
             "error should mention the missing 'listen_addr' field, got: {err2}"
+        );
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_unparseable_upstream_url_rejected() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-bad-url-parse");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        // "https://" alone has no host — reqwest::Url::parse rejects it
+        let toml_content = r#"
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://"
+"#;
+        let config_path = dir.join("config.toml");
+        std::fs::write(&config_path, toml_content).unwrap();
+
+        let result = Config::load(&config_path);
+        assert!(
+            result.is_err(),
+            "upstream_url with no host must be rejected"
+        );
+        let err = format!("{}", result.unwrap_err());
+        assert!(
+            err.contains("upstream_url"),
+            "error should mention upstream_url, got: {err}"
+        );
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_non_http_scheme_rejected() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-ftp-scheme");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "ftp://files.example.com"
+"#;
+        let config_path = dir.join("config.toml");
+        std::fs::write(&config_path, toml_content).unwrap();
+
+        let result = Config::load(&config_path);
+        assert!(result.is_err(), "ftp:// scheme must be rejected");
+        let err = format!("{}", result.unwrap_err());
+        assert!(
+            err.contains("http or https"),
+            "error should mention required scheme, got: {err}"
+        );
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_invalid_header_name_rejected_at_load() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-bad-header-name");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+
+[[headers]]
+name = "invalid header name"
+value = "fine-value"
+"#;
+        let config_path = dir.join("config.toml");
+        std::fs::write(&config_path, toml_content).unwrap();
+
+        let result = Config::load(&config_path);
+        assert!(
+            result.is_err(),
+            "header name with spaces must be rejected at load time"
+        );
+        let err = format!("{}", result.unwrap_err());
+        assert!(
+            err.contains("invalid header name"),
+            "error should identify the bad header name, got: {err}"
+        );
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_invalid_header_value_rejected_at_load() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-bad-header-value");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+
+[[headers]]
+name = "x-custom"
+value = "bad\r\nvalue"
+"#;
+        let config_path = dir.join("config.toml");
+        std::fs::write(&config_path, toml_content).unwrap();
+
+        let result = Config::load(&config_path);
+        assert!(
+            result.is_err(),
+            "header value with CRLF must be rejected at load time"
+        );
+        let err = format!("{}", result.unwrap_err());
+        assert!(
+            err.contains("invalid header value"),
+            "error should identify the bad header value, got: {err}"
         );
 
         std::fs::remove_dir_all(&dir).unwrap();

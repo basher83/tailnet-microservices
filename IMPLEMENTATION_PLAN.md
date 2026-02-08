@@ -6,9 +6,11 @@ Previous build history archived at IMPLEMENTATION_PLAN_v1.md (81 audits, 111 tes
 
 All work complete. Operator migration deployed. Specs synchronized with codebase.
 
-Verification: `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean, `cargo build --workspace` clean, `cargo test --workspace` 78 passed / 2 ignored (load test, memory soak).
+Verification: `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean, `cargo build --workspace` clean, `cargo test --workspace` 86 passed (82 oauth-proxy + 4 common) / 2 ignored (load test, memory soak).
 
 ## Audit Log
+
+**2026-02-08 (v0.0.110):** Config fail-fast validation. Opus audit found two gaps where misconfiguration was caught at runtime instead of startup: (1) `upstream_url` was only checked for `http://`/`https://` prefix but not parsed as a valid URL, so `"https://"` (no host) would pass config load and fail on first request; (2) header injection names/values were validated per-request with `warn!()` and skipped, so an operator could deploy invalid headers and only discover it via logs. Fixed both: `upstream_url` now parsed with `reqwest::Url::parse()` at load time, header names/values validated with `HeaderName::from_str()`/`HeaderValue::from_str()` at load time. Added 4 new tests: unparseable URL, non-http scheme, invalid header name, invalid header value with CRLF. 86 tests pass (82 + 4 common), 2 ignored.
 
 **2026-02-08 (v0.0.109):** RUNBOOK.md rewrite. The runbook was dangerously stale post-operator-migration: described two-container sidecar architecture, referenced deleted secrets (tailscale-authkey, ghcr-pull-secret), defunct tailnet health fields, removed `tailnet_connected` metric, and eliminated error states (TailnetAuth, TailnetMachineAuth, TailnetNotRunning, TailnetConnect). Rewrote for single-container operator-delegated architecture. Added Tailscale Operator troubleshooting section. 82 tests pass (78 + 4 common), 2 ignored.
 
