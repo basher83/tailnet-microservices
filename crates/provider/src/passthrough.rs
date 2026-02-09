@@ -41,11 +41,11 @@ impl Provider for PassthroughProvider {
         false
     }
 
-    fn prepare_request(
-        &self,
-        headers: &mut HeaderMap,
-        _body: &mut serde_json::Value,
-    ) -> Pin<Box<dyn Future<Output = crate::Result<()>> + Send + '_>> {
+    fn prepare_request<'a>(
+        &'a self,
+        headers: &'a mut HeaderMap,
+        _body: &'a mut serde_json::Value,
+    ) -> Pin<Box<dyn Future<Output = crate::Result<Option<String>>> + Send + 'a>> {
         for injection in &self.headers {
             let name = match HeaderName::from_str(&injection.name) {
                 Ok(n) => n,
@@ -67,7 +67,7 @@ impl Provider for PassthroughProvider {
             };
             headers.insert(name, value);
         }
-        Box::pin(async { Ok(()) })
+        Box::pin(async { Ok(None) })
     }
 
     fn classify_error(&self, _status: u16, _body: &str) -> ErrorClassification {
@@ -78,6 +78,7 @@ impl Provider for PassthroughProvider {
 
     fn report_error(
         &self,
+        _account_id: &str,
         _classification: ErrorClassification,
     ) -> Pin<Box<dyn Future<Output = crate::Result<()>> + Send + '_>> {
         // No-op: passthrough has no account state to update.
