@@ -8,7 +8,7 @@ Previous build history archived at IMPLEMENTATION_PLAN_v1.md (81 audits, 111 tes
 
 ## Baseline
 
-v0.0.116: 124 tests pass (89 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean.
+v0.0.117: 162 tests pass (89 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean.
 
 Completed specs: `oauth-proxy.md` (Complete), `operator-migration.md` (Complete), `operator-migration-addendum.md` (Complete — dual proxy conflict resolved, Ingress live).
 
@@ -16,7 +16,7 @@ Remaining from addendum: cluster verification for Ingress resolution, health end
 
 ## Gap Summary
 
-The current codebase is a passthrough header injector with provider abstraction. The spec target is a full OAuth 2.0 gateway with PKCE auth, token lifecycle, subscription pooling, admin API, and body modification. Zero OAuth code exists today. The Provider trait and PassthroughProvider exist, but no `anthropic-auth` or `anthropic-pool` crates. The following phases track the spec's six-phase structure; each phase builds on the previous.
+The codebase has provider abstraction, OAuth PKCE/token management, and subscription pool implemented as library crates. The spec target is a full OAuth 2.0 gateway with gateway integration, admin API, and deployment. Remaining work: wire pool into the proxy binary (Phase 4), add admin API endpoints (Phase 5), and deployment manifests (Phase 6).
 
 ### Verified Code State (2026-02-08)
 
@@ -28,7 +28,7 @@ The current codebase is a passthrough header injector with provider abstraction.
 - `services/oauth-proxy/src/metrics.rs` — Three metrics only: `proxy_requests_total`, `proxy_request_duration_seconds`, `proxy_upstream_errors_total`. No pool metrics.
 - `services/oauth-proxy/src/service.rs` — State machine: Initializing → Starting → Running → Draining → Stopped. `#[allow(dead_code)]` on state/event/action enums (spec-defined variants used only in tests).
 - `crates/anthropic-auth/` — PKCE (generate_verifier, compute_challenge, build_authorization_url), token exchange/refresh, credential store (atomic writes, 0600 perms, Mutex-serialized). 22 tests.
-- No `crates/anthropic-pool/` directory.
+- `crates/anthropic-pool/` — Pool state machine (AccountStatus: Available/CoolingDown/Disabled), round-robin selection with expired-cooldown auto-transition, quota detection (classify_429/classify_status), request-time inline refresh (60s threshold), background proactive refresh (spawn_refresh_task), pool management (add/remove/health). 38 tests.
 - No `admin.rs`, `provider_impl.rs` files in oauth-proxy.
 - No TODO, FIXME, todo!(), or unimplemented!() anywhere in the codebase.
 - Single `unreachable!()` in proxy.rs retry loop (defensive, correct).
@@ -141,54 +141,62 @@ Note: reqwest workspace dep uses `default-features = false` — the anthropic-au
 
 ---
 
-## Phase 3: Subscription Pool — not started
+## Phase 3: Subscription Pool — complete
 
 Goal: implement pool state machine, round-robin selection, quota detection, cooldown, and background refresh as a standalone library crate.
 
-- [ ] Create `crates/anthropic-pool/` crate
-  - Add to workspace members and dependency entries
+- [x] Create `crates/anthropic-pool/` crate
+  - Added to workspace members and dependency entries
   - Depends on: anthropic-auth, provider (for ErrorClassification), tokio, tracing, serde_json, thiserror, reqwest
+  - Dev-dependency: tempfile for credential store tests, tokio with test-util
 
-- [ ] Define `AccountStatus` enum: Available, CoolingDown { until: Instant }, Disabled
+- [x] Define `AccountStatus` enum: Available, CoolingDown { until: Instant }, Disabled
+  - `label()` method returns status string for health/logging
 
-- [ ] Define `PoolAccount` struct
-  - id (String), status (AccountStatus)
-  - Credential data (access_token, refresh_token, expires_at) lives in CredentialStore; pool references by id
-  - Pool reads credentials from store at selection time (single source of truth)
-
-- [ ] Implement `Pool` struct
+- [x] Implement `Pool` struct in `crates/anthropic-pool/src/pool.rs`
   - account_ids (RwLock<Vec<String>>), statuses (RwLock<HashMap<String, AccountStatus>>), next_index (AtomicUsize), cooldown_duration, credential_store (Arc<CredentialStore>), http_client
+  - No separate PoolAccount struct — pool references credentials by ID from store (single source of truth)
 
-- [ ] Implement round-robin account selection: `Pool::select() -> Result<SelectedAccount>`
-  - `SelectedAccount` struct: id, access_token (cloned from store for this request)
-  - Start from next_index, scan N accounts, check expired cooldowns (transition CoolingDown → Available), return first Available
-  - If none available, return error with pool counts for 503 response: `{"error": {"type": "pool_exhausted", "message": "All accounts exhausted", "pool": {"accounts_total": N, "available": 0, "cooling_down": X, "disabled": Y}}}`
-  - Tests: round-robin cycling, skip CoolingDown/Disabled, expired cooldown transitions, all-exhausted error with correct JSON shape
+- [x] Implement round-robin account selection: `Pool::select() -> Result<SelectedAccount>`
+  - SelectedAccount struct: id, access_token (cloned from store for this request)
+  - Start from next_index (AtomicUsize fetch_add), scan N accounts
+  - Expired cooldowns auto-transition CoolingDown → Available
+  - Accounts missing from credential store auto-disabled
+  - If none available, returns PoolExhausted error with JSON pool counts
+  - 16 tests: round-robin cycling, skip CoolingDown/Disabled, expired cooldown, all-exhausted with counts, empty pool, token from store, missing store entry
 
-- [ ] Implement quota detection in `crates/anthropic-pool/src/quota.rs`
-  - `classify_429(body)`: QuotaExceeded for "5-hour", "5 hour", "rolling window", "usage limit for your plan", "subscription usage limit"; Transient otherwise
-  - `classify_status(status, body)`: 429 delegates to classify_429, 401/403 Permanent, 408/5xx Transient
-  - Tests: each pattern, non-matching 429, 401/403, 5xx
+- [x] Implement quota detection in `crates/anthropic-pool/src/quota.rs`
+  - `classify_429(body)`: case-insensitive match against 5 quota patterns
+  - `classify_status(status, body)`: 429 delegates, 401/403 Permanent, 408/5xx Transient
+  - 17 tests: each pattern, non-matching, case-insensitive, all status codes
 
-- [ ] Implement state transitions via `Pool::report_error(account_id, classification)`
-  - QuotaExceeded → CoolingDown { until: now + cooldown_duration }, Permanent → Disabled, Transient → no change
-  - Tests: all transitions including CoolingDown + refresh failure → Disabled
+- [x] Implement state transitions via `Pool::report_error(account_id, classification)`
+  - QuotaExceeded → CoolingDown, Permanent → Disabled, Transient → no change
+  - 3 tests for each transition type
 
-- [ ] Implement proactive background refresh
-  - `spawn_refresh_task(pool, interval, threshold)` — periodic task refreshing expiring tokens
-  - Check interval = config.refresh_interval_secs (default 300s), threshold = config.refresh_threshold_secs (default 900s)
-  - On success: update token in credential store + persist; on 401/403: mark Disabled; on transient: log warning
-  - Tests: mock token endpoint, verify refresh called, verify Disabled on 401
+- [x] Implement proactive background refresh in `crates/anthropic-pool/src/refresh.rs`
+  - `spawn_refresh_task(pool, interval, threshold)` — periodic tokio task
+  - Skips tokens not expiring within threshold
+  - On success: updates credential store + persists
+  - On InvalidCredentials: marks account Disabled
+  - On transient error: logs warning, retries next cycle
+  - 2 tests: skips valid tokens, attempts refresh on expiring
 
-- [ ] Implement request-time refresh in `Pool::select()`
-  - If selected account's token expires within 60s, attempt inline refresh before returning
-  - On failure: mark Disabled, continue round-robin to next account
-  - Tests: expiring token triggers refresh, failure causes failover
+- [x] Implement request-time refresh in `Pool::select()`
+  - 60-second threshold triggers inline refresh before returning
+  - On failure: marks Disabled, continues round-robin to next account
+  - Test: expired token triggers refresh, failure causes failover to next
 
-- [ ] Pool::add_account(), Pool::remove_account(), Pool::health()
-  - `health()` returns per-account status list including `cooldown_remaining_secs` for CoolingDown accounts
+- [x] Pool::add_account(), Pool::remove_account(), Pool::health()
+  - `add_account()` idempotent (no duplicate IDs)
+  - `health()` returns JSON with per-account status, cooldown_remaining_secs, overall status mapping
+  - Tests: add/remove, idempotent add, health status mapping (healthy/degraded/unhealthy/empty), cooldown remaining
 
-- [ ] Verify: `cargo test -p anthropic-pool`
+- [x] Error module: `crates/anthropic-pool/src/error.rs` with PoolExhausted, NotFound, Credential, RefreshFailed variants
+
+- [x] Verify: 38 tests pass, clippy clean, fmt clean
+
+Note: Pool uses `Pin<Box<dyn Future>>` pattern is NOT needed here since Pool is a concrete type, not used behind dyn. The `set_status()` method allows background refresh to mark accounts Disabled directly.
 
 ---
 

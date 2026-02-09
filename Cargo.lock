@@ -40,6 +40,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "anthropic-pool"
+version = "0.1.0"
+dependencies = [
+ "anthropic-auth",
+ "provider",
+ "reqwest",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.101"
 source = "registry+https://github.com/rust-lang/crates.io-index"
