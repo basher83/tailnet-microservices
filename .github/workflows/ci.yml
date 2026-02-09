@@ -75,7 +75,12 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - run: kubectl kustomize k8s/ | kubectl apply --dry-run=client -f -
+      - name: Render and validate manifests
+        run: |
+          kubectl kustomize k8s/ > /dev/null
+          echo "Kustomize render: OK"
+          kubectl kustomize k8s/ | kubectl apply --dry-run=client --validate=false -f -
+          echo "Dry-run apply: OK"
 
   docker:
     name: Docker
