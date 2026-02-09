@@ -17,6 +17,7 @@ use axum::Router;
 use axum::extract::State;
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
+use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use tokio::net::TcpListener;
@@ -25,8 +26,9 @@ use tracing_subscriber::EnvFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use metrics_exporter_prometheus::PrometheusHandle;
+use provider::PassthroughProvider;
 
-use crate::config::Config;
+use crate::config::{AuthMode, Config};
 use crate::proxy::ProxyState;
 use crate::service::{
     DRAIN_TIMEOUT, ServiceAction, ServiceEvent, ServiceMetrics, ServiceState, handle_event,
@@ -97,9 +99,11 @@ async fn main() -> Result<()> {
     let config = Config::load(&config_path)
         .with_context(|| format!("failed to load config from {}", config_path.display()))?;
 
+    let mode = config.mode();
     info!(
         listen_addr = %config.proxy.listen_addr,
         upstream_url = %config.proxy.upstream_url,
+        mode = ?mode,
         headers = config.headers.len(),
         "configuration loaded"
     );
@@ -128,10 +132,31 @@ async fn main() -> Result<()> {
         .build()
         .context("failed to build HTTP client")?;
 
+    // Construct provider based on config mode
+    let provider: Arc<dyn provider::Provider> = match mode {
+        AuthMode::Passthrough => {
+            let headers = config
+                .headers
+                .iter()
+                .map(|h| provider::passthrough::HeaderInjection {
+                    name: h.name.clone(),
+                    value: h.value.clone(),
+                })
+                .collect();
+            Arc::new(PassthroughProvider::new(headers))
+        }
+        AuthMode::OAuthPool => {
+            // OAuth provider will be wired in Phase 4
+            anyhow::bail!("OAuth pool mode is not yet implemented");
+        }
+    };
+
+    info!(provider = provider.id(), "provider initialized");
+
     let proxy_state = ProxyState {
         client,
         upstream_url: config.proxy.upstream_url.clone(),
-        headers_to_inject: config.headers.clone(),
+        provider,
         timeout: Duration::from_secs(config.proxy.timeout_secs),
         requests_total: metrics.requests_total.clone(),
         errors_total: metrics.errors_total.clone(),
@@ -206,19 +231,25 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-/// Health endpoint per spec R5: returns 200 with status, uptime, requests served.
-/// No tailnet fields — the Tailscale Operator handles tailnet exposure externally.
+/// Health endpoint: returns 200 with status, mode, uptime, requests served.
+/// In OAuth mode, includes pool health details from the provider.
 async fn health_handler(State(state): State<AppState>) -> impl IntoResponse {
     let uptime = state.metrics.started_at.elapsed().as_secs();
     let requests = state.metrics.requests_total.load(Ordering::Relaxed);
     let errors = state.metrics.errors_total.load(Ordering::Relaxed);
+    let provider_health = state.proxy.provider.health().await;
 
-    let body = serde_json::json!({
-        "status": "healthy",
+    let mut body = serde_json::json!({
+        "status": provider_health.status,
+        "mode": state.proxy.provider.id(),
         "uptime_seconds": uptime,
         "requests_served": requests,
         "errors_total": errors,
     });
+
+    if let Some(pool) = provider_health.pool {
+        body["pool"] = pool;
+    }
 
     (
         axum::http::StatusCode::OK,
@@ -308,12 +339,21 @@ mod tests {
     /// Build test app state pointing at the given upstream URL with specified headers.
     fn test_app_state(upstream_url: &str, headers: Vec<config::HeaderInjection>) -> AppState {
         let metrics = ServiceMetrics::new();
+        let provider_headers: Vec<provider::passthrough::HeaderInjection> = headers
+            .iter()
+            .map(|h| provider::passthrough::HeaderInjection {
+                name: h.name.clone(),
+                value: h.value.clone(),
+            })
+            .collect();
+        let provider: Arc<dyn provider::Provider> =
+            Arc::new(provider::PassthroughProvider::new(provider_headers));
 
         AppState {
             proxy: ProxyState {
                 client: reqwest::Client::new(),
                 upstream_url: upstream_url.to_string(),
-                headers_to_inject: headers,
+                provider,
                 timeout: Duration::from_secs(5),
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
@@ -379,7 +419,7 @@ mod tests {
             proxy: ProxyState {
                 client: reqwest::Client::new(),
                 upstream_url: "http://unused".into(),
-                headers_to_inject: vec![],
+                provider: Arc::new(provider::PassthroughProvider::new(vec![])),
                 timeout: Duration::from_secs(5),
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
@@ -407,6 +447,7 @@ mod tests {
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
         assert_eq!(json["status"], "healthy");
+        assert_eq!(json["mode"], "passthrough");
         assert_eq!(json["requests_served"], 5);
         assert_eq!(json["errors_total"], 0);
         assert!(
@@ -720,7 +761,7 @@ mod tests {
             proxy: ProxyState {
                 client: reqwest::Client::new(),
                 upstream_url,
-                headers_to_inject: vec![],
+                provider: Arc::new(provider::PassthroughProvider::new(vec![])),
                 timeout: Duration::from_millis(50), // Very short timeout to trigger quickly
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
@@ -1028,7 +1069,7 @@ mod tests {
             proxy: ProxyState {
                 client: reqwest::Client::new(),
                 upstream_url: upstream_url.clone(),
-                headers_to_inject: vec![],
+                provider: Arc::new(provider::PassthroughProvider::new(vec![])),
                 timeout: Duration::from_secs(5),
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
@@ -1060,7 +1101,7 @@ mod tests {
             proxy: ProxyState {
                 client: reqwest::Client::new(),
                 upstream_url: "http://127.0.0.1:1".into(),
-                headers_to_inject: vec![],
+                provider: Arc::new(provider::PassthroughProvider::new(vec![])),
                 timeout: Duration::from_secs(5),
                 requests_total: metrics_err.requests_total.clone(),
                 errors_total: metrics_err.errors_total.clone(),
@@ -1084,7 +1125,7 @@ mod tests {
             proxy: ProxyState {
                 client: reqwest::Client::new(),
                 upstream_url,
-                headers_to_inject: vec![],
+                provider: Arc::new(provider::PassthroughProvider::new(vec![])),
                 timeout: Duration::from_secs(5),
                 requests_total: metrics2.requests_total.clone(),
                 errors_total: metrics2.errors_total.clone(),
@@ -1284,7 +1325,7 @@ mod tests {
             proxy: ProxyState {
                 client: reqwest::Client::new(),
                 upstream_url,
-                headers_to_inject: vec![],
+                provider: Arc::new(provider::PassthroughProvider::new(vec![])),
                 timeout: Duration::from_millis(50), // 50ms timeout to trigger quickly
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
@@ -1754,7 +1795,7 @@ mod tests {
             proxy: ProxyState {
                 client: reqwest::Client::new(),
                 upstream_url: "http://127.0.0.1:1".into(),
-                headers_to_inject: vec![],
+                provider: Arc::new(provider::PassthroughProvider::new(vec![])),
                 timeout: Duration::from_secs(5),
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
@@ -1792,7 +1833,7 @@ mod tests {
             proxy: ProxyState {
                 client: reqwest::Client::new(),
                 upstream_url,
-                headers_to_inject: vec![],
+                provider: Arc::new(provider::PassthroughProvider::new(vec![])),
                 timeout: Duration::from_secs(5),
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
@@ -1837,7 +1878,7 @@ mod tests {
             proxy: ProxyState {
                 client: reqwest::Client::new(),
                 upstream_url,
-                headers_to_inject: vec![],
+                provider: Arc::new(provider::PassthroughProvider::new(vec![])),
                 timeout: Duration::from_secs(5),
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
@@ -2158,7 +2199,7 @@ mod tests {
             proxy: ProxyState {
                 client: reqwest::Client::new(),
                 upstream_url,
-                headers_to_inject: vec![],
+                provider: Arc::new(provider::PassthroughProvider::new(vec![])),
                 timeout: Duration::from_millis(50), // Short timeout to trigger retry
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
@@ -2254,10 +2295,12 @@ mod tests {
                     .build()
                     .unwrap(),
                 upstream_url,
-                headers_to_inject: vec![config::HeaderInjection {
-                    name: "anthropic-beta".into(),
-                    value: "oauth-2025-04-20".into(),
-                }],
+                provider: Arc::new(provider::PassthroughProvider::new(vec![
+                    provider::passthrough::HeaderInjection {
+                        name: "anthropic-beta".into(),
+                        value: "oauth-2025-04-20".into(),
+                    },
+                ])),
                 timeout: Duration::from_secs(5),
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
@@ -2448,10 +2491,12 @@ mod tests {
                     .build()
                     .unwrap(),
                 upstream_url,
-                headers_to_inject: vec![config::HeaderInjection {
-                    name: "anthropic-beta".into(),
-                    value: "oauth-2025-04-20".into(),
-                }],
+                provider: Arc::new(provider::PassthroughProvider::new(vec![
+                    provider::passthrough::HeaderInjection {
+                        name: "anthropic-beta".into(),
+                        value: "oauth-2025-04-20".into(),
+                    },
+                ])),
                 timeout: Duration::from_secs(5),
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),

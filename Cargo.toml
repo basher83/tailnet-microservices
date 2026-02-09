@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/common",
+    "crates/provider",
     "services/oauth-proxy",
 ]
 
@@ -46,6 +47,7 @@ anyhow = "1"
 
 # Internal crates
 common = { path = "crates/common" }
+provider = { path = "crates/provider" }
 
 [profile.release]
 lto = true
