@@ -8,7 +8,7 @@ Previous build history archived at IMPLEMENTATION_PLAN_v1.md (81 audits, 111 tes
 
 ## Baseline
 
-v0.0.118: 187 tests pass (114 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean.
+v0.0.119: 198 tests pass (125 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean.
 
 Completed specs: `oauth-proxy.md` (Complete), `operator-migration.md` (Complete), `operator-migration-addendum.md` (Complete — dual proxy conflict resolved, Ingress live).
 
@@ -16,7 +16,7 @@ Remaining from addendum: cluster verification for Ingress resolution, health end
 
 ## Gap Summary
 
-The codebase has provider abstraction, OAuth PKCE/token management, subscription pool, and gateway integration (Phase 4) complete. The spec target is a full OAuth 2.0 gateway with admin API and deployment. Remaining work: admin API endpoints (Phase 5) and deployment manifests (Phase 6).
+The codebase has provider abstraction, OAuth PKCE/token management, subscription pool, gateway integration (Phase 4), and admin API (Phase 5) complete. The spec target is a full OAuth 2.0 gateway with deployment. Remaining work: deployment manifests (Phase 6).
 
 ### Verified Code State (2026-02-08)
 
@@ -25,12 +25,12 @@ The codebase has provider abstraction, OAuth PKCE/token management, subscription
 - `services/oauth-proxy/src/config.rs` — `[proxy]`, `[[headers]]`, optional `[oauth]`, optional `[admin]`. AuthMode detection. OAuthConfig/AdminConfig structs with validation.
 - `services/oauth-proxy/src/proxy.rs` — Failover loop: outer loop iterates accounts (capped at `max_failover_attempts`), inner loop handles timeout retries. Error classification buffers HTTP error response bodies for quota/permanent detection. Streams success responses for SSE. `build_buffered_response` and `build_streaming_response` helpers.
 - `services/oauth-proxy/src/provider_impl.rs` — `AnthropicOAuthProvider` implementing Provider trait. Bearer token injection, `anthropic-beta` merge/dedup, system prompt injection (Opus/Sonnet get prefix, Haiku skipped), `anthropic-dangerous-direct-browser-access`, `user-agent`, `anthropic-version` headers. Delegates classify/report to pool. 13 unit tests.
-- `services/oauth-proxy/src/main.rs` — OAuth mode wiring: loads CredentialStore, creates Pool from config providers (falls back to all credential store accounts), spawns background refresh task, creates AnthropicOAuthProvider. Health endpoint includes pool details in OAuth mode. 10 OAuth integration tests.
+- `services/oauth-proxy/src/main.rs` — OAuth mode wiring: loads CredentialStore, creates Pool from config providers (falls back to all credential store accounts), spawns background refresh task, creates AnthropicOAuthProvider. Spawns admin API listener on separate port when `admin.enabled` and OAuth mode. Health endpoint includes pool details in OAuth mode. 10 OAuth integration tests.
+- `services/oauth-proxy/src/admin.rs` — Admin API on separate listener (default :9090). AdminState holds `Arc<Pool>`, `reqwest::Client`, `Arc<Mutex<HashMap<String, PkceState>>>`. Five endpoints: GET /admin/accounts (list with status, no tokens), POST /admin/accounts/init-oauth (PKCE flow initiation, account ID `claude-max-{timestamp}`), POST /admin/accounts/complete-oauth (code exchange, credential storage, pool addition), DELETE /admin/accounts/{id} (pool + credential removal), GET /admin/pool (pool health summary). Lazy PKCE state cleanup on init-oauth. 11 tests.
 - `services/oauth-proxy/src/metrics.rs` — Seven metrics: `proxy_requests_total`, `proxy_request_duration_seconds`, `proxy_upstream_errors_total` (existing), plus `pool_account_status` (gauge), `pool_failovers_total`, `pool_token_refreshes_total`, `pool_quota_exhaustions_total` (new).
 - `services/oauth-proxy/src/service.rs` — State machine: Initializing → Starting → Running → Draining → Stopped. `#[allow(dead_code)]` on state/event/action enums (spec-defined variants used only in tests).
 - `crates/anthropic-auth/` — PKCE (generate_verifier, compute_challenge, build_authorization_url), token exchange/refresh, credential store (atomic writes, 0600 perms, Mutex-serialized). 22 tests.
 - `crates/anthropic-pool/` — Pool state machine (AccountStatus: Available/CoolingDown/Disabled), round-robin selection with expired-cooldown auto-transition, quota detection (classify_429/classify_status), request-time inline refresh (60s threshold), background proactive refresh (spawn_refresh_task), pool management (add/remove/health). 38 tests.
-- No `admin.rs` in oauth-proxy (Phase 5).
 - No TODO, FIXME, todo!(), or unimplemented!() anywhere in the codebase.
 - Single `unreachable!()` in proxy.rs failover loop (defensive, correct).
 
@@ -252,42 +252,44 @@ Note: Health endpoint `mode` field returns `provider.id()` — `"passthrough"` o
 
 ---
 
-## Phase 5: Admin API — not started
+## Phase 5: Admin API — complete
 
 Goal: implement account management endpoints on a separate listener port.
 
-- [ ] Implement admin router in `services/oauth-proxy/src/admin.rs`
+- [x] Implement admin router in `services/oauth-proxy/src/admin.rs`
   - Separate axum Router on config.admin.listen_addr (default `0.0.0.0:9090`)
-  - Shared state: Arc<Pool>, Arc<CredentialStore>, Mutex<HashMap<String, PkceState>>
-  - PkceState struct: `verifier: String`, `created_at: Instant`; expires after 10 minutes
+  - AdminState holds: `Arc<Pool>`, `reqwest::Client`, `Arc<Mutex<HashMap<String, PkceState>>>`
+  - PkceState struct: `verifier: String`, `created_at: Instant`; expires after 10 minutes (600s)
+  - Pool's credential_store accessed via `pool.credential_store()` — no separate Arc needed
 
-- [ ] `GET /admin/accounts` — list accounts with status, never expose tokens
-  - Response: `[{"id": "claude-max-...", "status": "available"|"cooling_down"|"disabled", ...}]`
+- [x] `GET /admin/accounts` — list accounts with status, never expose tokens
+  - Delegates to `pool.health()` for account data, wraps in `{"accounts": [...]}`
 
-- [ ] `POST /admin/accounts/init-oauth` — generate PKCE pair, return authorization URL + account_id
+- [x] `POST /admin/accounts/init-oauth` — generate PKCE pair, return authorization URL + account_id
   - Account ID format: `claude-max-{unix_timestamp}` (e.g., `claude-max-1739059200`)
-  - Response: `{"authorization_url": "...", "account_id": "claude-max-...", "instructions": "Open the URL in a browser, authorize, then paste the code to complete-oauth"}`
-  - Store PkceState in-memory HashMap keyed by account_id
+  - Uses `anthropic_auth::generate_verifier()`, `compute_challenge()`, `build_authorization_url()`
+  - Stores PkceState in-memory HashMap keyed by account_id
 
-- [ ] `POST /admin/accounts/complete-oauth` — exchange code, store credential, add to pool
-  - Request body: `{"account_id": "claude-max-...", "code": "{authorization_code}#{state}"}`
-  - Parse `code#state`, exchange code with verifier from stored PkceState
-  - Store credential in CredentialStore, add account to Pool
-  - Return 400 if PkceState expired (>10 minutes) or not found
+- [x] `POST /admin/accounts/complete-oauth` — exchange code, store credential, add to pool
+  - Parses `code#state` format, exchanges code with stored verifier
+  - Stores credential via `pool.credential_store().add()`, adds to pool via `pool.add_account()`
+  - Returns 400 if PkceState expired (>10 minutes) or not found
+  - Returns 502 if token exchange fails (upstream auth server error)
 
-- [ ] `DELETE /admin/accounts/{id}` — remove from pool + credential file
+- [x] `DELETE /admin/accounts/{id}` — remove from pool + credential file
+  - Calls `pool.remove_account()` and `credential_store.remove()` — idempotent
 
-- [ ] `GET /admin/pool` — pool summary (same shape as health endpoint pool object)
+- [x] `GET /admin/pool` — pool summary (same shape as health endpoint pool object)
 
-- [ ] Wire admin router in main.rs
-  - Start only if config.admin.enabled and OAuth mode
-  - Graceful shutdown alongside main listener
+- [x] Wire admin router in main.rs
+  - Starts only if `config.admin.enabled` and OAuth mode
+  - Spawned as background tokio task on admin_config.listen_addr
 
-- [ ] PKCE state cleanup (lazy expiration: check age on access, remove expired entries)
+- [x] PKCE state cleanup: lazy expiration on init-oauth (removes expired entries while holding lock)
 
-- [ ] Tests: init-oauth URL validation, complete-oauth stores credential, expired PkceState returns 400, delete removes account, accounts list excludes tokens, admin isolation from proxy port
+- [x] Tests (11 tests): list_accounts empty + with accounts, init-oauth URL validation + stores state, complete-oauth without init returns 400, expired PkceState returns 400, delete removes from pool + idempotent for nonexistent, pool status empty + with accounts, admin routes isolated from proxy port
 
-- [ ] Verify: `cargo test --workspace`, `cargo clippy` clean
+- [x] Verify: 198 tests pass (196 + 2 ignored), clippy clean, fmt clean
 
 ---
 

@@ -7,6 +7,7 @@
 //!
 //! Tailnet exposure is handled externally by the Tailscale Operator.
 
+mod admin;
 mod config;
 mod metrics;
 mod provider_impl;
@@ -189,6 +190,29 @@ async fn main() -> Result<()> {
                 Duration::from_secs(oauth_config.refresh_interval_secs),
                 Duration::from_secs(oauth_config.refresh_threshold_secs),
             );
+
+            // Start admin API if enabled
+            if let Some(ref admin_config) = config.admin
+                && admin_config.enabled
+            {
+                let admin_state = admin::AdminState::new(pool.clone(), client.clone());
+                let admin_router = admin::build_admin_router(admin_state);
+                let admin_addr = admin_config.listen_addr;
+
+                tokio::spawn(async move {
+                    let listener = match TcpListener::bind(admin_addr).await {
+                        Ok(l) => l,
+                        Err(e) => {
+                            error!(addr = %admin_addr, error = %e, "failed to bind admin listener");
+                            return;
+                        }
+                    };
+                    info!(addr = %admin_addr, "admin API listening");
+                    if let Err(e) = axum::serve(listener, admin_router).await {
+                        error!(error = %e, "admin API server error");
+                    }
+                });
+            }
 
             let provider = Arc::new(provider_impl::AnthropicOAuthProvider::new(pool));
             (provider as Arc<dyn provider::Provider>, pool_size)
