@@ -1,13 +1,28 @@
 #!/bin/bash
 # Ralph Loop for Tailnet Microservices
-# Usage: ./loop.sh [--json] [plan] [max_iterations]
+# Usage: ./loop.sh [--json] [plan|plan-work "scope"|max_iterations]
 # Examples:
-#   ./loop.sh              # Build mode, human output
-#   ./loop.sh --json       # Build mode, JSON output
-#   ./loop.sh 20           # Build mode, max 20 tasks
-#   ./loop.sh plan         # Plan mode, unlimited
-#   ./loop.sh plan 5       # Plan mode, max 5 iterations
-#   ./loop.sh --json plan  # Plan mode, JSON output
+#   ./loop.sh                          # Build mode, human output
+#   ./loop.sh --json                   # Build mode, JSON output
+#   ./loop.sh 20                       # Build mode, max 20 tasks
+#   ./loop.sh plan                     # Plan mode, unlimited
+#   ./loop.sh plan 5                   # Plan mode, max 5 iterations
+#   ./loop.sh plan-work "token refresh" # Scoped plan for work branch
+#   ./loop.sh --json plan              # Plan mode, JSON output
+
+# --- Sandbox pre-flight ---
+check_sandbox() {
+    if [ -f /.dockerenv ] || [ -f /run/.containerenv ] || grep -qsE 'docker|lxc|kubepods' /proc/1/cgroup 2>/dev/null; then
+        echo "✅ Sandbox: container detected"
+    elif command -v bwrap &>/dev/null; then
+        echo "✅ Sandbox: bubblewrap available"
+    elif command -v sandbox-exec &>/dev/null; then
+        echo "✅ Sandbox: macOS Seatbelt available"
+    else
+        echo "⚠️  No sandbox detected — running uncontained"
+        echo "   Consider: Docker, bubblewrap, or macOS sandbox-exec"
+    fi
+}
 
 # Parse --json flag
 OUTPUT_FORMAT=""
@@ -17,7 +32,24 @@ if [ "$1" = "--json" ]; then
 fi
 
 # Parse mode and iterations
-if [ "$1" = "plan" ]; then
+if [ "$1" = "plan-work" ]; then
+    MODE="plan-work"
+    PROMPT_FILE="PROMPT_plan_work.md"
+    if [ -z "$2" ]; then
+        echo "Error: plan-work requires a scope description"
+        echo "Usage: ./loop.sh plan-work \"token refresh logic\""
+        exit 1
+    fi
+    export WORK_SCOPE="$2"
+    MAX_ITERATIONS=${3:-5}
+    # Branch validation — plan-work must not run on main/master
+    CURRENT_BRANCH=$(git branch --show-current)
+    if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
+        echo "Error: plan-work must run on a work branch, not $CURRENT_BRANCH"
+        echo "Create one: git checkout -b work/$(echo "$2" | tr ' ' '-' | tr '[:upper:]' '[:lower:]')"
+        exit 1
+    fi
+elif [ "$1" = "plan" ]; then
     MODE="plan"
     PROMPT_FILE="PROMPT_plan.md"
     MAX_ITERATIONS=${2:-0}
@@ -54,9 +86,12 @@ echo "Mode:   $MODE"
 echo "Prompt: $PROMPT_FILE"
 echo "Output: ${OUTPUT_FORMAT:-human}"
 echo "Branch: $CURRENT_BRANCH"
+[ "$MODE" = "plan-work" ] && echo "Scope:  $WORK_SCOPE"
 [ $MAX_ITERATIONS -gt 0 ] && echo "Max:    $MAX_ITERATIONS iterations"
 echo "Stop:   Ctrl+C"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+check_sandbox
 
 # Verify prompt file exists
 if [ ! -f "$PROMPT_FILE" ]; then
@@ -66,16 +101,29 @@ fi
 
 while true; do
     if [ $MAX_ITERATIONS -gt 0 ] && [ $ITERATION -ge $MAX_ITERATIONS ]; then
-        echo "Reached max iterations: $MAX_ITERATIONS"
+        if [ "$MODE" = "plan-work" ]; then
+            echo "✅ Scoped planning complete ($MAX_ITERATIONS iterations)"
+            echo "   Next: review IMPLEMENTATION_PLAN.md, then ./loop.sh to build"
+        else
+            echo "Reached max iterations: $MAX_ITERATIONS"
+        fi
         break
     fi
 
-    # Run Ralph iteration (background + wait to allow signal handling)
-    cat "$PROMPT_FILE" | claude -p \
-        --dangerously-skip-permissions \
-        $OUTPUT_FORMAT \
-        --model opus \
-        --verbose &
+    # Prepare prompt — envsubst for plan-work, cat for others
+    if [ "$MODE" = "plan-work" ]; then
+        envsubst '${WORK_SCOPE}' < "$PROMPT_FILE" | claude -p \
+            --dangerously-skip-permissions \
+            $OUTPUT_FORMAT \
+            --model opus \
+            --verbose &
+    else
+        cat "$PROMPT_FILE" | claude -p \
+            --dangerously-skip-permissions \
+            $OUTPUT_FORMAT \
+            --model opus \
+            --verbose &
+    fi
     CLAUDE_PID=$!
     wait $CLAUDE_PID
     CLAUDE_PID=""
