@@ -8,7 +8,7 @@ Previous build history archived at IMPLEMENTATION_PLAN_v1.md (81 audits, 111 tes
 
 ## Baseline
 
-v0.0.115: 102 tests pass (89 oauth-proxy + 4 common + 9 provider), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean.
+v0.0.116: 124 tests pass (89 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean.
 
 Completed specs: `oauth-proxy.md` (Complete), `operator-migration.md` (Complete), `operator-migration-addendum.md` (Complete — dual proxy conflict resolved, Ingress live).
 
@@ -27,7 +27,8 @@ The current codebase is a passthrough header injector with provider abstraction.
 - `services/oauth-proxy/src/main.rs` — Health returns `{status, mode, uptime_seconds, requests_served, errors_total}`. Mode comes from provider.id().
 - `services/oauth-proxy/src/metrics.rs` — Three metrics only: `proxy_requests_total`, `proxy_request_duration_seconds`, `proxy_upstream_errors_total`. No pool metrics.
 - `services/oauth-proxy/src/service.rs` — State machine: Initializing → Starting → Running → Draining → Stopped. `#[allow(dead_code)]` on state/event/action enums (spec-defined variants used only in tests).
-- No `crates/anthropic-auth/`, `crates/anthropic-pool/` directories.
+- `crates/anthropic-auth/` — PKCE (generate_verifier, compute_challenge, build_authorization_url), token exchange/refresh, credential store (atomic writes, 0600 perms, Mutex-serialized). 22 tests.
+- No `crates/anthropic-pool/` directory.
 - No `admin.rs`, `provider_impl.rs` files in oauth-proxy.
 - No TODO, FIXME, todo!(), or unimplemented!() anywhere in the codebase.
 - Single `unreachable!()` in proxy.rs retry loop (defensive, correct).
@@ -97,47 +98,46 @@ Note: Provider trait uses `Pin<Box<dyn Future>>` for dyn-compatibility (not nati
 
 ---
 
-## Phase 2: OAuth Foundation — not started
+## Phase 2: OAuth Foundation — complete
 
 Goal: implement PKCE generation, token exchange, token refresh, and credential file storage as a standalone library crate.
 
-- [ ] Create `crates/anthropic-auth/` crate
-  - Add to workspace members and dependency entries
-  - Add `sha2`, `base64`, `rand` to workspace dependencies in root Cargo.toml
-  - Cargo.toml depends on: reqwest, serde/serde_json, tokio, thiserror, tracing, base64, sha2, rand
+- [x] Create `crates/anthropic-auth/` crate
+  - Added to workspace members and dependency entries
+  - Added `sha2`, `base64`, `rand` to workspace dependencies in root Cargo.toml
+  - Cargo.toml depends on: reqwest (with `json`, `form` features), serde/serde_json, tokio, thiserror, tracing, base64, sha2, rand
+  - Dev-dependency: `tempfile` for credential store tests
 
-- [ ] Define constants in `crates/anthropic-auth/src/constants.rs`
-  - `ANTHROPIC_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"`
-  - `REDIRECT_URI = "https://console.anthropic.com/oauth/code/callback"`
-  - `TOKEN_ENDPOINT = "https://console.anthropic.com/v1/oauth/token"`
-  - `AUTHORIZE_ENDPOINT = "https://claude.ai/oauth/authorize"`
-  - `SCOPES = "user:profile user:inference user:sessions:claude_code"`
-  - `REQUIRED_SYSTEM_PROMPT_PREFIX = "You are Claude Code, Anthropic's official CLI for Claude."`
+- [x] Define constants in `crates/anthropic-auth/src/constants.rs`
+  - All six constants per spec
 
-- [ ] Implement PKCE in `crates/anthropic-auth/src/pkce.rs`
-  - `generate_verifier()` — 128-byte random URL-safe base64 string
-  - `compute_challenge(verifier)` — SHA-256 hash, base64url-encoded (no padding)
-  - `build_authorization_url(state, challenge)` — full URL with all required params (client_id, redirect_uri, response_type=code, scope, code_challenge, code_challenge_method=S256, state)
-  - Tests: verifier length, deterministic challenge, URL contains required parameters
+- [x] Implement PKCE in `crates/anthropic-auth/src/pkce.rs`
+  - `generate_verifier()` — 128-byte random, 171-char URL-safe base64 (no padding)
+  - `compute_challenge(verifier)` — SHA-256 hash, 43-char base64url (no padding)
+  - `build_authorization_url(state, challenge)` — full URL with all required params
+  - 7 tests: verifier length/uniqueness/charset, deterministic challenge, known-value challenge, URL params, roundtrip
 
-- [ ] Implement token exchange in `crates/anthropic-auth/src/token.rs`
-  - `exchange_code(client, code, verifier) -> Result<TokenResponse>` — POST to TOKEN_ENDPOINT with grant_type=authorization_code, code, code_verifier, client_id, redirect_uri
-  - `refresh_token(client, refresh) -> Result<TokenResponse>` — POST to TOKEN_ENDPOINT with grant_type=refresh_token, refresh_token, client_id
-  - `TokenResponse` struct: access_token, refresh_token, expires_in (seconds)
-  - Mapping: `TokenResponse.expires_in` (seconds delta) → `Credential.expires` (unix millis) computed at storage time
-  - Error type for HTTP failures, invalid responses, 401/403
-  - Tests: mock HTTP responses, correct POST body, error on 401
+- [x] Implement token exchange in `crates/anthropic-auth/src/token.rs`
+  - `exchange_code(client, code, verifier) -> Result<TokenResponse>` — POST with authorization_code grant
+  - `refresh_token(client, refresh) -> Result<TokenResponse>` — POST with refresh_token grant
+  - `TokenResponse` struct: access_token, refresh_token, expires_in (seconds delta)
+  - Distinct error variants: Http (network), TokenExchange (non-success), InvalidCredentials (401/403)
+  - 7 tests: deserialization, serialization, constants verification, error on invalid code/token
 
-- [ ] Implement credential storage in `crates/anthropic-auth/src/credentials.rs`
-  - `Credential` struct: type (`"oauth"`), refresh, access, expires (unix millis)
-  - `CredentialStore` struct: PathBuf + tokio::sync::Mutex for write serialization
-  - load(), save() (atomic temp+rename, 0600 permissions), update_token(), add(), remove()
-  - Cold start: missing file creates empty `{}`, pool starts with zero accounts
-  - Tests: round-trip save/load, atomic rename, permissions, concurrent writes, cold start
+- [x] Implement credential storage in `crates/anthropic-auth/src/credentials.rs`
+  - `Credential` struct with `type`, `refresh`, `access`, `expires` (unix millis)
+  - `CredentialStore`: PathBuf + tokio::sync::Mutex, all methods async
+  - Atomic writes: temp file + rename, 0600 permissions on unix
+  - Cold start: creates `{}` if file missing
+  - 7 tests: roundtrip, cold start, add/remove, update, nonexistent update error, permissions, concurrent writes
 
-- [ ] Module structure: `src/lib.rs` re-exports pkce, token, credentials, constants
+- [x] Error module: `crates/anthropic-auth/src/error.rs` with Http, TokenExchange, InvalidCredentials, CredentialParse, Io, NotFound variants
 
-- [ ] Verify: `cargo test -p anthropic-auth`
+- [x] Module structure: `src/lib.rs` re-exports all public types from pkce, token, credentials, constants, error
+
+- [x] Verify: 22 tests pass, clippy clean, fmt clean
+
+Note: reqwest workspace dep uses `default-features = false` — the anthropic-auth crate adds `json` and `form` features locally in its Cargo.toml.
 
 ---
 
