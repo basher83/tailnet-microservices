@@ -1,13 +1,12 @@
 //! HTTP proxy logic
 //!
-//! Receives inbound requests, strips hop-by-hop headers, injects configured
-//! headers, and forwards to the upstream URL. Returns the upstream response
+//! Receives inbound requests, strips hop-by-hop headers, delegates auth to the
+//! provider, and forwards to the upstream URL. Returns the upstream response
 //! verbatim (including error status codes from upstream).
 
-use crate::config::HeaderInjection;
-use axum::http::{HeaderName, HeaderValue, StatusCode};
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use std::str::FromStr;
+use provider::Provider;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{error, info, instrument, warn};
@@ -38,7 +37,7 @@ const HOP_BY_HOP_HEADERS: &[&str] = &[
 pub struct ProxyState {
     pub client: reqwest::Client,
     pub upstream_url: String,
-    pub headers_to_inject: Vec<HeaderInjection>,
+    pub provider: Arc<dyn Provider>,
     pub timeout: Duration,
     pub requests_total: Arc<std::sync::atomic::AtomicU64>,
     pub errors_total: Arc<std::sync::atomic::AtomicU64>,
@@ -115,31 +114,6 @@ pub async fn proxy_request(
         }
     }
 
-    // Inject configured headers (add if not present, replace if present).
-    // The authorization header is protected per spec: it must always pass
-    // through from the client unchanged, regardless of injection config.
-    for injection in &state.headers_to_inject {
-        let name = match HeaderName::from_str(&injection.name) {
-            Ok(n) => n,
-            Err(e) => {
-                warn!(header = %injection.name, error = %e, "skipping invalid header name");
-                continue;
-            }
-        };
-        if name == axum::http::header::AUTHORIZATION {
-            warn!(header = %injection.name, "refusing to overwrite authorization header per spec");
-            continue;
-        }
-        let value = match HeaderValue::from_str(&injection.value) {
-            Ok(v) => v,
-            Err(e) => {
-                warn!(header = %injection.name, error = %e, "skipping invalid header value");
-                continue;
-            }
-        };
-        headers.insert(name, value);
-    }
-
     // Read the request body
     let body_bytes = match axum::body::to_bytes(request.into_body(), MAX_BODY_SIZE).await {
         Ok(b) => b,
@@ -159,6 +133,53 @@ pub async fn proxy_request(
         }
     };
 
+    // Delegate auth to the provider (header injection, body modification).
+    // Passthrough mode: injects configured headers, ignores body.
+    // OAuth mode (future): selects account, injects Bearer token, modifies body.
+    let mut body_value = if state.provider.needs_body() {
+        match serde_json::from_slice::<serde_json::Value>(&body_bytes) {
+            Ok(v) => v,
+            Err(e) => {
+                state
+                    .errors_total
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                let status = StatusCode::BAD_REQUEST;
+                crate::metrics::record_request(
+                    status.as_u16(),
+                    &method_str,
+                    start.elapsed().as_secs_f64(),
+                );
+                crate::metrics::record_upstream_error("invalid_request");
+                return error_response(status, &format!("Invalid JSON body: {e}"), &request_id);
+            }
+        }
+    } else {
+        serde_json::Value::Null
+    };
+
+    if let Err(e) = state
+        .provider
+        .prepare_request(&mut headers, &mut body_value)
+        .await
+    {
+        state
+            .errors_total
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let status = StatusCode::SERVICE_UNAVAILABLE;
+        crate::metrics::record_request(status.as_u16(), &method_str, start.elapsed().as_secs_f64());
+        error!(error = %e, "provider prepare_request failed");
+        return error_response(status, &format!("provider error: {e}"), &request_id);
+    }
+
+    // If the provider modified the body, serialize it back to bytes
+    let final_body = if state.provider.needs_body() {
+        serde_json::to_vec(&body_value)
+            .unwrap_or_else(|_| body_bytes.to_vec())
+            .into()
+    } else {
+        body_bytes
+    };
+
     // Retry loop: up to 2 retries (3 total attempts) for timeouts only
     for attempt in 0..MAX_UPSTREAM_ATTEMPTS {
         if attempt > 0 {
@@ -171,7 +192,7 @@ pub async fn proxy_request(
             .request(method.clone(), &upstream_url)
             .headers(headers.clone())
             .timeout(state.timeout)
-            .body(body_bytes.clone());
+            .body(final_body.clone());
 
         match req.send().await {
             Ok(upstream_response) => {
