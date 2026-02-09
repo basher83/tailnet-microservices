@@ -50,9 +50,8 @@ pub struct HeaderInjection {
     pub value: String,
 }
 
-/// OAuth pool configuration (spec-defined fields, wired in Phase 4)
+/// OAuth pool configuration — activates pool mode when present in TOML.
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)]
 pub struct OAuthConfig {
     pub credential_file: String,
     #[serde(default = "default_cooldown_secs")]

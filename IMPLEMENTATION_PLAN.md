@@ -8,7 +8,7 @@ Previous build history archived at IMPLEMENTATION_PLAN_v1.md (81 audits, 111 tes
 
 ## Baseline
 
-v0.0.120: 198 tests pass (125 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean. `kubectl kustomize k8s/` validates clean.
+v0.0.122: 198 tests pass (125 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean. `kubectl kustomize k8s/` validates clean.
 
 Completed specs: `oauth-proxy.md` (Complete), `operator-migration.md` (Complete), `operator-migration-addendum.md` (Complete — dual proxy conflict resolved, Ingress live), `anthropic-oauth-gateway.md` (Phases 1–6 complete).
 
@@ -25,10 +25,10 @@ The full OAuth 2.0 gateway implementation is code-complete across all six phases
 - `services/oauth-proxy/src/provider_impl.rs` — `AnthropicOAuthProvider` implementing Provider trait. Bearer token injection, `anthropic-beta` merge/dedup, system prompt injection (Opus/Sonnet get prefix, Haiku skipped), `anthropic-dangerous-direct-browser-access`, `user-agent`, `anthropic-version` headers. Delegates classify/report to pool. 13 unit tests.
 - `services/oauth-proxy/src/main.rs` — OAuth mode wiring: loads CredentialStore, creates Pool from config providers (falls back to all credential store accounts), spawns background refresh task, creates AnthropicOAuthProvider. Spawns admin API listener on separate port when `admin.enabled` and OAuth mode. Health endpoint includes pool details in OAuth mode. 10 OAuth integration tests.
 - `services/oauth-proxy/src/admin.rs` — Admin API on separate listener (default :9090). AdminState holds `Arc<Pool>`, `reqwest::Client`, `Arc<Mutex<HashMap<String, PkceState>>>`. Five endpoints: GET /admin/accounts (list with status, no tokens), POST /admin/accounts/init-oauth (PKCE flow initiation, account ID `claude-max-{timestamp}`), POST /admin/accounts/complete-oauth (code exchange, credential storage, pool addition), DELETE /admin/accounts/{id} (pool + credential removal), GET /admin/pool (pool health summary). Lazy PKCE state cleanup on init-oauth. 11 tests.
-- `services/oauth-proxy/src/metrics.rs` — Seven metrics: `proxy_requests_total`, `proxy_request_duration_seconds`, `proxy_upstream_errors_total` (existing), plus `pool_account_status` (gauge), `pool_failovers_total`, `pool_token_refreshes_total`, `pool_quota_exhaustions_total` (new).
+- `services/oauth-proxy/src/metrics.rs` — Six metric helpers: `proxy_requests_total`, `proxy_request_duration_seconds`, `proxy_upstream_errors_total` (existing), plus `pool_account_status` (gauge), `pool_failovers_total`, `pool_quota_exhaustions_total` (new). `pool_token_refreshes_total` emitted directly by `anthropic-pool` refresh cycle.
 - `services/oauth-proxy/src/service.rs` — State machine: Initializing → Starting → Running → Draining → Stopped. `#[allow(dead_code)]` on state/event/action enums (spec-defined variants used only in tests).
 - `crates/anthropic-auth/` — PKCE (generate_verifier, compute_challenge, build_authorization_url), token exchange/refresh, credential store (atomic writes, 0600 perms, Mutex-serialized). 22 tests.
-- `crates/anthropic-pool/` — Pool state machine (AccountStatus: Available/CoolingDown/Disabled), round-robin selection with expired-cooldown auto-transition, quota detection (classify_429/classify_status), request-time inline refresh (60s threshold), background proactive refresh (spawn_refresh_task), pool management (add/remove/health). 38 tests.
+- `crates/anthropic-pool/` — Pool state machine (AccountStatus: Available/CoolingDown/Disabled), round-robin selection with expired-cooldown auto-transition, quota detection (classify_429/classify_status), request-time inline refresh (60s threshold), background proactive refresh (spawn_refresh_task with `pool_token_refreshes_total` metric emission), pool management (add/remove/health). 38 tests.
 - No TODO, FIXME, todo!(), or unimplemented!() anywhere in the codebase.
 - Single `unreachable!()` in proxy.rs failover loop (defensive, correct).
 
@@ -84,5 +84,6 @@ oauth-proxy (binary)
   ├── anthropic-auth    (PKCE, token exchange/refresh, credential storage)
   └── anthropic-pool    (AccountStatus state machine, round-robin, failover, background refresh)
         ├── anthropic-auth
-        └── provider    (ErrorClassification reuse)
+        ├── provider    (ErrorClassification reuse)
+        └── metrics     (pool_token_refreshes_total emission)
 ```
