@@ -1,6 +1,6 @@
 # Spec: Anthropic OAuth Gateway
 
-**Status:** Draft
+**Status:** Complete
 **Created:** 2026-02-09
 **Author:** Brent + Cowork
 **Supersedes:** `oauth-proxy.md` (header injector → full OAuth gateway)
@@ -635,71 +635,71 @@ Same Deployment, same Ingress, same MagicDNS hostname, same container image tag 
 
 ### Phase 1: Provider Abstraction + Mode Detection
 
-- [ ] Create `crates/provider/` with `Provider` trait and `ErrorClassification`
-- [ ] Create `PassthroughProvider` implementing `Provider` trait (wraps current header injection logic)
-- [ ] Extend `config.rs` with `[oauth]` section parsing and mode detection
-- [ ] Refactor `proxy.rs` to call `provider.prepare_request()` instead of inline header injection
-- [ ] Body handling fork: passthrough = opaque bytes, oauth = deserialize (stubbed — passthrough provider uses opaque path)
-- [ ] All existing tests pass, behavior unchanged (passthrough provider reproduces current behavior exactly)
+- [x] Create `crates/provider/` with `Provider` trait and `ErrorClassification`
+- [x] Create `PassthroughProvider` implementing `Provider` trait (wraps current header injection logic)
+- [x] Extend `config.rs` with `[oauth]` section parsing and mode detection
+- [x] Refactor `proxy.rs` to call `provider.prepare_request()` instead of inline header injection
+- [x] Body handling fork: passthrough = opaque bytes, oauth = deserialize (stubbed — passthrough provider uses opaque path)
+- [x] All existing tests pass, behavior unchanged (passthrough provider reproduces current behavior exactly)
 
 ### Phase 2: OAuth Foundation
 
-- [ ] Create `crates/anthropic-auth/` with PKCE generation (verifier + S256 challenge)
-- [ ] Implement token exchange (`authorization_code` grant)
-- [ ] Implement token refresh (`refresh_token` grant)
-- [ ] Implement credential file storage (read/write JSON, 0600 permissions)
-- [ ] Unit tests for PKCE, exchange, refresh, storage
+- [x] Create `crates/anthropic-auth/` with PKCE generation (verifier + S256 challenge)
+- [x] Implement token exchange (`authorization_code` grant)
+- [x] Implement token refresh (`refresh_token` grant)
+- [x] Implement credential file storage (read/write JSON, 0600 permissions)
+- [x] Unit tests for PKCE, exchange, refresh, storage
 
 ### Phase 3: Subscription Pool
 
-- [ ] Create `crates/anthropic-pool/` with `AccountStatus` state machine
-- [ ] Implement round-robin account selection
-- [ ] Implement quota detection (429 message parsing)
-- [ ] Implement cooldown management
-- [ ] Implement proactive background refresh task
-- [ ] Unit tests for selection, failover, cooldown transitions, quota detection
+- [x] Create `crates/anthropic-pool/` with `AccountStatus` state machine
+- [x] Implement round-robin account selection
+- [x] Implement quota detection (429 message parsing)
+- [x] Implement cooldown management
+- [x] Implement proactive background refresh task
+- [x] Unit tests for selection, failover, cooldown transitions, quota detection
 
 ### Phase 4: Gateway Integration
 
-- [ ] Implement `AnthropicOAuthProvider` using pool + auth crates
-- [ ] Header injection: Bearer token, beta flags, User-Agent, dangerous-direct-browser-access
-- [ ] System prompt prefix injection (body modification for Opus/Sonnet)
-- [ ] Model extraction from request body
-- [ ] Extend config.rs with `[oauth]` section parsing
-- [ ] Mode detection: passthrough vs oauth_pool
-- [ ] Extend health endpoint with pool status
-- [ ] Add pool metrics
-- [ ] Integration tests with mock Anthropic API
+- [x] Implement `AnthropicOAuthProvider` using pool + auth crates
+- [x] Header injection: Bearer token, beta flags, User-Agent, dangerous-direct-browser-access
+- [x] System prompt prefix injection (body modification for Opus/Sonnet)
+- [x] Model extraction from request body
+- [x] Extend config.rs with `[oauth]` section parsing
+- [x] Mode detection: passthrough vs oauth_pool
+- [x] Extend health endpoint with pool status
+- [x] Add pool metrics
+- [x] Integration tests with mock Anthropic API
 
 ### Phase 5: Admin API
 
-- [ ] Implement admin router on separate port
-- [ ] `GET /admin/accounts` — list with pool status
-- [ ] `POST /admin/accounts/init-oauth` — generate PKCE, return authorization URL
-- [ ] `POST /admin/accounts/complete-oauth` — exchange code, store credentials, add to pool
-- [ ] `DELETE /admin/accounts/{id}` — remove from pool, update credential file
-- [ ] `GET /admin/pool` — pool summary
+- [x] Implement admin router on separate port
+- [x] `GET /admin/accounts` — list with pool status
+- [x] `POST /admin/accounts/init-oauth` — generate PKCE, return authorization URL
+- [x] `POST /admin/accounts/complete-oauth` — exchange code, store credentials, add to pool
+- [x] `DELETE /admin/accounts/{id}` — remove from pool, update credential file
+- [x] `GET /admin/pool` — pool summary
 
 ### Phase 6: Deployment
 
-- [ ] Add PVC manifest for credential storage
-- [ ] Update ConfigMap with `[oauth]` section
-- [ ] Optional admin Service manifest
-- [ ] Update RUNBOOK.md with OAuth operational procedures
-- [ ] E2E test: add account → proxy request → verify Claude API response
+- [x] Add PVC manifest for credential storage
+- [x] Update ConfigMap with `[oauth]` section
+- [x] Optional admin Service manifest
+- [x] Update RUNBOOK.md with OAuth operational procedures
+- [x] E2E test: add account → proxy request → verify Claude API response
 
 ---
 
 ## Success Criteria
 
-- [ ] Backward compatible: existing `[[headers]]` config works unchanged
-- [ ] OAuth PKCE flow completes: admin adds account via CLI/API
-- [ ] Token auto-refresh: no manual token management after initial auth
-- [ ] Pool failover: quota exhaustion on account A → automatic switch to account B
-- [ ] System prompt injection: Opus/Sonnet requests get required prefix
-- [ ] Health endpoint: reports pool status (available/cooling/disabled per account)
-- [ ] Credential persistence: pod restart preserves OAuth tokens
-- [ ] Zero client credentials: ForgeFlare/Claude Code send bare requests
+- [x] Backward compatible: existing `[[headers]]` config works unchanged
+- [x] OAuth PKCE flow completes: admin adds account via CLI/API
+- [x] Token auto-refresh: no manual token management after initial auth
+- [x] Pool failover: quota exhaustion on account A → automatic switch to account B
+- [x] System prompt injection: Opus/Sonnet requests get required prefix
+- [x] Health endpoint: reports pool status (available/cooling/disabled per account)
+- [x] Credential persistence: pod restart preserves OAuth tokens
+- [x] Zero client credentials: ForgeFlare/Claude Code send bare requests
 
 ---
 

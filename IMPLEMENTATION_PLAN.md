@@ -4,7 +4,7 @@ Previous build history archived at IMPLEMENTATION_PLAN_v1.md (81 audits, 111 tes
 
 ## Current Spec
 
-`specs/anthropic-oauth-gateway.md` (Draft) — evolve the proxy from static header injector to full OAuth 2.0 gateway with subscription pooling.
+`specs/anthropic-oauth-gateway.md` (Complete) — evolve the proxy from static header injector to full OAuth 2.0 gateway with subscription pooling.
 
 ## Baseline
 
