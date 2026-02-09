@@ -20,12 +20,10 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+      - uses: jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8 # v3
       - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
-      - run: cargo fmt --all --check
-      - run: cargo clippy --workspace -- -D warnings
+      - run: mise run fmt:check
+      - run: mise run lint
 
   audit:
     name: Audit
@@ -34,9 +32,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8 # v3
+      - run: mise run audit
 
   test:
     name: Test
@@ -45,9 +42,9 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8 # v3
       - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
-      - run: cargo test --workspace
+      - run: mise run test
 
   build:
     name: Build
@@ -56,17 +53,9 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8 # v3
       - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
-      - run: cargo build --workspace --release
-      - name: Check binary size
-        run: |
-          size=$(stat -c%s target/release/anthropic-oauth-proxy)
-          echo "Binary size: $((size / 1024 / 1024))MB ($size bytes)"
-          if [ "$size" -gt 15728640 ]; then
-            echo "::error::Binary exceeds 15MB target"
-            exit 1
-          fi
+      - run: mise run build:release
 
   manifests:
     name: Validate K8s Manifests
@@ -74,18 +63,9 @@ jobs:
     permissions:
       contents: read
     steps:
-<<<<<<< renovate/github-actions
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - run: kubectl kustomize k8s/ | kubectl apply --dry-run=client -f -
-=======
-      - uses: actions/checkout@v6
-      - name: Render and validate manifests
-        run: |
-          kubectl kustomize k8s/ > /dev/null
-          echo "Kustomize render: OK"
-          kubectl kustomize k8s/ | kubectl apply --dry-run=client --validate=false -f -
-          echo "Dry-run apply: OK"
->>>>>>> main
+      - uses: jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8 # v3
+      - run: mise run k8s:validate
 
   docker:
     name: Docker
