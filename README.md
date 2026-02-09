@@ -1,5 +1,10 @@
 # Tailnet Microservices
 
+> [!CAUTION]
+> **Tailnet Microservices is a research project. If your name is not basher83 then do not use.**
+>
+> This software is experimental, unstable, and under active development. APIs will change without notice. Features may be incomplete or broken. There is no support, no documentation guarantees, and no warranty of any kind. Use at your own risk.
+
 Single-binary Rust services that act as infrastructure proxies on a Tailscale tailnet. Tailnet exposure is handled by the Tailscale Operator via Kubernetes Service annotations. Each service includes Prometheus metrics and structured JSON logging.
 
 ## Services
