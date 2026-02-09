@@ -49,6 +49,8 @@ cargo zigbuild --workspace --release --target aarch64-unknown-linux-gnu
 ```
 crates/
   common/           # Shared types: error types
+  provider/         # Provider trait, ErrorClassification, PassthroughProvider
+  anthropic-auth/   # OAuth PKCE, token exchange/refresh, credential storage
 services/
   oauth-proxy/      # Anthropic OAuth header injection proxy
 specs/
