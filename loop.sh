@@ -86,6 +86,14 @@ while true; do
         git push -u origin "$CURRENT_BRANCH"
     }
 
+    # Convergence detection (build mode only)
+    if [ "$MODE" = "build" ] && [ -f ".claude/hooks/convergence-check.sh" ]; then
+        if ! bash .claude/hooks/convergence-check.sh; then
+            echo "Loop auto-terminated: convergence detected after $((ITERATION + 1)) iterations"
+            break
+        fi
+    fi
+
     ITERATION=$((ITERATION + 1))
     echo -e "\n\n════════════════════ LOOP $ITERATION ════════════════════\n"
 done

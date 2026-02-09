@@ -2,7 +2,9 @@
 
 ## Current Work
 
-Remaining success criteria require cluster deployment verification (Ingress resolution, health endpoint from tailnet, upstream proxy requests). See `specs/operator-migration-addendum.md`.
+**Primary:** OAuth gateway evolution — upgrade anthropic-oauth-proxy from static header injector to full OAuth 2.0 pool manager. See `specs/anthropic-oauth-gateway.md` (Draft).
+
+**Remaining from previous:** Cluster verification for Ingress (resolution, health endpoint, upstream proxy). See `specs/operator-migration-addendum.md`.
 
 **Do NOT** modify anything in mothership-gitops. ArgoCD syncs this repo via wave 8.
 
@@ -10,7 +12,7 @@ Remaining success criteria require cluster deployment verification (Ingress reso
 
 ## Overview
 
-Rust HTTP proxy that injects OAuth headers and forwards to api.anthropic.com. Tailnet exposure is handled by the Tailscale Operator (not the binary).
+Rust HTTP proxy on the tailnet. Currently injects static OAuth headers and forwards to api.anthropic.com. Evolving into a full OAuth 2.0 gateway with PKCE auth, token refresh, and subscription pooling. Tailnet exposure is handled by the Tailscale Operator (not the binary). Multi-provider interface designed in, Anthropic-only for now.
 
 ## Build & Test
 
