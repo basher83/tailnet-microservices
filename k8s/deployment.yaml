@@ -34,6 +34,9 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
+            - name: admin
+              containerPort: 9090
+              protocol: TCP
           env:
             - name: CONFIG_PATH
               value: /etc/anthropic-oauth-proxy/config.toml
@@ -43,6 +46,8 @@ spec:
             - name: config
               mountPath: /etc/anthropic-oauth-proxy
               readOnly: true
+            - name: credentials
+              mountPath: /data
           startupProbe:
             httpGet:
               path: /health
@@ -80,3 +85,6 @@ spec:
         - name: config
           configMap:
             name: anthropic-oauth-proxy
+        - name: credentials
+          persistentVolumeClaim:
+            claimName: anthropic-oauth-credentials

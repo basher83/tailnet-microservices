@@ -2,6 +2,9 @@
 resolver = "2"
 members = [
     "crates/common",
+    "crates/provider",
+    "crates/anthropic-auth",
+    "crates/anthropic-pool",
     "services/oauth-proxy",
 ]
 
@@ -44,8 +47,16 @@ tower = { version = "0.5", features = ["limit"] }
 thiserror = "2"
 anyhow = "1"
 
+# Crypto / encoding (PKCE, OAuth)
+sha2 = "0.10"
+base64 = "0.22"
+rand = "0.9"
+
 # Internal crates
 common = { path = "crates/common" }
+provider = { path = "crates/provider" }
+anthropic-auth = { path = "crates/anthropic-auth" }
+anthropic-pool = { path = "crates/anthropic-pool" }
 
 [profile.release]
 lto = true

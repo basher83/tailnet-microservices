@@ -74,8 +74,18 @@ jobs:
     permissions:
       contents: read
     steps:
+<<<<<<< renovate/github-actions
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - run: kubectl kustomize k8s/ | kubectl apply --dry-run=client -f -
+=======
+      - uses: actions/checkout@v6
+      - name: Render and validate manifests
+        run: |
+          kubectl kustomize k8s/ > /dev/null
+          echo "Kustomize render: OK"
+          kubectl kustomize k8s/ | kubectl apply --dry-run=client --validate=false -f -
+          echo "Dry-run apply: OK"
+>>>>>>> main
 
   docker:
     name: Docker

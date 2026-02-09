@@ -65,7 +65,7 @@ metadata:
 
 Service remains `type: ClusterIP`. The Tailscale Operator creates a StatefulSet that proxies from the tailnet to the Service.
 
-> **Note:** This is a new pattern in the cluster. Existing Tailscale Operator usage falls into two other categories: egress (`tailscale.com/tailnet-fqdn` on proxmox-egress) for reaching tailnet hosts from inside the cluster, and Ingress (`ingressClassName: tailscale` on homarr, longhorn, etc.) for browser-accessible HTTP services. The proxy needs neither — it's a headless service that must be reachable by other tailnet nodes (Aperture) directly. The `expose` annotation is the correct mechanism for this.
+> **Note (superseded):** The `expose` annotation was originally correct but creates a separate Tailscale proxy pod. When combined with a Tailscale Ingress (added by `specs/operator-migration-addendum.md`), two proxy pods both claim the same hostname, creating a dual-proxy conflict. The annotations were removed in v0.0.114 — tailnet exposure is now handled exclusively by the Ingress.
 
 ### R4: Core proxy functionality unchanged
 
