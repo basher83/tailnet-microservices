@@ -65,13 +65,6 @@ pub fn record_pool_failover(from_account: &str, reason: &str) {
         .increment(1);
 }
 
-/// Record a token refresh attempt result.
-#[allow(dead_code)] // Wired when background refresh emits metrics (Phase 5)
-pub fn record_pool_token_refresh(account_id: &str, result: &str) {
-    metrics::counter!("pool_token_refreshes_total", "account_id" => account_id.to_string(), "result" => result.to_string())
-        .increment(1);
-}
-
 /// Record a quota exhaustion event for an account.
 pub fn record_pool_quota_exhaustion(account_id: &str) {
     metrics::counter!("pool_quota_exhaustions_total", "account_id" => account_id.to_string())

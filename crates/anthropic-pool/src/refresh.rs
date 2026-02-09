@@ -77,13 +77,19 @@ async fn refresh_cycle(pool: &Pool, threshold: Duration) {
                 {
                     warn!(account_id = id, error = %e, "failed to persist refreshed token");
                 }
+                metrics::counter!("pool_token_refreshes_total", "account_id" => id.to_string(), "result" => "success")
+                    .increment(1);
                 info!(account_id = id, "background token refresh succeeded");
             }
             Err(anthropic_auth::Error::InvalidCredentials(msg)) => {
+                metrics::counter!("pool_token_refreshes_total", "account_id" => id.to_string(), "result" => "failure")
+                    .increment(1);
                 warn!(account_id = id, error = %msg, "refresh token rejected, disabling account");
                 pool.set_status(id, AccountStatus::Disabled).await;
             }
             Err(e) => {
+                metrics::counter!("pool_token_refreshes_total", "account_id" => id.to_string(), "result" => "failure")
+                    .increment(1);
                 warn!(account_id = id, error = %e, "background refresh failed (transient), will retry next cycle");
             }
         }

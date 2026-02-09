@@ -44,6 +44,7 @@ name = "anthropic-pool"
 version = "0.1.0"
 dependencies = [
  "anthropic-auth",
+ "metrics",
  "provider",
  "reqwest",
  "serde_json",
