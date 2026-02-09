@@ -51,6 +51,7 @@ crates/
   common/           # Shared types: error types
   provider/         # Provider trait, ErrorClassification, PassthroughProvider
   anthropic-auth/   # OAuth PKCE, token exchange/refresh, credential storage
+  anthropic-pool/   # Subscription pool: round-robin, quota detection, cooldown, refresh
 services/
   oauth-proxy/      # Anthropic OAuth header injection proxy
 specs/
