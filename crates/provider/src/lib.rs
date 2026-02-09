@@ -79,12 +79,15 @@ pub trait Provider: Send + Sync {
     /// - Add/replace headers (e.g. Authorization, anthropic-beta)
     /// - Modify the JSON body (e.g. inject system prompt)
     ///
+    /// Returns the account ID used for this request (for error reporting), or
+    /// None if the provider doesn't use accounts (passthrough mode).
+    ///
     /// If `needs_body()` is false, `body` will be `Value::Null` and should be ignored.
-    fn prepare_request(
-        &self,
-        headers: &mut reqwest::header::HeaderMap,
-        body: &mut serde_json::Value,
-    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + '_>>;
+    fn prepare_request<'a>(
+        &'a self,
+        headers: &'a mut reqwest::header::HeaderMap,
+        body: &'a mut serde_json::Value,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<String>>> + Send + 'a>>;
 
     /// Classify an upstream error response to determine the retry strategy.
     fn classify_error(&self, status: u16, body: &str) -> ErrorClassification;
@@ -92,8 +95,12 @@ pub trait Provider: Send + Sync {
     /// Report an error classification back to the provider for state management.
     /// OAuth mode uses this to transition accounts (cooldown, disable).
     /// Passthrough mode is a no-op.
+    ///
+    /// `account_id` identifies which account experienced the error. Providers
+    /// without account pools ignore this parameter.
     fn report_error(
         &self,
+        account_id: &str,
         classification: ErrorClassification,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + '_>>;
 

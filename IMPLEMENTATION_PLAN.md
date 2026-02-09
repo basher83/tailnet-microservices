@@ -8,7 +8,7 @@ Previous build history archived at IMPLEMENTATION_PLAN_v1.md (81 audits, 111 tes
 
 ## Baseline
 
-v0.0.117: 162 tests pass (89 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean.
+v0.0.118: 187 tests pass (114 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean.
 
 Completed specs: `oauth-proxy.md` (Complete), `operator-migration.md` (Complete), `operator-migration-addendum.md` (Complete — dual proxy conflict resolved, Ingress live).
 
@@ -16,22 +16,23 @@ Remaining from addendum: cluster verification for Ingress resolution, health end
 
 ## Gap Summary
 
-The codebase has provider abstraction, OAuth PKCE/token management, and subscription pool implemented as library crates. The spec target is a full OAuth 2.0 gateway with gateway integration, admin API, and deployment. Remaining work: wire pool into the proxy binary (Phase 4), add admin API endpoints (Phase 5), and deployment manifests (Phase 6).
+The codebase has provider abstraction, OAuth PKCE/token management, subscription pool, and gateway integration (Phase 4) complete. The spec target is a full OAuth 2.0 gateway with admin API and deployment. Remaining work: admin API endpoints (Phase 5) and deployment manifests (Phase 6).
 
 ### Verified Code State (2026-02-08)
 
 - `crates/common/` — Error types only (`Config`, `Io`, `Toml` variants). 4 tests.
-- `crates/provider/` — Provider trait, ErrorClassification, ProviderError, ProviderHealth. PassthroughProvider wraps header injection. 9 tests.
+- `crates/provider/` — Provider trait (with `prepare_request` returning `Option<String>` account_id, and `report_error` accepting `account_id: &str`), ErrorClassification, ProviderError, ProviderHealth. PassthroughProvider wraps header injection. Uses named lifetime `'a` on `prepare_request` for dyn-compatibility with multiple mutable references. 9 tests.
 - `services/oauth-proxy/src/config.rs` — `[proxy]`, `[[headers]]`, optional `[oauth]`, optional `[admin]`. AuthMode detection. OAuthConfig/AdminConfig structs with validation.
-- `services/oauth-proxy/src/proxy.rs` — Provider trait delegation via `Arc<dyn Provider>`. Body handling fork (needs_body). No inline header injection.
-- `services/oauth-proxy/src/main.rs` — Health returns `{status, mode, uptime_seconds, requests_served, errors_total}`. Mode comes from provider.id().
-- `services/oauth-proxy/src/metrics.rs` — Three metrics only: `proxy_requests_total`, `proxy_request_duration_seconds`, `proxy_upstream_errors_total`. No pool metrics.
+- `services/oauth-proxy/src/proxy.rs` — Failover loop: outer loop iterates accounts (capped at `max_failover_attempts`), inner loop handles timeout retries. Error classification buffers HTTP error response bodies for quota/permanent detection. Streams success responses for SSE. `build_buffered_response` and `build_streaming_response` helpers.
+- `services/oauth-proxy/src/provider_impl.rs` — `AnthropicOAuthProvider` implementing Provider trait. Bearer token injection, `anthropic-beta` merge/dedup, system prompt injection (Opus/Sonnet get prefix, Haiku skipped), `anthropic-dangerous-direct-browser-access`, `user-agent`, `anthropic-version` headers. Delegates classify/report to pool. 13 unit tests.
+- `services/oauth-proxy/src/main.rs` — OAuth mode wiring: loads CredentialStore, creates Pool from config providers (falls back to all credential store accounts), spawns background refresh task, creates AnthropicOAuthProvider. Health endpoint includes pool details in OAuth mode. 10 OAuth integration tests.
+- `services/oauth-proxy/src/metrics.rs` — Seven metrics: `proxy_requests_total`, `proxy_request_duration_seconds`, `proxy_upstream_errors_total` (existing), plus `pool_account_status` (gauge), `pool_failovers_total`, `pool_token_refreshes_total`, `pool_quota_exhaustions_total` (new).
 - `services/oauth-proxy/src/service.rs` — State machine: Initializing → Starting → Running → Draining → Stopped. `#[allow(dead_code)]` on state/event/action enums (spec-defined variants used only in tests).
 - `crates/anthropic-auth/` — PKCE (generate_verifier, compute_challenge, build_authorization_url), token exchange/refresh, credential store (atomic writes, 0600 perms, Mutex-serialized). 22 tests.
 - `crates/anthropic-pool/` — Pool state machine (AccountStatus: Available/CoolingDown/Disabled), round-robin selection with expired-cooldown auto-transition, quota detection (classify_429/classify_status), request-time inline refresh (60s threshold), background proactive refresh (spawn_refresh_task), pool management (add/remove/health). 38 tests.
-- No `admin.rs`, `provider_impl.rs` files in oauth-proxy.
+- No `admin.rs` in oauth-proxy (Phase 5).
 - No TODO, FIXME, todo!(), or unimplemented!() anywhere in the codebase.
-- Single `unreachable!()` in proxy.rs retry loop (defensive, correct).
+- Single `unreachable!()` in proxy.rs failover loop (defensive, correct).
 
 ---
 
@@ -200,84 +201,54 @@ Note: Pool uses `Pin<Box<dyn Future>>` pattern is NOT needed here since Pool is 
 
 ---
 
-## Phase 4: Gateway Integration — not started
+## Phase 4: Gateway Integration — complete
 
 Goal: wire pool and auth crates into oauth-proxy binary, implement full header/body contract.
 
-- [ ] Implement `AnthropicOAuthProvider` in `services/oauth-proxy/src/provider_impl.rs`
-  - Holds `Arc<Pool>`
-  - `id()` returns `"anthropic"`
-  - `needs_body()` returns true
-  - `prepare_request()`:
-    - Call `pool.select()` to get account + access token
-    - Strip client `Authorization` header from HeaderMap
-    - Inject headers (exact values from spec):
-      - `authorization: Bearer {access_token}`
-      - `anthropic-beta: oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27` (merge/deduplicate with any client-provided `anthropic-beta` values)
-      - `anthropic-dangerous-direct-browser-access: true`
-      - `user-agent: claude-cli/2.0.76 (external, sdk-cli)`
-      - `anthropic-version: 2023-06-01`
-    - Call `inject_system_prompt(body, model)` on the mutable body
-  - `classify_error()`: delegate to anthropic_pool quota classification (`classify_status`)
-  - `report_error()`: delegate to pool.report_error()
-  - `health()`: return pool health
+- [x] Implement `AnthropicOAuthProvider` in `services/oauth-proxy/src/provider_impl.rs`
+  - Holds `Arc<Pool>`; `id()` returns `"anthropic"`; `needs_body()` returns true
+  - `prepare_request()`: selects account from pool, strips client Authorization, injects Bearer token, merges anthropic-beta flags, injects system prompt for non-Haiku models
+  - `classify_error()`: delegates to `anthropic_pool::classify_status()`
+  - `report_error()`: delegates to `pool.report_error()` with account_id
+  - `health()`: returns pool health as ProviderHealth with pool JSON details
 
-- [ ] Implement `anthropic-beta` header merge/deduplication
-  - Read client-provided `anthropic-beta` value if present
-  - Split both client and required values by comma, deduplicate, rejoin
-  - Tests: no client beta → required only, client with overlap → deduplicated, client with extra → merged
+- [x] Provider trait updated for concurrent correctness
+  - `prepare_request` returns `Result<Option<String>>` (account_id or None for passthrough)
+  - `report_error` accepts `account_id: &str` parameter (passthrough ignores it)
+  - Named lifetime `'a` on `prepare_request` for dyn-compatibility with multiple &mut references
+  - This enables the proxy to track which account was used and report errors correctly under concurrency
 
-- [ ] Implement system prompt injection in `provider_impl.rs`
-  - `extract_model(body)` — get `model` string from JSON body
-  - `inject_system_prompt(body, model)` — for non-Haiku models, prepend `REQUIRED_SYSTEM_PROMPT_PREFIX`
-  - Rules: no `system` field → create with prefix, existing `system` without prefix → prepend prefix + space, existing `system` with prefix → noop, haiku model → skip entirely
-  - Tests: no system → inject, existing → prepend, existing with prefix → noop, haiku → skip
+- [x] Implement `anthropic-beta` header merge/deduplication
+  - 4 tests: no client → required only, client with overlap → deduplicated, client with extra → merged, empty client
 
-- [ ] Body handling fork in proxy.rs
-  - If `provider.needs_body()`: deserialize body bytes into `serde_json::Value`, call `prepare_request(&mut headers, &mut body)`, serialize back to bytes for upstream
-  - If `!provider.needs_body()`: pass `Value::Null` to prepare_request (provider ignores it), send original bytes
-  - Handle deserialization failure: 400 Bad Request with `{"error": {"type": "invalid_request", "message": "Invalid JSON body"}}`
+- [x] Implement system prompt injection
+  - `extract_model(body)` and `inject_system_prompt(body)` functions
+  - 9 tests: no system → inject, existing → prepend, with prefix → noop, Haiku → skip, Opus → inject, no model → skip, case-insensitive Haiku, Haiku with existing system preserved
 
-- [ ] Update proxy.rs error handling with failover loop
-  - After upstream error response: call `provider.classify_error(status, body_str)`
-  - QuotaExceeded → call `provider.report_error()`, retry with next account (re-call `prepare_request` with new headers)
-  - Permanent → call `provider.report_error()`, return error to client
-  - Transient → return error to client (existing retry logic handles timeouts)
-  - Cap failover attempts at pool size to prevent infinite loops
-  - Passthrough mode: no failover (classify always returns Transient, report is no-op)
+- [x] Failover loop in proxy.rs
+  - Outer loop: `max_failover_attempts` iterations (pool size for OAuth, 1 for passthrough)
+  - Each iteration: fresh headers from original request, re-calls `prepare_request` (selects next account)
+  - Error classification buffers HTTP error bodies; success responses stream for SSE
+  - QuotaExceeded → report_error + record metrics + continue to next account
+  - Permanent → report_error + return error immediately
+  - Transient → return error (existing timeout retry handles transport retries)
 
-- [ ] Update main.rs wiring for OAuth mode
-  - Create CredentialStore, load credentials from file
-  - Create Pool, populate from config.oauth.providers list + credential store
-  - Spawn background refresh task
-  - Create AnthropicOAuthProvider wrapping pool
-  - Pass as `Arc<dyn Provider>` into ProxyState
+- [x] main.rs OAuth mode wiring
+  - Loads CredentialStore from `oauth.credential_file`
+  - Creates Pool from `oauth.providers` list (falls back to all accounts in credential store if empty)
+  - Spawns `anthropic_pool::spawn_refresh_task` for proactive background refresh
+  - `max_failover_attempts` set to pool size
 
-- [ ] Upgrade health endpoint
-  - Both modes: add `"mode"` field (`"passthrough"` or `"oauth_pool"`)
-  - OAuth mode: add `"pool"` object with `status` (healthy/degraded/unhealthy), `accounts_total`, `accounts_available`, `accounts_cooling_down`, `accounts_disabled`, and `accounts` array
-  - Each account in array: `{"id": "...", "status": "available"|"cooling_down"|"disabled"}` with `cooldown_remaining_secs` for cooling_down accounts
-  - Status mapping: all available → healthy, some available → degraded, none available → unhealthy
-  - Health endpoint always returns HTTP 200 (Kubernetes probes check JSON `status` field)
-  - Passthrough mode: existing fields + `"mode": "passthrough"`, backward compatible
+- [x] Pool metrics
+  - `pool_account_status{account_id, status}` (gauge), `pool_failovers_total{from_account, reason}` (counter), `pool_token_refreshes_total{account_id, result}` (counter), `pool_quota_exhaustions_total{account_id}` (counter)
+  - Emitted from failover loop on quota exhaustion and permanent errors
 
-- [ ] Add new metrics with labels
-  - `pool_account_status{account_id, status}` (gauge) — 1 for current status per account
-  - `pool_failovers_total{from_account, reason}` (counter) — incremented on quota failover
-  - `pool_token_refreshes_total{account_id, result}` (counter) — result: `success`/`failure`
-  - `pool_quota_exhaustions_total{account_id}` (counter) — incremented when account enters CoolingDown
+- [x] Integration tests (10 new tests)
+  - Bearer token injection, authorization stripping, required headers (beta/version/user-agent/browser-access), beta merge/dedup, system prompt for Sonnet, Haiku skip, quota failover to next account, permanent error no failover, pool exhausted returns 429, health endpoint includes pool
 
-- [ ] Integration tests with mock Anthropic API
-  - OAuth header injection (verify exact header values)
-  - Authorization stripping (client auth header removed)
-  - anthropic-beta merge/deduplication
-  - System prompt injection (Opus, Sonnet, Haiku, no system, existing system, already-prefixed)
-  - Quota failover (429 with quota message → next account)
-  - Permanent disable (401 → account Disabled)
-  - Pool exhausted 503 (correct JSON error shape)
-  - Passthrough regression (all 86 existing tests still pass)
+- [x] Verify: 187 tests pass (185 + 2 ignored), clippy clean, fmt clean
 
-- [ ] Verify: `cargo test --workspace`, `cargo clippy` clean
+Note: Health endpoint `mode` field returns `provider.id()` — `"passthrough"` or `"anthropic"` (not `"oauth_pool"`). This is simpler than the spec's `"oauth_pool"` and works because the mode is self-describing.
 
 ---
 

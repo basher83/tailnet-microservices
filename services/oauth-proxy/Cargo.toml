@@ -10,6 +10,8 @@ path = "src/main.rs"
 [dependencies]
 common = { workspace = true }
 provider = { workspace = true }
+anthropic-auth = { workspace = true }
+anthropic-pool = { workspace = true }
 tokio = { workspace = true }
 axum = { workspace = true }
 reqwest = { workspace = true }
@@ -27,3 +29,4 @@ tower = { workspace = true }
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
 libc = "0.2"
+tempfile = "3"

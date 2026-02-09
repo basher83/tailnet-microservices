@@ -915,6 +915,8 @@ dependencies = [
 name = "oauth-proxy"
 version = "0.1.0"
 dependencies = [
+ "anthropic-auth",
+ "anthropic-pool",
  "anyhow",
  "axum",
  "common",
@@ -925,6 +927,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "toml",
  "tower",
