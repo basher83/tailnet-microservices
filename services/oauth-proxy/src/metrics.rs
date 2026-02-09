@@ -47,6 +47,30 @@ pub fn record_upstream_error(error_type: &str) {
         .increment(1);
 }
 
+/// Record a pool account status change (gauge, 1 for current status).
+pub fn record_pool_account_status(account_id: &str, status: &str) {
+    // Set all status variants to 0 first, then set the current one to 1.
+    // This ensures only one status variant is active per account at any time.
+    for s in &["available", "cooling_down", "disabled"] {
+        metrics::gauge!("pool_account_status", "account_id" => account_id.to_string(), "status" => s.to_string())
+            .set(0.0);
+    }
+    metrics::gauge!("pool_account_status", "account_id" => account_id.to_string(), "status" => status.to_string())
+        .set(1.0);
+}
+
+/// Record a pool failover event (account switch due to quota exhaustion).
+pub fn record_pool_failover(from_account: &str, reason: &str) {
+    metrics::counter!("pool_failovers_total", "from_account" => from_account.to_string(), "reason" => reason.to_string())
+        .increment(1);
+}
+
+/// Record a quota exhaustion event for an account.
+pub fn record_pool_quota_exhaustion(account_id: &str) {
+    metrics::counter!("pool_quota_exhaustions_total", "account_id" => account_id.to_string())
+        .increment(1);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
