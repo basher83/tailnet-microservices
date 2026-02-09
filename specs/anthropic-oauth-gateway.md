@@ -213,7 +213,11 @@ JSON file on disk, keyed by account ID. Mounted as a PersistentVolume in K8s.
 }
 ```
 
-File permissions: `0600`. Never exposed via API. Health endpoint shows account IDs and status only.
+File permissions: `0600`, owned by container UID 1000 (non-root). Never exposed via API. Health endpoint shows account IDs and status only.
+
+**Atomic writes:** Credential file updates use write-to-temp + atomic rename to prevent corruption on crash mid-write. All writes acquire an in-memory `Mutex` to prevent concurrent modification from request-time refresh and background refresh tasks.
+
+**Cold start:** If credential file does not exist, create it as `{}`. Pool starts with zero accounts, health reports `unhealthy` with `accounts_total: 0`. First request returns 503 until an account is added via admin API.
 
 ---
 
@@ -245,13 +249,29 @@ pub enum AccountStatus {
 | `CoolingDown` | Token refresh fails | `Disabled` | Log error |
 | `Disabled` | Admin removes | (removed) | Persist credential file |
 
+State transitions apply uniformly: a 401/403 from token refresh (request-time or background) transitions the account to `Disabled` regardless of previous state. `CoolingDown` accounts that fail background refresh go directly to `Disabled`.
+
 ### Account Selection (Round-Robin)
 
 1. Start from `next_index`
 2. Scan N accounts for `Available` status
 3. Check `CoolingDown` accounts — if cooldown expired, transition to `Available`
 4. Select first `Available`, advance `next_index`
-5. If none available → 503 Service Unavailable with pool status in body
+5. If none available → 503 Service Unavailable:
+```json
+{
+  "error": {
+    "type": "pool_exhausted",
+    "message": "All accounts exhausted",
+    "pool": {
+      "accounts_total": 2,
+      "accounts_available": 0,
+      "accounts_cooling": 2,
+      "accounts_disabled": 0
+    }
+  }
+}
+```
 
 ### Quota Detection
 
@@ -278,7 +298,7 @@ The gateway modifies both headers and body before forwarding.
 
 | Header | Value | Notes |
 |--------|-------|-------|
-| `Authorization` | `Bearer {access_token}` | From selected pool account. **Replaces** any client-provided Authorization. |
+| `Authorization` | `Bearer {access_token}` | From selected pool account. Client-provided Authorization is **ignored** (stripped before injection). |
 | `anthropic-beta` | `oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27` | Must include `oauth-2025-04-20` |
 | `anthropic-dangerous-direct-browser-access` | `true` | Required for OAuth |
 | `user-agent` | `claude-cli/2.0.76 (external, sdk-cli)` | Must match Claude CLI format |
@@ -342,6 +362,19 @@ fn extract_model(body: &serde_json::Value) -> Option<&str> {
 }
 ```
 
+### Body Handling Path
+
+The current proxy forwards request bodies as opaque bytes. OAuth mode requires body modification (system prompt injection), which means `bytes → serde_json::Value → modify → serialize → forward`. This is the riskiest refactor — it touches the hot path and introduces a JSON round-trip that could alter field ordering, whitespace, or unicode escapes.
+
+| Mode | Body Path | Cost |
+|------|-----------|------|
+| Passthrough | Opaque bytes forwarded unchanged | Zero overhead (existing behavior) |
+| OAuth | Deserialize → modify → serialize | JSON round-trip on every request |
+
+Design choice: **always deserialize in OAuth mode.** The latency of an Anthropic API call (seconds) dwarfs JSON serde time (microseconds). Optimizing with string-scan peeking adds complexity for negligible gain at this scale.
+
+The `Provider` trait receives `&mut serde_json::Value` so providers that don't need body modification (future OpenAI provider) can simply no-op. The deserialization happens once in `proxy.rs` before calling `provider.prepare_request()`, only when the provider is in OAuth mode.
+
 ---
 
 ## Token Refresh
@@ -400,7 +433,7 @@ enabled = true
 listen_addr = "0.0.0.0:9090"  # Separate port, not exposed via Ingress
 ```
 
-When `[oauth]` is absent, the gateway falls back to passthrough mode using `[[headers]]` (backward compatible with current config).
+When `[oauth]` is absent, the gateway falls back to passthrough mode using `[[headers]]` (backward compatible with current config). If both `[oauth]` and `[[headers]]` are present, `[oauth]` takes precedence and `[[headers]]` is ignored.
 
 ### Environment Variables
 
@@ -414,7 +447,9 @@ When `[oauth]` is absent, the gateway falls back to passthrough mode using `[[he
 
 ## Admin API
 
-Separate listener on a non-Ingress port. Only accessible from within the cluster or via kubectl port-forward.
+Separate listener on a non-Ingress port. Accessed via `kubectl port-forward` (authenticated by Kubernetes kubeconfig). Not exposed to the tailnet.
+
+**Single-pod requirement:** PKCE state is in-memory. The gateway runs as a single-replica Deployment. Multi-pod is not supported for the admin API flow (init-oauth on pod A, complete-oauth on pod B would fail). This is acceptable — account management is a rare admin operation, not a hot path.
 
 ### Endpoints
 
@@ -598,12 +633,14 @@ Same Deployment, same Ingress, same MagicDNS hostname, same container image tag 
 
 ## Implementation Phases
 
-### Phase 1: Provider Abstraction
+### Phase 1: Provider Abstraction + Mode Detection
 
 - [ ] Create `crates/provider/` with `Provider` trait and `ErrorClassification`
-- [ ] Create `provider_impl.rs` in oauth-proxy implementing passthrough provider
+- [ ] Create `PassthroughProvider` implementing `Provider` trait (wraps current header injection logic)
+- [ ] Extend `config.rs` with `[oauth]` section parsing and mode detection
 - [ ] Refactor `proxy.rs` to call `provider.prepare_request()` instead of inline header injection
-- [ ] All existing tests pass, behavior unchanged
+- [ ] Body handling fork: passthrough = opaque bytes, oauth = deserialize (stubbed — passthrough provider uses opaque path)
+- [ ] All existing tests pass, behavior unchanged (passthrough provider reproduces current behavior exactly)
 
 ### Phase 2: OAuth Foundation
 
