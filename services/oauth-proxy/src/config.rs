@@ -29,7 +29,6 @@ pub struct Config {
     #[serde(default)]
     pub headers: Vec<HeaderInjection>,
     pub oauth: Option<OAuthConfig>,
-    #[allow(dead_code)]
     pub admin: Option<AdminConfig>,
 }
 
@@ -51,9 +50,8 @@ pub struct HeaderInjection {
     pub value: String,
 }
 
-/// OAuth pool configuration (spec-defined fields, wired in Phase 4)
+/// OAuth pool configuration — activates pool mode when present in TOML.
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)]
 pub struct OAuthConfig {
     pub credential_file: String,
     #[serde(default = "default_cooldown_secs")]
@@ -66,9 +64,8 @@ pub struct OAuthConfig {
     pub providers: Vec<String>,
 }
 
-/// Admin API configuration (spec-defined fields, wired in Phase 5)
+/// Admin API configuration — separate listener for account management.
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)]
 pub struct AdminConfig {
     #[serde(default)]
     pub enabled: bool,

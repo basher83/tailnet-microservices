@@ -1,0 +1,84 @@
+[settings]
+experimental = true
+
+# ── Tools ─────────────────────────────────────────────────
+[tools]
+rust = { version = "stable", components = "rustfmt,clippy" }
+"cargo:cargo-audit" = "latest"
+"cargo:cargo-zigbuild" = "latest"
+kubeconform = "latest"
+
+# ── Format ────────────────────────────────────────────────
+[tasks.fmt]
+description = "Format all code"
+run = "cargo fmt --all"
+
+[tasks."fmt:check"]
+description = "Check formatting (no changes)"
+run = "cargo fmt --all --check"
+
+# ── Lint ──────────────────────────────────────────────────
+[tasks.lint]
+description = "Run clippy with warnings as errors"
+run = "cargo clippy --workspace -- -D warnings"
+
+# ── Build ─────────────────────────────────────────────────
+[tasks.build]
+description = "Debug build (all workspace members)"
+run = "cargo build --workspace"
+
+[tasks."build:release"]
+description = "Release build + binary size check (15 MB limit, mirrors CI)"
+run = """
+cargo build --workspace --release
+SIZE=$(stat -c%s target/release/anthropic-oauth-proxy 2>/dev/null || echo 0)
+LIMIT=15728640
+if [ "$SIZE" -gt "$LIMIT" ]; then
+  echo "FAIL: binary ${SIZE} bytes exceeds ${LIMIT} byte limit"
+  exit 1
+fi
+echo "OK: binary ${SIZE} bytes (limit ${LIMIT})"
+"""
+
+# ── Test ──────────────────────────────────────────────────
+[tasks.test]
+description = "Run all workspace tests"
+run = "cargo test --workspace"
+
+# ── Audit ─────────────────────────────────────────────────
+[tasks.audit]
+description = "Security audit of dependencies"
+run = "cargo audit"
+
+# ── K8s ───────────────────────────────────────────────────
+[tasks."k8s:validate"]
+description = "Render and validate Kubernetes manifests (offline)"
+run = """
+kubectl kustomize k8s/ > /tmp/rendered.yaml
+echo "Kustomize render: OK"
+kubeconform -summary -output json /tmp/rendered.yaml
+echo "Kubeconform validate: OK"
+"""
+
+# ── Cross-compile ─────────────────────────────────────────
+[tasks."build:cross-x86"]
+description = "Cross-compile release for x86_64-linux"
+run = "cargo zigbuild --workspace --release --target x86_64-unknown-linux-gnu"
+
+[tasks."build:cross-arm64"]
+description = "Cross-compile release for aarch64-linux"
+run = "cargo zigbuild --workspace --release --target aarch64-unknown-linux-gnu"
+
+# ── Composite ─────────────────────────────────────────────
+[tasks.check]
+description = "Full pre-commit check: fmt → lint → build → test (sequential)"
+depends = ["fmt:check"]
+run = [
+  "cargo clippy --workspace -- -D warnings",
+  "cargo build --workspace",
+  "cargo test --workspace",
+]
+
+[tasks.ci]
+description = "Full CI-equivalent pipeline"
+depends = ["check", "audit", "build:release", "k8s:validate"]

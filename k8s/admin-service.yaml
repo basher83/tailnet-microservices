@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: anthropic-oauth-proxy-admin
+  namespace: anthropic-oauth-proxy
+  labels:
+    app: anthropic-oauth-proxy
+spec:
+  type: ClusterIP
+  selector:
+    app: anthropic-oauth-proxy
+  ports:
+    - name: admin
+      port: 9090
+      targetPort: admin
+      protocol: TCP

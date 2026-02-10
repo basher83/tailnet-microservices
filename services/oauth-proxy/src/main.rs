@@ -7,8 +7,10 @@
 //!
 //! Tailnet exposure is handled externally by the Tailscale Operator.
 
+mod admin;
 mod config;
 mod metrics;
+mod provider_impl;
 mod proxy;
 mod service;
 
@@ -133,7 +135,7 @@ async fn main() -> Result<()> {
         .context("failed to build HTTP client")?;
 
     // Construct provider based on config mode
-    let provider: Arc<dyn provider::Provider> = match mode {
+    let (provider, max_failover_attempts): (Arc<dyn provider::Provider>, usize) = match mode {
         AuthMode::Passthrough => {
             let headers = config
                 .headers
@@ -143,11 +145,77 @@ async fn main() -> Result<()> {
                     value: h.value.clone(),
                 })
                 .collect();
-            Arc::new(PassthroughProvider::new(headers))
+            (Arc::new(PassthroughProvider::new(headers)), 1)
         }
         AuthMode::OAuthPool => {
-            // OAuth provider will be wired in Phase 4
-            anyhow::bail!("OAuth pool mode is not yet implemented");
+            let oauth_config = config.oauth.as_ref().unwrap();
+
+            let credential_store = anthropic_auth::CredentialStore::load(std::path::PathBuf::from(
+                &oauth_config.credential_file,
+            ))
+            .await
+            .with_context(|| {
+                format!(
+                    "failed to load credential store from {}",
+                    oauth_config.credential_file
+                )
+            })?;
+            let credential_store = Arc::new(credential_store);
+
+            // Populate pool from providers list in config, falling back to
+            // all accounts found in the credential store if no explicit list.
+            let account_ids = if oauth_config.providers.is_empty() {
+                credential_store.account_ids().await
+            } else {
+                oauth_config.providers.clone()
+            };
+            let pool_size = account_ids.len().max(1);
+
+            info!(
+                accounts = account_ids.len(),
+                credential_file = %oauth_config.credential_file,
+                "initializing OAuth pool"
+            );
+
+            let pool = Arc::new(anthropic_pool::Pool::new(
+                account_ids,
+                Duration::from_secs(oauth_config.cooldown_secs),
+                credential_store,
+                client.clone(),
+            ));
+
+            // Spawn background proactive refresh task
+            let _refresh_handle = anthropic_pool::spawn_refresh_task(
+                pool.clone(),
+                Duration::from_secs(oauth_config.refresh_interval_secs),
+                Duration::from_secs(oauth_config.refresh_threshold_secs),
+            );
+
+            // Start admin API if enabled
+            if let Some(ref admin_config) = config.admin
+                && admin_config.enabled
+            {
+                let admin_state = admin::AdminState::new(pool.clone(), client.clone());
+                let admin_router = admin::build_admin_router(admin_state);
+                let admin_addr = admin_config.listen_addr;
+
+                tokio::spawn(async move {
+                    let listener = match TcpListener::bind(admin_addr).await {
+                        Ok(l) => l,
+                        Err(e) => {
+                            error!(addr = %admin_addr, error = %e, "failed to bind admin listener");
+                            return;
+                        }
+                    };
+                    info!(addr = %admin_addr, "admin API listening");
+                    if let Err(e) = axum::serve(listener, admin_router).await {
+                        error!(error = %e, "admin API server error");
+                    }
+                });
+            }
+
+            let provider = Arc::new(provider_impl::AnthropicOAuthProvider::new(pool));
+            (provider as Arc<dyn provider::Provider>, pool_size)
         }
     };
 
@@ -161,6 +229,7 @@ async fn main() -> Result<()> {
         requests_total: metrics.requests_total.clone(),
         errors_total: metrics.errors_total.clone(),
         in_flight: metrics.in_flight.clone(),
+        max_failover_attempts,
     };
 
     let app_state = AppState {
@@ -311,7 +380,7 @@ mod tests {
     use axum::http::{Request, StatusCode};
     use std::sync::Arc;
     use std::sync::OnceLock;
-    use std::sync::atomic::AtomicU64;
+    use std::sync::atomic::{AtomicU64, AtomicUsize};
     use std::time::Instant;
     use tower::ServiceExt;
 
@@ -358,6 +427,7 @@ mod tests {
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
                 in_flight: metrics.in_flight.clone(),
+                max_failover_attempts: 1,
             },
             metrics,
             prometheus: test_prometheus_handle(),
@@ -424,6 +494,7 @@ mod tests {
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
                 in_flight: Arc::new(AtomicU64::new(0)),
+                max_failover_attempts: 1,
             },
             metrics,
             prometheus: test_prometheus_handle(),
@@ -766,6 +837,7 @@ mod tests {
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
                 in_flight: metrics.in_flight.clone(),
+                max_failover_attempts: 1,
             },
             metrics,
 
@@ -1074,6 +1146,7 @@ mod tests {
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
                 in_flight: metrics.in_flight.clone(),
+                max_failover_attempts: 1,
             },
             metrics,
 
@@ -1106,6 +1179,7 @@ mod tests {
                 requests_total: metrics_err.requests_total.clone(),
                 errors_total: metrics_err.errors_total.clone(),
                 in_flight: metrics_err.in_flight.clone(),
+                max_failover_attempts: 1,
             },
             metrics: metrics_err,
 
@@ -1130,6 +1204,7 @@ mod tests {
                 requests_total: metrics2.requests_total.clone(),
                 errors_total: metrics2.errors_total.clone(),
                 in_flight: metrics2.in_flight.clone(),
+                max_failover_attempts: 1,
             },
             metrics: metrics2,
 
@@ -1330,6 +1405,7 @@ mod tests {
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
                 in_flight: metrics.in_flight.clone(),
+                max_failover_attempts: 1,
             },
             metrics,
 
@@ -1800,6 +1876,7 @@ mod tests {
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
                 in_flight: metrics.in_flight.clone(),
+                max_failover_attempts: 1,
             },
             metrics,
 
@@ -1838,6 +1915,7 @@ mod tests {
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
                 in_flight: metrics.in_flight.clone(),
+                max_failover_attempts: 1,
             },
             metrics,
 
@@ -1883,6 +1961,7 @@ mod tests {
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
                 in_flight: metrics.in_flight.clone(),
+                max_failover_attempts: 1,
             },
             metrics,
 
@@ -2204,6 +2283,7 @@ mod tests {
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
                 in_flight: metrics.in_flight.clone(),
+                max_failover_attempts: 1,
             },
             metrics,
 
@@ -2305,6 +2385,7 @@ mod tests {
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
                 in_flight: metrics.in_flight.clone(),
+                max_failover_attempts: 1,
             },
             metrics: metrics.clone(),
             prometheus: test_prometheus_handle(),
@@ -2501,6 +2582,7 @@ mod tests {
                 requests_total: metrics.requests_total.clone(),
                 errors_total: metrics.errors_total.clone(),
                 in_flight: metrics.in_flight.clone(),
+                max_failover_attempts: 1,
             },
             metrics,
             prometheus: test_prometheus_handle(),
@@ -2618,5 +2700,597 @@ mod tests {
             "error kind must be AddrInUse, got {:?}",
             err.kind()
         );
+    }
+
+    // --- OAuth provider integration tests ---
+
+    /// Create a test credential store with accounts that have far-future expiry.
+    async fn test_oauth_credential_store(
+        dir: &tempfile::TempDir,
+        accounts: &[&str],
+    ) -> Arc<anthropic_auth::CredentialStore> {
+        let path = dir.path().join("credentials.json");
+        let store = anthropic_auth::CredentialStore::load(path).await.unwrap();
+        let far_future = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64
+            + 3_600_000; // 1 hour from now
+        for id in accounts {
+            store
+                .add(
+                    id.to_string(),
+                    anthropic_auth::Credential {
+                        credential_type: "oauth".to_string(),
+                        refresh: format!("refresh_{id}"),
+                        access: format!("access_{id}"),
+                        expires: far_future,
+                    },
+                )
+                .await
+                .unwrap();
+        }
+        Arc::new(store)
+    }
+
+    /// Build an AppState with the OAuth provider backed by a real pool.
+    fn test_oauth_app_state(
+        upstream_url: &str,
+        pool: Arc<anthropic_pool::Pool>,
+        pool_size: usize,
+    ) -> AppState {
+        let metrics = ServiceMetrics::new();
+        let provider: Arc<dyn provider::Provider> =
+            Arc::new(crate::provider_impl::AnthropicOAuthProvider::new(pool));
+        AppState {
+            proxy: ProxyState {
+                client: reqwest::Client::new(),
+                upstream_url: upstream_url.to_string(),
+                provider,
+                timeout: Duration::from_secs(5),
+                requests_total: metrics.requests_total.clone(),
+                errors_total: metrics.errors_total.clone(),
+                in_flight: metrics.in_flight.clone(),
+                max_failover_attempts: pool_size,
+            },
+            metrics,
+            prometheus: test_prometheus_handle(),
+        }
+    }
+
+    #[tokio::test]
+    async fn oauth_provider_injects_bearer_token() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = test_oauth_credential_store(&dir, &["acct-1"]).await;
+        let pool = Arc::new(anthropic_pool::Pool::new(
+            vec!["acct-1".into()],
+            Duration::from_secs(7200),
+            store,
+            reqwest::Client::new(),
+        ));
+
+        let (upstream_url, _handle) = start_echo_server().await;
+        let state = test_oauth_app_state(&upstream_url, pool, 1);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/messages")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({"model": "claude-sonnet-4-20250514", "messages": []})
+                            .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // Verify Bearer token was injected
+        let auth = json["echoed_headers"]["authorization"].as_str().unwrap();
+        assert!(
+            auth.starts_with("Bearer access_acct-1"),
+            "expected Bearer token, got: {auth}"
+        );
+    }
+
+    #[tokio::test]
+    async fn oauth_provider_strips_client_authorization() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = test_oauth_credential_store(&dir, &["acct-1"]).await;
+        let pool = Arc::new(anthropic_pool::Pool::new(
+            vec!["acct-1".into()],
+            Duration::from_secs(7200),
+            store,
+            reqwest::Client::new(),
+        ));
+
+        let (upstream_url, _handle) = start_echo_server().await;
+        let state = test_oauth_app_state(&upstream_url, pool, 1);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/messages")
+                    .header("content-type", "application/json")
+                    .header("authorization", "Bearer sk-client-key-should-be-stripped")
+                    .body(Body::from(
+                        serde_json::json!({"model": "claude-sonnet-4-20250514", "messages": []})
+                            .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // Client auth should be replaced with pool token, not passed through
+        let auth = json["echoed_headers"]["authorization"].as_str().unwrap();
+        assert!(
+            !auth.contains("sk-client-key"),
+            "client auth must be stripped in OAuth mode"
+        );
+        assert!(
+            auth.starts_with("Bearer access_acct-1"),
+            "pool token must be injected"
+        );
+    }
+
+    #[tokio::test]
+    async fn oauth_provider_injects_required_headers() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = test_oauth_credential_store(&dir, &["acct-1"]).await;
+        let pool = Arc::new(anthropic_pool::Pool::new(
+            vec!["acct-1".into()],
+            Duration::from_secs(7200),
+            store,
+            reqwest::Client::new(),
+        ));
+
+        let (upstream_url, _handle) = start_echo_server().await;
+        let state = test_oauth_app_state(&upstream_url, pool, 1);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/messages")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({"model": "claude-sonnet-4-20250514", "messages": []})
+                            .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let headers = &json["echoed_headers"];
+
+        // Verify all required OAuth headers
+        let beta = headers["anthropic-beta"].as_str().unwrap();
+        assert!(beta.contains("oauth-2025-04-20"), "missing oauth beta flag");
+        assert!(
+            beta.contains("interleaved-thinking-2025-05-14"),
+            "missing thinking beta flag"
+        );
+        assert!(
+            beta.contains("context-management-2025-06-27"),
+            "missing context beta flag"
+        );
+
+        assert_eq!(
+            headers["anthropic-dangerous-direct-browser-access"]
+                .as_str()
+                .unwrap(),
+            "true"
+        );
+        assert_eq!(headers["anthropic-version"].as_str().unwrap(), "2023-06-01");
+        assert!(
+            headers["user-agent"]
+                .as_str()
+                .unwrap()
+                .contains("claude-cli")
+        );
+    }
+
+    #[tokio::test]
+    async fn oauth_provider_merges_client_beta_flags() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = test_oauth_credential_store(&dir, &["acct-1"]).await;
+        let pool = Arc::new(anthropic_pool::Pool::new(
+            vec!["acct-1".into()],
+            Duration::from_secs(7200),
+            store,
+            reqwest::Client::new(),
+        ));
+
+        let (upstream_url, _handle) = start_echo_server().await;
+        let state = test_oauth_app_state(&upstream_url, pool, 1);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/messages")
+                    .header("content-type", "application/json")
+                    .header(
+                        "anthropic-beta",
+                        "custom-feature-2025-01-01,oauth-2025-04-20",
+                    )
+                    .body(Body::from(
+                        serde_json::json!({"model": "claude-sonnet-4-20250514", "messages": []})
+                            .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let beta = json["echoed_headers"]["anthropic-beta"].as_str().unwrap();
+
+        // Client's custom flag should be merged
+        assert!(
+            beta.contains("custom-feature-2025-01-01"),
+            "client beta flag must be merged"
+        );
+        // oauth-2025-04-20 should appear exactly once (deduplicated)
+        assert_eq!(
+            beta.matches("oauth-2025-04-20").count(),
+            1,
+            "duplicate beta flags must be deduplicated"
+        );
+        // All required flags present
+        assert!(beta.contains("interleaved-thinking-2025-05-14"));
+        assert!(beta.contains("context-management-2025-06-27"));
+    }
+
+    #[tokio::test]
+    async fn oauth_provider_injects_system_prompt_for_sonnet() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = test_oauth_credential_store(&dir, &["acct-1"]).await;
+        let pool = Arc::new(anthropic_pool::Pool::new(
+            vec!["acct-1".into()],
+            Duration::from_secs(7200),
+            store,
+            reqwest::Client::new(),
+        ));
+
+        let (upstream_url, _handle) = start_echo_server().await;
+        let state = test_oauth_app_state(&upstream_url, pool, 1);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/messages")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({
+                            "model": "claude-sonnet-4-20250514",
+                            "messages": [{"role": "user", "content": "hi"}]
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // The echo server returns the body as a string — parse it to check system prompt
+        let upstream_body: serde_json::Value =
+            serde_json::from_str(json["body"].as_str().unwrap()).unwrap();
+        let system = upstream_body["system"].as_str().unwrap();
+        assert!(
+            system.starts_with("You are Claude Code"),
+            "system prompt prefix must be injected for Sonnet: {system}"
+        );
+    }
+
+    #[tokio::test]
+    async fn oauth_provider_skips_system_prompt_for_haiku() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = test_oauth_credential_store(&dir, &["acct-1"]).await;
+        let pool = Arc::new(anthropic_pool::Pool::new(
+            vec!["acct-1".into()],
+            Duration::from_secs(7200),
+            store,
+            reqwest::Client::new(),
+        ));
+
+        let (upstream_url, _handle) = start_echo_server().await;
+        let state = test_oauth_app_state(&upstream_url, pool, 1);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/messages")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({
+                            "model": "claude-3-haiku-20240307",
+                            "messages": [{"role": "user", "content": "hi"}]
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let upstream_body: serde_json::Value =
+            serde_json::from_str(json["body"].as_str().unwrap()).unwrap();
+
+        // Haiku: no system prompt should be injected
+        assert!(
+            upstream_body.get("system").is_none(),
+            "system prompt must NOT be injected for Haiku"
+        );
+    }
+
+    #[tokio::test]
+    async fn oauth_provider_quota_failover() {
+        // Set up two accounts so failover can switch
+        let dir = tempfile::tempdir().unwrap();
+        let store = test_oauth_credential_store(&dir, &["acct-a", "acct-b"]).await;
+        let pool = Arc::new(anthropic_pool::Pool::new(
+            vec!["acct-a".into(), "acct-b".into()],
+            Duration::from_secs(7200),
+            store,
+            reqwest::Client::new(),
+        ));
+
+        // Mock server that returns 429 with quota message for first request,
+        // then 200 for second request.
+        use std::sync::atomic::AtomicUsize;
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let call_count_clone = call_count.clone();
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream_url = format!("http://{addr}");
+
+        let _server = tokio::spawn(async move {
+            let app = axum::Router::new().fallback(
+                move |_request: axum::http::Request<Body>| {
+                    let cc = call_count_clone.clone();
+                    async move {
+                        let count = cc.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        if count == 0 {
+                            // First call: 429 quota exhaustion
+                            (
+                                StatusCode::TOO_MANY_REQUESTS,
+                                serde_json::json!({"error":{"message":"You've exceeded your 5-hour usage limit"}}).to_string(),
+                            )
+                        } else {
+                            // Second call: success
+                            (StatusCode::OK, r#"{"ok": true}"#.to_string())
+                        }
+                    }
+                },
+            );
+            axum::serve(listener, app).await.unwrap();
+        });
+
+        let state = test_oauth_app_state(&upstream_url, pool, 2);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/messages")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({
+                            "model": "claude-sonnet-4-20250514",
+                            "messages": [{"role": "user", "content": "hi"}]
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        // After failover to second account, should succeed
+        assert_eq!(
+            response.status(),
+            StatusCode::OK,
+            "failover to second account should succeed"
+        );
+
+        // Should have made 2 upstream calls (first 429, second 200)
+        assert_eq!(
+            call_count.load(std::sync::atomic::Ordering::SeqCst),
+            2,
+            "should have made exactly 2 upstream calls"
+        );
+    }
+
+    #[tokio::test]
+    async fn oauth_provider_permanent_error_returns_immediately() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = test_oauth_credential_store(&dir, &["acct-1", "acct-2"]).await;
+        let pool = Arc::new(anthropic_pool::Pool::new(
+            vec!["acct-1".into(), "acct-2".into()],
+            Duration::from_secs(7200),
+            store,
+            reqwest::Client::new(),
+        ));
+
+        // Mock server that always returns 401
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream_url = format!("http://{addr}");
+
+        let call_count = Arc::new(AtomicUsize::new(0));
+        let cc = call_count.clone();
+        let _server = tokio::spawn(async move {
+            let app = axum::Router::new().fallback(move |_: axum::http::Request<Body>| {
+                let cc = cc.clone();
+                async move {
+                    cc.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                    (StatusCode::UNAUTHORIZED, r#"{"error":"unauthorized"}"#)
+                }
+            });
+            axum::serve(listener, app).await.unwrap();
+        });
+
+        let state = test_oauth_app_state(&upstream_url, pool, 2);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/messages")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({
+                            "model": "claude-sonnet-4-20250514",
+                            "messages": []
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        // Permanent error: should return 401 immediately (no failover)
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(
+            call_count.load(std::sync::atomic::Ordering::SeqCst),
+            1,
+            "permanent errors should not trigger failover"
+        );
+    }
+
+    #[tokio::test]
+    async fn oauth_provider_pool_exhausted_returns_503() {
+        // Single account, will be exhausted by quota error
+        let dir = tempfile::tempdir().unwrap();
+        let store = test_oauth_credential_store(&dir, &["acct-1"]).await;
+        let pool = Arc::new(anthropic_pool::Pool::new(
+            vec!["acct-1".into()],
+            Duration::from_secs(7200),
+            store,
+            reqwest::Client::new(),
+        ));
+
+        // Mock server always returns 429 quota
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream_url = format!("http://{addr}");
+
+        let _server = tokio::spawn(async move {
+            let app = axum::Router::new().fallback(|_: axum::http::Request<Body>| async {
+                (
+                    StatusCode::TOO_MANY_REQUESTS,
+                    r#"{"error":{"message":"5-hour usage limit exceeded"}}"#,
+                )
+            });
+            axum::serve(listener, app).await.unwrap();
+        });
+
+        let state = test_oauth_app_state(&upstream_url, pool, 1);
+        let app = build_router(state, 1000);
+
+        // First request: quota exhaustion on only account → 429 returned
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/messages")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({
+                            "model": "claude-sonnet-4-20250514",
+                            "messages": []
+                        })
+                        .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        // With only one account and max_failover_attempts=1, the 429 is returned
+        assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
+    }
+
+    #[tokio::test]
+    async fn oauth_health_endpoint_includes_pool() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = test_oauth_credential_store(&dir, &["acct-1", "acct-2"]).await;
+        let pool = Arc::new(anthropic_pool::Pool::new(
+            vec!["acct-1".into(), "acct-2".into()],
+            Duration::from_secs(7200),
+            store,
+            reqwest::Client::new(),
+        ));
+
+        let state = test_oauth_app_state("http://unused", pool, 2);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(json["mode"], "anthropic");
+        assert_eq!(json["status"], "healthy");
+        assert!(json["pool"].is_object(), "health must include pool details");
+        assert_eq!(json["pool"]["accounts_total"], 2);
+        assert_eq!(json["pool"]["accounts_available"], 2);
+        assert_eq!(json["pool"]["status"], "healthy");
     }
 }
