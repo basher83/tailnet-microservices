@@ -1,11 +1,11 @@
 0a. Study `specs/*` with up to 500 parallel Sonnet subagents to learn the service specifications.
-0b. Study @IMPLEMENTATION_PLAN.md.
+0b. If @TASK.md exists, read it — this is your sole task for this iteration. Skip @IMPLEMENTATION_PLAN.md for task selection. Otherwise, study @IMPLEMENTATION_PLAN.md.
 0c. Study @AGENTS.md for build commands and code patterns.
 
-1. Your task is to implement functionality per the specifications using parallel subagents. Follow @IMPLEMENTATION_PLAN.md and choose the most important item to address. Before making changes, search the codebase (don't assume not implemented) using Sonnet subagents. You may use up to 500 parallel Sonnet subagents for searches/reads and only 1 Sonnet subagent for build/tests. Use Opus subagents when complex reasoning is needed (debugging, architectural decisions).
+1. If @TASK.md exists, that is your SOLE task — implement it, do not consult @IMPLEMENTATION_PLAN.md for task selection. Otherwise, follow @IMPLEMENTATION_PLAN.md and choose the most important item to address. Before making changes, search the codebase (don't assume not implemented) using Sonnet subagents. You may use up to 500 parallel Sonnet subagents for searches/reads and only 1 Sonnet subagent for build/tests. Use Opus subagents when complex reasoning is needed (debugging, architectural decisions).
 2. After implementing functionality or resolving problems, run the tests for that unit of code that was improved. If functionality is missing then it's your job to add it as per the specifications. Ultrathink.
 3. When you discover issues, immediately update @IMPLEMENTATION_PLAN.md with your findings using a subagent. When resolved, update and remove the item.
-4. When the tests pass, update @IMPLEMENTATION_PLAN.md, then `git add -A` then `git commit` with a message describing the changes. After the commit, `git push`.
+4. When the tests pass: if working from @TASK.md, delete @TASK.md (its removal signals completion to the loop); otherwise, update @IMPLEMENTATION_PLAN.md. Then `git add -A` then `git commit` with a message describing the changes. After the commit, `git push`.
 5. SCOPE LIMIT: Complete ONE phase or logical unit of work per iteration, then commit, tag, push, and EXIT. Do not continue to the next phase — the loop will restart you with fresh context. Multi-phase work in a single context causes exhaustion and silent hangs.
 
 99999. Important: When authoring documentation, capture the why — tests and implementation importance.

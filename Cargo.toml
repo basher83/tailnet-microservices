@@ -12,7 +12,7 @@ members = [
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
-authors = ["Brent <brent@basher83.dev>"]
+authors = ["Brent <basher83@themothership.work>"]
 
 [workspace.dependencies]
 # Async runtime

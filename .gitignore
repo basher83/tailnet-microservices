@@ -27,6 +27,12 @@ secrets/
 
 # Ralph artifacts
 IMPLEMENTATION_PLAN.md
+TASK.md
+
+# Claude Code proprietary (skills, commands, docs)
+.claude/commands/
+.claude/skills/
+.claude/README.md
 
 # Specstory
 .specstory/
