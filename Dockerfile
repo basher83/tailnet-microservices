@@ -8,7 +8,7 @@
 # Tailscale Operator via Service annotations (not a sidecar).
 
 # ---------- builder ----------
-FROM rust:1-bookworm AS builder
+FROM rust:1-bookworm@sha256:d0a4aa3ca2e1088ac0c81690914a0d810f2eee188197034edf366ed010a2b382 AS builder
 
 WORKDIR /src
 COPY . .
@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     && cp target/release/anthropic-oauth-proxy /anthropic-oauth-proxy
 
 # ---------- runtime ----------
-FROM debian:bookworm-slim
+FROM debian:bookworm-slim@sha256:98f4b71de414932439ac6ac690d7060df1f27161073c5036a7553723881bffbe
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
