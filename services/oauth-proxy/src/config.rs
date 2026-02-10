@@ -1,6 +1,11 @@
 //! Configuration types and loading
 //!
 //! Config precedence: CLI args > env vars > config file > defaults.
+//!
+//! Auth mode detection: if `[oauth]` is present, the proxy runs in OAuth pool
+//! mode. If only `[[headers]]` is present, it runs in passthrough mode. When
+//! both are present, `[oauth]` takes precedence (`[[headers]]` is ignored with
+//! a warning).
 
 use axum::http::{HeaderName, HeaderValue};
 use serde::Deserialize;
@@ -8,12 +13,23 @@ use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+/// Auth mode determined from config shape — drives provider construction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AuthMode {
+    /// Static header injection (existing behavior)
+    Passthrough,
+    /// OAuth 2.0 pool with PKCE, token refresh, subscription pooling
+    OAuthPool,
+}
+
 /// Root configuration
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub proxy: ProxyConfig,
     #[serde(default)]
     pub headers: Vec<HeaderInjection>,
+    pub oauth: Option<OAuthConfig>,
+    pub admin: Option<AdminConfig>,
 }
 
 /// HTTP proxy settings
@@ -34,6 +50,29 @@ pub struct HeaderInjection {
     pub value: String,
 }
 
+/// OAuth pool configuration — activates pool mode when present in TOML.
+#[derive(Debug, Deserialize)]
+pub struct OAuthConfig {
+    pub credential_file: String,
+    #[serde(default = "default_cooldown_secs")]
+    pub cooldown_secs: u64,
+    #[serde(default = "default_refresh_interval_secs")]
+    pub refresh_interval_secs: u64,
+    #[serde(default = "default_refresh_threshold_secs")]
+    pub refresh_threshold_secs: u64,
+    #[serde(default)]
+    pub providers: Vec<String>,
+}
+
+/// Admin API configuration — separate listener for account management.
+#[derive(Debug, Deserialize)]
+pub struct AdminConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default = "default_admin_listen_addr")]
+    pub listen_addr: SocketAddr,
+}
+
 fn default_timeout() -> u64 {
     60
 }
@@ -42,11 +81,51 @@ fn default_max_connections() -> usize {
     1000
 }
 
+fn default_cooldown_secs() -> u64 {
+    7200
+}
+
+fn default_refresh_interval_secs() -> u64 {
+    300
+}
+
+fn default_refresh_threshold_secs() -> u64 {
+    900
+}
+
+fn default_admin_listen_addr() -> SocketAddr {
+    "0.0.0.0:9090".parse().unwrap()
+}
+
 impl Config {
+    /// Determine auth mode from config shape.
+    pub fn mode(&self) -> AuthMode {
+        if self.oauth.is_some() {
+            AuthMode::OAuthPool
+        } else {
+            AuthMode::Passthrough
+        }
+    }
+
     /// Load configuration from a TOML file, then validate.
     pub fn load(path: &Path) -> common::Result<Self> {
         let contents = std::fs::read_to_string(path)?;
-        let config: Config = toml::from_str(&contents)?;
+        let mut config: Config = toml::from_str(&contents)?;
+
+        // CREDENTIAL_FILE env var override
+        if let Ok(cred_path) = std::env::var("CREDENTIAL_FILE")
+            && let Some(ref mut oauth) = config.oauth
+        {
+            oauth.credential_file = cred_path;
+        }
+
+        // When both [oauth] and [[headers]] present, [oauth] takes precedence
+        if config.oauth.is_some() && !config.headers.is_empty() {
+            tracing::warn!(
+                "[oauth] and [[headers]] both present — [oauth] takes precedence, [[headers]] ignored"
+            );
+            config.headers.clear();
+        }
 
         // Validate upstream_url is a parseable URL with http(s) scheme.
         // Catches malformed URLs at startup rather than on first request.
@@ -85,6 +164,30 @@ impl Config {
             HeaderValue::from_str(&h.value).map_err(|e| {
                 common::Error::Config(format!("invalid header value for '{}': {e}", h.name))
             })?;
+        }
+
+        // Validate [oauth] fields if present
+        if let Some(ref oauth) = config.oauth {
+            if oauth.credential_file.is_empty() {
+                return Err(common::Error::Config(
+                    "oauth.credential_file must not be empty".into(),
+                ));
+            }
+            if oauth.cooldown_secs == 0 {
+                return Err(common::Error::Config(
+                    "oauth.cooldown_secs must be greater than 0".into(),
+                ));
+            }
+            if oauth.refresh_interval_secs == 0 {
+                return Err(common::Error::Config(
+                    "oauth.refresh_interval_secs must be greater than 0".into(),
+                ));
+            }
+            if oauth.refresh_threshold_secs == 0 {
+                return Err(common::Error::Config(
+                    "oauth.refresh_threshold_secs must be greater than 0".into(),
+                ));
+            }
         }
 
         Ok(config)
@@ -426,6 +529,188 @@ value = "fine-value"
         assert!(
             err.contains("invalid header name"),
             "error should identify the bad header name, got: {err}"
+        );
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_passthrough_mode_when_no_oauth() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-passthrough-mode");
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("config.toml");
+        std::fs::write(&path, valid_toml()).unwrap();
+
+        let config = Config::load(&path).unwrap();
+        assert_eq!(config.mode(), AuthMode::Passthrough);
+        assert!(config.oauth.is_none());
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_oauth_mode_when_oauth_present() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-oauth-mode");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+
+[oauth]
+credential_file = "/data/credentials.json"
+providers = ["claude-max-1"]
+"#;
+        let path = dir.join("config.toml");
+        std::fs::write(&path, toml_content).unwrap();
+
+        let config = Config::load(&path).unwrap();
+        assert_eq!(config.mode(), AuthMode::OAuthPool);
+        assert!(config.oauth.is_some());
+        let oauth = config.oauth.unwrap();
+        assert_eq!(oauth.credential_file, "/data/credentials.json");
+        assert_eq!(oauth.cooldown_secs, 7200);
+        assert_eq!(oauth.refresh_interval_secs, 300);
+        assert_eq!(oauth.refresh_threshold_secs, 900);
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_oauth_takes_precedence_over_headers() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-precedence");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+
+[[headers]]
+name = "anthropic-beta"
+value = "oauth-2025-04-20"
+
+[oauth]
+credential_file = "/data/credentials.json"
+"#;
+        let path = dir.join("config.toml");
+        std::fs::write(&path, toml_content).unwrap();
+
+        let config = Config::load(&path).unwrap();
+        assert_eq!(config.mode(), AuthMode::OAuthPool);
+        // Headers should be cleared when oauth takes precedence
+        assert!(config.headers.is_empty());
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_oauth_validation_empty_credential_file() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-empty-cred");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+
+[oauth]
+credential_file = ""
+"#;
+        let path = dir.join("config.toml");
+        std::fs::write(&path, toml_content).unwrap();
+
+        let result = Config::load(&path);
+        assert!(result.is_err());
+        let err = format!("{}", result.unwrap_err());
+        assert!(err.contains("credential_file"), "got: {err}");
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_oauth_validation_zero_cooldown() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-zero-cooldown");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+
+[oauth]
+credential_file = "/data/credentials.json"
+cooldown_secs = 0
+"#;
+        let path = dir.join("config.toml");
+        std::fs::write(&path, toml_content).unwrap();
+
+        let result = Config::load(&path);
+        assert!(result.is_err());
+        let err = format!("{}", result.unwrap_err());
+        assert!(err.contains("cooldown_secs"), "got: {err}");
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_credential_file_env_override() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        unsafe { set_env("CREDENTIAL_FILE", "/override/path.json") };
+
+        let dir = std::env::temp_dir().join("oauth-proxy-test-cred-env");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+
+[oauth]
+credential_file = "/data/credentials.json"
+"#;
+        let path = dir.join("config.toml");
+        std::fs::write(&path, toml_content).unwrap();
+
+        let config = Config::load(&path).unwrap();
+        assert_eq!(config.oauth.unwrap().credential_file, "/override/path.json");
+
+        unsafe { remove_env("CREDENTIAL_FILE") };
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn test_admin_config_defaults() {
+        let _lock = ENV_MUTEX.lock().unwrap();
+        let dir = std::env::temp_dir().join("oauth-proxy-test-admin-defaults");
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let toml_content = r#"
+[proxy]
+listen_addr = "127.0.0.1:8080"
+upstream_url = "https://api.anthropic.com"
+
+[oauth]
+credential_file = "/data/credentials.json"
+
+[admin]
+enabled = true
+"#;
+        let path = dir.join("config.toml");
+        std::fs::write(&path, toml_content).unwrap();
+
+        let config = Config::load(&path).unwrap();
+        let admin = config.admin.unwrap();
+        assert!(admin.enabled);
+        assert_eq!(
+            admin.listen_addr,
+            "0.0.0.0:9090".parse::<SocketAddr>().unwrap()
         );
 
         std::fs::remove_dir_all(&dir).unwrap();

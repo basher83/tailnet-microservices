@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: anthropic-oauth-proxy
+  name: anthropic-oauth-proxy-admin
   namespace: anthropic-oauth-proxy
   labels:
     app: anthropic-oauth-proxy
@@ -10,7 +10,7 @@ spec:
   selector:
     app: anthropic-oauth-proxy
   ports:
-    - name: http
-      port: 80
-      targetPort: http
+    - name: admin
+      port: 9090
+      targetPort: admin
       protocol: TCP
