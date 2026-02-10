@@ -2,6 +2,8 @@
 name = "oauth-proxy"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [[bin]]
 name = "anthropic-oauth-proxy"
@@ -9,6 +11,9 @@ path = "src/main.rs"
 
 [dependencies]
 common = { workspace = true }
+provider = { workspace = true }
+anthropic-auth = { workspace = true }
+anthropic-pool = { workspace = true }
 tokio = { workspace = true }
 axum = { workspace = true }
 reqwest = { workspace = true }
@@ -25,4 +30,5 @@ tower = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
-libc = "=0.2.180"
+libc = "0.2"
+tempfile = "3"

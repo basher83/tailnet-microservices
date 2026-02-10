@@ -29,7 +29,7 @@ COPY --from=builder /anthropic-oauth-proxy /usr/local/bin/anthropic-oauth-proxy
 
 USER 1000
 
-EXPOSE 8080
+EXPOSE 8080 9090
 
 ENV CONFIG_PATH=/etc/anthropic-oauth-proxy/config.toml
 
