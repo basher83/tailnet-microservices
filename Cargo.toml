@@ -24,7 +24,7 @@ reqwest = { version = "0.13", default-features = false, features = ["rustls", "h
 
 # Config
 serde = { version = "1", features = ["derive"] }
-toml = "0.9"
+toml = "1.0"
 
 # Observability
 tracing = "0.1"
