@@ -50,7 +50,7 @@ anyhow = "1"
 # Crypto / encoding (PKCE, OAuth)
 sha2 = "0.10"
 base64 = "0.22"
-rand = "0.9"
+rand = "0.10"
 
 # Internal crates
 common = { path = "crates/common" }

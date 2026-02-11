@@ -8,7 +8,7 @@
 
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use rand::Rng;
+use rand::RngExt;
 use sha2::{Digest, Sha256};
 
 use crate::constants::{ANTHROPIC_CLIENT_ID, AUTHORIZE_ENDPOINT, REDIRECT_URI, SCOPES};
