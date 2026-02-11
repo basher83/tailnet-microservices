@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "d28135a83cd2",
+  "session_id": "4495a30b-b94f-41ce-aed2-ae8e6a8045fc",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-11T04:14:09.439215Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "Cargo.toml",
+    "crates/anthropic-auth/src/pkce.rs"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 26,
+    "cache_creation_tokens": 60605,
+    "cache_read_tokens": 1149598,
+    "output_tokens": 135,
+    "api_call_count": 25
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-11T04:14:09.429573Z",
+    "agent_lines": 2,
+    "human_added": 28,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 30,
+    "agent_percentage": 6.666666666666667
+  }
+}
