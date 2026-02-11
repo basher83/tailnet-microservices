@@ -2,7 +2,7 @@
 
 ## Overview
 
-Rust HTTP proxy on the tailnet. Currently injects static OAuth headers and forwards to api.anthropic.com. Evolving into a full OAuth 2.0 gateway with PKCE auth, token refresh, and subscription pooling. Multi-provider interface designed in, Anthropic-only for now.
+Rust OAuth 2.0 gateway on the tailnet. Manages Claude Max subscription credentials with PKCE auth, automatic token refresh, and round-robin subscription pooling with quota failover. Clients send unauthenticated requests; the gateway injects everything. Multi-provider interface designed in, Anthropic-only for now.
 
 **Do NOT** modify anything in mothership-gitops. ArgoCD syncs this repo via wave 8.
 

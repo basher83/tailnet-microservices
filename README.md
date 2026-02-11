@@ -9,7 +9,7 @@ Single-binary Rust services that act as infrastructure proxies on a Tailscale ta
 
 ## Services
 
-`anthropic-oauth-proxy` injects the `anthropic-beta: oauth-2025-04-20` header into requests proxied to `https://api.anthropic.com`. This enables Claude Max OAuth token authentication through proxies like Aperture that lack custom header injection. Runs as a single-container Kubernetes pod with zero secrets.
+`anthropic-oauth-proxy` is an OAuth 2.0 gateway that manages Claude Max subscription credentials and proxies authenticated requests to `https://api.anthropic.com`. It handles PKCE authentication, automatic token refresh, round-robin subscription pooling with quota failover, and the full Anthropic header contract. Clients on the tailnet send unauthenticated requests; the gateway handles everything. Runs as a single-container Kubernetes pod with credentials persisted on a PVC.
 
 ## Quick Start
 
@@ -25,8 +25,11 @@ cargo test --workspace
 ```text
 crates/
   common/           # Shared types: error types
+  provider/         # Provider trait, ErrorClassification
+  anthropic-auth/   # OAuth PKCE, token exchange/refresh, credential storage
+  anthropic-pool/   # Subscription pool: round-robin, quota detection, cooldown
 services/
-  oauth-proxy/      # Anthropic OAuth header injection proxy
+  oauth-proxy/      # Anthropic OAuth gateway proxy
 specs/
   *.md              # Service specifications
 k8s/                # Kubernetes deployment manifests
