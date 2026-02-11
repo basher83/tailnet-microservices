@@ -29,7 +29,6 @@ spec:
       containers:
         - name: proxy
           image: ghcr.io/basher83/tailnet-microservices/anthropic-oauth-proxy:main
-          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8080
