@@ -8,9 +8,9 @@ Previous build history archived at IMPLEMENTATION_PLAN_v1.md (81 audits, 111 tes
 
 ## Baseline
 
-v0.0.122: 198 tests pass (125 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean. `kubectl kustomize k8s/` validates clean.
+v0.0.123: 198 tests pass (125 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean. `kubectl kustomize k8s/` validates clean. rand migrated from 0.9 to 0.10 (RngExt trait rename in pkce.rs).
 
-Completed specs: `oauth-proxy.md` (Complete), `operator-migration.md` (Complete), `operator-migration-addendum.md` (Complete — dual proxy conflict resolved, Ingress live), `anthropic-oauth-gateway.md` (Phases 1–6 complete).
+Completed specs: `oauth-proxy.md` (Complete), `operator-migration.md` (Complete), `operator-migration-addendum.md` (Complete — dual proxy conflict resolved, Ingress live), `anthropic-oauth-gateway.md` (Phases 1–6 complete), `rand-0.10-migration.md` (Complete — rand::Rng → rand::RngExt, single call site in pkce.rs).
 
 ## All Phases Complete
 
