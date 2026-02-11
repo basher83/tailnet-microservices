@@ -3,10 +3,17 @@ kind: Kustomization
 images:
   - name: ghcr.io/basher83/tailnet-microservices/anthropic-oauth-proxy
     newTag: sha-3067e4f
+namespace: anthropic-oauth-proxy
+configMapGenerator:
+  - name: anthropic-oauth-proxy
+    files:
+      - config.toml
+    options:
+      labels:
+        app: anthropic-oauth-proxy
 resources:
   - namespace.yaml
   - serviceaccount.yaml
-  - configmap.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml

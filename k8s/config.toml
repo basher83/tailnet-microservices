@@ -1,0 +1,25 @@
+[proxy]
+listen_addr = "0.0.0.0:8080"
+upstream_url = "https://api.anthropic.com"
+timeout_secs = 60
+max_connections = 1000
+
+# --- Passthrough mode (default) ---
+# Static header injection. Remove this section when switching to OAuth mode.
+[[headers]]
+name = "anthropic-beta"
+value = "oauth-2025-04-20"
+
+# --- OAuth mode ---
+# When [oauth] is present, [[headers]] above is ignored automatically.
+
+[oauth]
+credential_file = "/data/credentials.json"
+cooldown_secs = 7200
+refresh_interval_secs = 300
+refresh_threshold_secs = 900
+providers = []
+
+[admin]
+enabled = true
+listen_addr = "0.0.0.0:9090"
