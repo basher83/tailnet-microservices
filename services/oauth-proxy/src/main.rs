@@ -3018,7 +3018,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn oauth_provider_skips_system_prompt_for_haiku() {
+    async fn oauth_provider_injects_system_prompt_for_haiku() {
         let dir = tempfile::tempdir().unwrap();
         let store = test_oauth_credential_store(&dir, &["acct-1"]).await;
         let pool = Arc::new(anthropic_pool::Pool::new(
@@ -3057,10 +3057,11 @@ mod tests {
         let upstream_body: serde_json::Value =
             serde_json::from_str(json["body"].as_str().unwrap()).unwrap();
 
-        // Haiku: no system prompt should be injected
-        assert!(
-            upstream_body.get("system").is_none(),
-            "system prompt must NOT be injected for Haiku"
+        // Haiku gets system prompt prefix under OAuth (consistent with Loom)
+        assert_eq!(
+            upstream_body["system"].as_str().unwrap(),
+            anthropic_auth::REQUIRED_SYSTEM_PROMPT_PREFIX,
+            "system prompt prefix must be injected for Haiku under OAuth"
         );
     }
 

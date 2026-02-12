@@ -106,16 +106,21 @@ pub async fn proxy_request(
         state.upstream_url.clone()
     };
 
-    // Collect original request headers, stripping hop-by-hop and host.
-    // The host header carries the proxy's hostname (e.g. "anthropic-oauth-proxy")
-    // but the upstream expects its own hostname (e.g. "api.anthropic.com").
-    // Reqwest automatically sets the correct Host from the upstream URL.
+    // Collect original request headers, stripping hop-by-hop, host, and
+    // content-length. Host carries the proxy's hostname — reqwest sets the
+    // correct one from the upstream URL. Content-Length must be recalculated
+    // by reqwest/hyper because OAuth mode re-serializes the body (system
+    // prompt injection changes byte count). Forwarding the client's original
+    // Content-Length causes a mismatch that Cloudflare rejects with 400.
     //
     // Uses append() instead of insert() to preserve multi-value headers
     // (e.g. multiple Cookie or Accept-Encoding values from the client).
     let mut original_headers = reqwest::header::HeaderMap::new();
     for (name, value) in request.headers() {
-        if !is_hop_by_hop(name.as_str()) && name != axum::http::header::HOST {
+        if !is_hop_by_hop(name.as_str())
+            && name != axum::http::header::HOST
+            && name != axum::http::header::CONTENT_LENGTH
+        {
             original_headers.append(name.clone(), value.clone());
         }
     }

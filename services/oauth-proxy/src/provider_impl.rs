@@ -61,9 +61,12 @@ impl Provider for AnthropicOAuthProvider {
                 other => ProviderError::Internal(other.to_string()),
             })?;
 
-            // Strip any client-provided Authorization header — OAuth mode manages
-            // its own credentials, client auth is not forwarded.
+            // Strip any client-provided auth headers — OAuth mode manages its
+            // own credentials. Both Authorization (Bearer) and x-api-key (direct
+            // API key) must be removed. Forwarding x-api-key alongside the OAuth
+            // Bearer token signals a non-Claude-Code client to Anthropic.
             headers.remove(reqwest::header::AUTHORIZATION);
+            headers.remove(HeaderName::from_static("x-api-key"));
 
             // Inject Bearer token from the selected account
             headers.insert(
@@ -164,22 +167,20 @@ fn extract_model(body: &serde_json::Value) -> Option<&str> {
     body.get("model").and_then(|m| m.as_str())
 }
 
-/// Inject the required system prompt prefix for non-Haiku models.
+/// Inject the required system prompt prefix for OAuth credential compliance.
 ///
 /// Rules:
-/// - Haiku models: skip entirely (no system prompt required)
+/// - No model field: skip (can't determine if injection is needed)
 /// - No `system` field: create with required prefix
 /// - Existing `system` without prefix: prepend prefix + space + existing
 /// - Existing `system` already has prefix: no modification
+///
+/// Applied to ALL models including Haiku. While Haiku doesn't require the
+/// prefix for model access, consistent injection avoids credential validation
+/// edge cases. Loom (reference implementation) applies the prefix to all
+/// models under OAuth.
 fn inject_system_prompt(body: &mut serde_json::Value) {
-    let model = match extract_model(body) {
-        Some(m) => m.to_lowercase(),
-        None => return,
-    };
-
-    // Haiku models don't require system prompt injection
-    if model.contains("haiku") {
-        debug!(model = %model, "skipping system prompt injection for haiku model");
+    if extract_model(body).is_none() {
         return;
     }
 
@@ -325,13 +326,16 @@ mod tests {
     }
 
     #[test]
-    fn inject_haiku_skipped() {
+    fn inject_haiku_gets_prefix() {
         let mut body = serde_json::json!({
             "model": "claude-haiku-3-20240307",
             "messages": [{"role": "user", "content": "hello"}]
         });
         inject_system_prompt(&mut body);
-        assert!(body.get("system").is_none());
+        assert_eq!(
+            body["system"].as_str().unwrap(),
+            REQUIRED_SYSTEM_PROMPT_PREFIX
+        );
     }
 
     #[test]
@@ -341,7 +345,10 @@ mod tests {
             "messages": []
         });
         inject_system_prompt(&mut body);
-        assert!(body.get("system").is_none());
+        assert_eq!(
+            body["system"].as_str().unwrap(),
+            REQUIRED_SYSTEM_PROMPT_PREFIX
+        );
     }
 
     #[test]
@@ -367,14 +374,15 @@ mod tests {
     }
 
     #[test]
-    fn inject_haiku_with_existing_system_preserved() {
+    fn inject_haiku_with_existing_system_gets_prefix() {
         let mut body = serde_json::json!({
             "model": "claude-3-haiku-20240307",
             "system": "Custom system prompt",
             "messages": []
         });
         inject_system_prompt(&mut body);
-        // Haiku: system field should be untouched
-        assert_eq!(body["system"].as_str().unwrap(), "Custom system prompt");
+        let system = body["system"].as_str().unwrap();
+        assert!(system.starts_with(REQUIRED_SYSTEM_PROMPT_PREFIX));
+        assert!(system.contains("Custom system prompt"));
     }
 }
