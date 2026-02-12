@@ -59,6 +59,38 @@ Verify the Tailscale Operator created its proxy StatefulSet:
 kubectl -n anthropic-oauth-proxy get statefulset
 ```
 
+### End-to-End Test
+
+Test the full request path over the tailnet. Requests must use HTTPS against the Tailscale FQDN (not the short MagicDNS name, which lacks a valid TLS cert for curl). No credentials are needed in the request — the proxy injects everything.
+
+```bash
+curl -s -X POST "https://anthropic-oauth-proxy.tailfb3ea.ts.net/v1/messages" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-haiku-4-5-20251001",
+    "max_tokens": 64,
+    "messages": [{"role": "user", "content": "Say hello in exactly 5 words."}]
+  }' | jq .
+```
+
+A successful response contains `"type": "message"` with a `content` array and `usage` block. The request path is:
+
+```text
+curl → tailnet (WireGuard) → Tailscale Ingress (TLS termination)
+     → Service (ClusterIP :80) → proxy (:8080, OAuth token injection)
+     → api.anthropic.com → 200 OK
+```
+
+Common failures at this stage:
+
+| Symptom | Cause |
+|---------|-------|
+| Connection refused on port 80 | Using `http://` instead of `https://`, or using the short MagicDNS name without port 443 |
+| TLS handshake error | Using the short name `anthropic-oauth-proxy` instead of the FQDN `anthropic-oauth-proxy.tailfb3ea.ts.net` |
+| 400 from Cloudflare | Request reached Anthropic but was malformed — check proxy logs for the request_id |
+| 401 Unauthorized | Token expired or invalid — check `curl -s http://localhost:9090/admin/pool \| jq .` (requires admin port-forward) |
+| 503 Service Unavailable | Pool exhausted — no available accounts |
+
 ### Switching to OAuth Mode
 
 To switch from passthrough to OAuth mode, update the ConfigMap to uncomment the `[oauth]` and `[admin]` sections (and optionally remove `[[headers]]` — `[oauth]` takes precedence automatically). Then restart the deployment:
@@ -131,6 +163,56 @@ curl -s -X POST http://localhost:9090/admin/accounts/complete-oauth \
 ```
 
 The PKCE state expires after 10 minutes. If Step 3 is not completed in time, start over from Step 1.
+
+### Adding an Account (Keychain Extraction)
+
+If the PKCE consent flow fails (see Known Issues), credentials can be extracted from a local Claude Code installation and loaded directly.
+
+Step 1 — Extract tokens from the macOS keychain (tokens are not printed):
+
+```bash
+CREDS=$(security find-generic-password -s "Claude Code-credentials" -a "$(whoami)" -w)
+echo "$CREDS" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+oauth = data['claudeAiOauth']
+print(json.dumps({
+    'claude-max-local': {
+        'type': 'oauth',
+        'refresh': oauth['refreshToken'],
+        'access': oauth['accessToken'],
+        'expires': oauth['expiresAt']
+    }
+}, indent=2))
+" > /tmp/credentials.json
+```
+
+Step 2 — Copy the credential file into the pod:
+
+```bash
+POD=$(kubectl -n anthropic-oauth-proxy get pods -l app=anthropic-oauth-proxy -o name | head -1)
+kubectl cp /tmp/credentials.json anthropic-oauth-proxy/${POD#pod/}:/data/credentials.json -c proxy
+```
+
+Step 3 — Restart the pod to load the new credentials:
+
+```bash
+kubectl -n anthropic-oauth-proxy rollout restart deployment/anthropic-oauth-proxy
+```
+
+Step 4 — Verify the account loaded:
+
+```bash
+curl -s http://localhost:9090/admin/pool | jq .
+```
+
+Clean up the local temp file after confirming:
+
+```bash
+rm -f /tmp/credentials.json
+```
+
+The keychain entry name varies by platform. On macOS, Claude Code stores credentials under service `Claude Code-credentials`. The `claudeAiOauth` key contains the tokens for claude.ai OAuth (Max/Pro subscriptions). The `expiresAt` field is already in unix milliseconds, matching the gateway's `expires` field directly.
 
 ### Listing Accounts
 
@@ -384,3 +466,23 @@ HTTPS_PROXY=http://127.0.0.1:8888 claude --print "hello"
 ```
 
 Compare the captured headers against the constants in `services/oauth-proxy/src/provider_impl.rs`. Update the constants and run tests if anything has changed.
+
+## Known Issues
+
+### OAuth Consent Page "Invalid request format"
+
+The PKCE flow's `init-oauth` endpoint generates an authorization URL for `claude.ai/oauth/authorize`. The consent page loads correctly (shows "Claude Code would like to connect to your Claude chat account" with the expected scopes), but clicking "Authorize" fails with "Invalid request format" in the browser's React Query mutation. This occurs in both normal and incognito browser sessions.
+
+The root cause is unclear. The gateway uses the same client ID, redirect URI, and PKCE parameters as the Claude Code CLI. Possible factors:
+
+- Anthropic may have added server-side validation that rejects the authorization grant for sessions not initiated by the official Claude Code CLI binary.
+- The gateway requests scopes `user:profile user:inference user:sessions:claude_code`, while the Claude Code CLI's keychain tokens include an additional `user:mcp_servers` scope. The consent page may require this scope for approval to succeed.
+- Anthropic has publicly stated they block third-party tools from using Claude Code OAuth tokens. The consent page rejection may be part of this enforcement.
+
+Workaround: Use the keychain extraction method (see "Adding an Account — Keychain Extraction" above) to load tokens from an existing Claude Code installation. The extracted tokens work correctly for API requests through the gateway.
+
+### Credential File Missing `type` Field
+
+The credential file requires a `type` field (value: `"oauth"`) on every credential entry. Omitting it causes a fatal parse error on startup (`missing field 'type'`), putting the pod into CrashLoopBackOff. If this happens, the PVC retains the bad file across restarts.
+
+Recovery: scale the deployment to 0 (disable ArgoCD auto-sync first if enabled), run a temporary pod mounting the PVC, fix the file, then restore. See the field reference in `specs/anthropic-oauth-gateway.md` for the required format.
