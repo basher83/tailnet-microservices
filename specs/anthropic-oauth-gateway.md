@@ -196,24 +196,39 @@ Admin CLI                    Gateway                     claude.ai
 
 JSON file on disk, keyed by account ID. Mounted as a PersistentVolume in K8s.
 
+#### Field Reference
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | yes | Always `"oauth"`. Discriminator for future credential types. Deserialized via `#[serde(rename = "type")]`. |
+| `refresh` | string | yes | Refresh token for obtaining new access tokens. Prefix: `sk-ant-ort*`. Used by background refresh and request-time refresh. |
+| `access` | string | yes | Current Bearer token for API calls. Prefix: `sk-ant-oat*`. Injected as `Authorization: Bearer {access}`. |
+| `expires` | u64 | yes | Absolute expiration as unix timestamp in **milliseconds**. Computed from `TokenResponse.expires_in` (seconds delta) + current time at storage. |
+
+The account ID key (e.g., `claude-max-1739059200`) is an opaque string. The admin API generates IDs in the format `claude-max-{unix_timestamp}`. Manually created entries can use any unique string.
+
+#### Example `credentials.json`
+
 ```json
 {
-  "claude-max-1": {
+  "claude-max-1739059200": {
     "type": "oauth",
-    "refresh": "rt_abc123...",
-    "access": "at_xyz789...",
-    "expires": 1735500000000
+    "refresh": "sk-ant-ort01-example...",
+    "access": "sk-ant-oat01-example...",
+    "expires": 1739073600000
   },
-  "claude-max-2": {
+  "claude-max-1739145600": {
     "type": "oauth",
-    "refresh": "rt_def456...",
-    "access": "at_uvw000...",
-    "expires": 1735500100000
+    "refresh": "sk-ant-ort01-example...",
+    "access": "sk-ant-oat01-example...",
+    "expires": 1739160000000
   }
 }
 ```
 
 File permissions: `0600`, owned by container UID 1000 (non-root). Never exposed via API. Health endpoint shows account IDs and status only.
+
+Missing or empty file (`{}`) is a valid cold start — the pool reports `unhealthy` until accounts are added. Omitting the `type` field causes a fatal parse error on startup.
 
 **Atomic writes:** Credential file updates use write-to-temp + atomic rename to prevent corruption on crash mid-write. All writes acquire an in-memory `Mutex` to prevent concurrent modification from request-time refresh and background refresh tasks.
 
