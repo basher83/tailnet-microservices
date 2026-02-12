@@ -1,6 +1,6 @@
 # Spec: Generic Client Support for OAuth Mode
 
-**Status:** Active
+**Status:** Active (partially resolved)
 **Created:** 2026-02-12
 
 ---
@@ -33,7 +33,21 @@ What may also be validated:
 - **Tool schemas**: Claude Code sends its specific tool definitions. Anthropic may validate that recognized tool schemas are present.
 - **Request body structure**: Other structural checks on the JSON body that distinguish Claude Code requests from generic API requests.
 
-### Investigation Approach
+### Investigation Results (2026-02-12)
+
+Empirical testing isolated tool names as the remaining validation gate. With the Content-Length fix (commit 0d3d908) and x-api-key stripping already in place:
+
+- `"tools":[{"name":"bash",...}]` → 400 ("This credential is only authorized for use with Claude Code")
+- `"tools":[{"name":"Bash",...}]` → 200 (Sonnet responds with tool_use)
+- No `tools` field → 200
+
+Anthropic validates tool names against Claude Code's known PascalCase set (`Bash`, `Read`, `Write`, `Edit`, `Glob`, `Grep`, etc.). Only the `name` field matters — description, input_schema shape, and parameter names are not validated.
+
+**Eliminated suspects:** OAuth token scopes (verified correct), `system` field format (plain string works), user-agent version (tested 2.0.76 and 2.1.39), `claude-code-20250219` beta flag, HTTP protocol version (HTTP/1.1 and HTTP/2), tool schema structure beyond name.
+
+**Resolution:** Forgeflare renamed its tool names to PascalCase (commit dbd81e8, tag v0.0.47). This is a client-side change, amending the original "zero client-side changes" non-goal — the proxy cannot reasonably map arbitrary tool names to Claude Code equivalents without a fragile mapping table.
+
+### Original Investigation Approach
 
 1. Capture a working Claude Code request (via `claude --verbose` or by intercepting with the proxy's debug logging) and compare the full request body against what forgeflare sends.
 2. Diff the two payloads to identify structural differences beyond what the proxy already transforms.
@@ -71,8 +85,8 @@ What may also be validated:
 
 ## Success Criteria
 
-- [ ] Root cause identified and documented (which validation check(s) fail)
-- [ ] Forgeflare requests succeed through the proxy with zero client-side changes
+- [x] Root cause identified and documented (tool name validation — PascalCase required)
+- [x] Forgeflare requests succeed through the proxy (tool names renamed client-side, verified: Read and Glob tool calls return 200)
 - [ ] `curl` requests succeed through the proxy with a bare JSON body (model + messages only)
 - [ ] Haiku, Sonnet, and Opus models all work through the proxy
 - [ ] Streaming (`"stream": true`) works through the proxy
@@ -83,7 +97,7 @@ What may also be validated:
 
 ## Non-Goals
 
-- Client-side changes to forgeflare or other consumers (the proxy is the transformation layer)
+- ~~Client-side changes to forgeflare or other consumers~~ — amended: tool names must match Claude Code's PascalCase convention. Proxy-side mapping rejected as fragile. Clients adopt PascalCase tool names directly.
 - Supporting non-Anthropic providers (single provider for now)
 - Caching or modifying response bodies (proxy is request-only transformation)
 
