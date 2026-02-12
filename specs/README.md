@@ -8,3 +8,4 @@
 | [anthropic-oauth-gateway.md](./anthropic-oauth-gateway.md) | **Complete** | crates/, services/oauth-proxy/, k8s/ | OAuth pool gateway — PKCE, token refresh, subscription pooling (supersedes oauth-proxy.md) |
 | [tailnet.md](./tailnet.md) | Superseded by operator-migration | (deleted) | Tailnet integration via tailscaled sidecar (Option B) |
 | [rand-0.10-migration.md](./rand-0.10-migration.md) | **Active** | crates/anthropic-auth/ | Migrate rand 0.9 → 0.10 (breaking API renames) |
+| [generic-client-support.md](./generic-client-support.md) | **Active** | services/oauth-proxy/ | Transform generic client requests to pass Claude Max OAuth credential validation |
