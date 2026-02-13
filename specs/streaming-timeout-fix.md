@@ -136,7 +136,6 @@ use std::task::{Context, Poll};
 use futures_util::Stream;
 use tokio::time::{sleep, Sleep, Duration};
 use bytes::Bytes;
-use http_body::Frame;
 
 pin_project_lite::pin_project! {
     pub struct IdleTimeoutStream<S> {
@@ -165,7 +164,7 @@ where
     S: Stream<Item = Result<Bytes, E>>,
     E: Into<Box<dyn std::error::Error + Send + Sync>>,
 {
-    type Item = Result<Frame<Bytes>, Box<dyn std::error::Error + Send + Sync>>;
+    type Item = Result<Bytes, Box<dyn std::error::Error + Send + Sync>>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.project();
@@ -187,7 +186,7 @@ where
             Poll::Ready(Some(Ok(bytes))) => {
                 // Data received — reset the idle deadline
                 this.deadline.reset(tokio::time::Instant::now() + *this.timeout);
-                Poll::Ready(Some(Ok(Frame::data(bytes))))
+                Poll::Ready(Some(Ok(bytes)))
             }
             Poll::Ready(Some(Err(e))) => {
                 Poll::Ready(Some(Err(e.into())))
@@ -201,10 +200,11 @@ where
 
 Key differences from a naive implementation:
 - `timed_out: bool` guard prevents infinite error loop — `Sleep` stays `Ready` after firing, so without this guard every subsequent `poll_next` would immediately fire the deadline again
-- Item type is `Result<Frame<Bytes>, _>` not `Result<Bytes, _>` — axum 0.8 with http-body 1.0 requires `Frame<Bytes>` for `Body::from_stream()`
+- Item type is `Result<Bytes, _>` (bare `Bytes`, NOT `Frame<Bytes>`) — axum 0.8's `Body::from_stream()` requires `TryStream<Ok: Into<Bytes>>`, and axum's internal `StreamBody` handles the `Frame` wrapping automatically. The existing code passes reqwest's `bytes_stream()` (which yields bare `Bytes`) directly to `from_stream`, and this wrapper must match that contract.
 - Timeout terminates the stream cleanly with `Poll::Ready(None)` instead of emitting an error frame — the client sees a closed stream, not a garbled SSE frame
 - Uses `tokio::time::Instant` (not `std::time::Instant`) for the deadline reset — note that `proxy.rs` already imports `std::time::Instant` at line 8 for request timing, so qualify `tokio::time::Instant` explicitly to avoid name collision
 - Inner stream errors use `e.into()` instead of `format!` wrapping, preserving the original error type chain
+- No `http_body::Frame` import needed — axum handles the `Bytes` → `Frame<Bytes>` conversion internally
 
 **Update build_streaming_response signature:**
 
@@ -326,8 +326,9 @@ This test exercises the `IdleTimeoutStream` directly, which no existing test cov
 ## Implementation Notes
 
 - The `IdleTimeoutStream` uses `pin_project_lite::pin_project!` for safe pin projection. `pin-project-lite` is declared as a direct dependency (see Dependency Changes section above). Do not use `unsafe` manual pin projection.
-- The `IdleTimeoutStream::Item` type is `Result<Frame<Bytes>, Box<dyn Error + Send + Sync>>`. This project uses axum 0.8 with http-body 1.0, which requires `Frame<Bytes>` (not bare `Bytes`) for `Body::from_stream()`. The implementation wraps each chunk in `Frame::data(bytes)`. Import `http_body::Frame` — the `http-body` crate is already a direct dependency.
+- The `IdleTimeoutStream::Item` type is `Result<Bytes, Box<dyn Error + Send + Sync>>` — bare `Bytes`, NOT `Frame<Bytes>`. Axum 0.8's `Body::from_stream()` signature is `fn from_stream<S>(stream: S) where S: TryStream, S::Ok: Into<Bytes>`. The internal `StreamBody` adapter wraps each chunk in `Frame::data(chunk.into())` automatically. Do NOT import `http_body::Frame` — it is not needed and `http-body` is not a direct dependency.
 - **Instant name collision:** `proxy.rs` already imports `std::time::Instant` (line 8) for request timing. The `IdleTimeoutStream` needs `tokio::time::Instant` for `deadline.reset()`. Use fully qualified `tokio::time::Instant::now()` in the reset call, or add `use tokio::time::Instant as TokioInstant;`.
+- **`Ok(Err(e))` arm content:** The `Ok(Err(e))` arm in the new match pattern must replicate the existing `Err(e)` (non-timeout) arm at `proxy.rs:377-394` exactly: increment `errors_total`, record metrics with `BAD_GATEWAY` status, log the error with `error!()`, and return `error_response` with 502 and the error message. Do not leave this as a comment placeholder.
 - The `tokio::time::timeout` wrapping `send()` changes the match pattern from 2 arms (`Ok(response)`, `Err(e)`) to 3 arms (`Ok(Ok(response))`, `Ok(Err(e))`, `Err(elapsed)`). The `Err(elapsed)` arm replaces the `Err(e) if e.is_timeout()` arms. Keep the two existing `is_timeout()` arms' behavior (retry on non-final attempt, 504 on final attempt) in the `Err(elapsed)` arm.
 - The `state.timeout` field on `ProxyState` is NOT dead after this change. It's passed to `tokio::time::timeout()` in the retry loop and to `build_streaming_response()` for the `IdleTimeoutStream`. The error message at `proxy.rs:370-373` also uses `state.timeout.as_secs()`. No clippy dead-field warning.
 - `build_streaming_response` is called in two places: `proxy.rs:318` (passthrough error responses) and `proxy.rs:342` (success responses). Both need the `idle_timeout` parameter. For error passthrough responses, the idle timeout wrapper is still appropriate — the upstream error body might stream.
