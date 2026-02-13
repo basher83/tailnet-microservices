@@ -30,7 +30,7 @@ const ANTHROPIC_VERSION: &str = "2023-06-01";
 /// OAuth provider backed by a subscription pool.
 ///
 /// Selects accounts round-robin, injects Bearer tokens, merges anthropic-beta
-/// flags, and injects the required system prompt prefix for non-Haiku models.
+/// flags, and injects the required system prompt prefix for all models.
 pub struct AnthropicOAuthProvider {
     pool: Arc<Pool>,
 }
@@ -93,7 +93,7 @@ impl Provider for AnthropicOAuthProvider {
                 HeaderValue::from_static(ANTHROPIC_VERSION),
             );
 
-            // System prompt injection for non-Haiku models
+            // System prompt injection for all models
             inject_system_prompt(body);
 
             Ok(Some(selected.id))

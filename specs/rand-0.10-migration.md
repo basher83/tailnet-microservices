@@ -1,5 +1,7 @@
 # Migrate rand crate to 0.10
 
+**Status:** Complete
+
 ## Context
 
 Renovate PR #3 bumps `rand` from 0.9 to 0.10 in `Cargo.toml`. rand 0.10 contains breaking API renames that require code changes before the version bump compiles.
