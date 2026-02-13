@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
   - name: ghcr.io/basher83/tailnet-microservices/anthropic-oauth-proxy
-    newTag: sha-ec4ad55
+    newTag: sha-ec4ad55@sha256:3ca320ff76065baf3913d182a4e9cb97809af17d7baca81aee852d53b07859a9
 namespace: anthropic-oauth-proxy
 configMapGenerator:
   - name: anthropic-oauth-proxy
