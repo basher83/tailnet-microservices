@@ -6,9 +6,14 @@
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use bytes::Bytes;
+use futures_util::Stream;
 use provider::Provider;
+use std::pin::Pin;
 use std::sync::Arc;
+use std::task::{Context, Poll};
 use std::time::{Duration, Instant};
+use tokio::time::Sleep;
 use tracing::{error, info, instrument, warn};
 
 /// Maximum retry attempts for upstream timeouts (spec: 2 retries = 3 total attempts)
@@ -55,6 +60,65 @@ struct InFlightGuard(Arc<std::sync::atomic::AtomicU64>);
 impl Drop for InFlightGuard {
     fn drop(&mut self) {
         self.0.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+// Wraps a byte stream with an idle timeout that resets on each received chunk.
+// If no data arrives within the timeout window, the stream terminates cleanly
+// (returns None). This protects against dead upstream connections mid-stream
+// without killing healthy long-running SSE streams that send periodic data.
+pin_project_lite::pin_project! {
+    struct IdleTimeoutStream<S> {
+        #[pin]
+        inner: S,
+        #[pin]
+        deadline: Sleep,
+        timeout: Duration,
+        timed_out: bool,
+    }
+}
+
+impl<S> IdleTimeoutStream<S> {
+    fn new(inner: S, timeout: Duration) -> Self {
+        Self {
+            inner,
+            deadline: tokio::time::sleep(timeout),
+            timeout,
+            timed_out: false,
+        }
+    }
+}
+
+impl<S, E> Stream for IdleTimeoutStream<S>
+where
+    S: Stream<Item = Result<Bytes, E>>,
+    E: Into<Box<dyn std::error::Error + Send + Sync>>,
+{
+    type Item = Result<Bytes, Box<dyn std::error::Error + Send + Sync>>;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let mut this = self.project();
+
+        if *this.timed_out {
+            return Poll::Ready(None);
+        }
+
+        if this.deadline.as_mut().poll(cx).is_ready() {
+            *this.timed_out = true;
+            warn!("upstream idle timeout after {}s", this.timeout.as_secs());
+            return Poll::Ready(None);
+        }
+
+        match this.inner.poll_next(cx) {
+            Poll::Ready(Some(Ok(bytes))) => {
+                this.deadline
+                    .reset(tokio::time::Instant::now() + *this.timeout);
+                Poll::Ready(Some(Ok(bytes)))
+            }
+            Poll::Ready(Some(Err(e))) => Poll::Ready(Some(Err(e.into()))),
+            Poll::Ready(None) => Poll::Ready(None),
+            Poll::Pending => Poll::Pending,
+        }
     }
 }
 
@@ -220,11 +284,11 @@ pub async fn proxy_request(
                 .client
                 .request(method.clone(), &upstream_url)
                 .headers(headers.clone())
-                .timeout(state.timeout)
                 .body(final_body.clone());
 
-            match req.send().await {
-                Ok(upstream_response) => {
+            let send_result = tokio::time::timeout(state.timeout, req.send()).await;
+            match send_result {
+                Ok(Ok(upstream_response)) => {
                     let status = upstream_response.status();
 
                     // For error responses that may need classification (quota/auth
@@ -320,6 +384,7 @@ pub async fn proxy_request(
                                 &resp_headers,
                                 upstream_response,
                                 &request_id,
+                                state.timeout,
                             );
                         }
                     }
@@ -344,37 +409,10 @@ pub async fn proxy_request(
                         &resp_headers,
                         upstream_response,
                         &request_id,
+                        state.timeout,
                     );
                 }
-                Err(e) if e.is_timeout() && attempt < MAX_UPSTREAM_ATTEMPTS - 1 => {
-                    continue;
-                }
-                Err(e) if e.is_timeout() => {
-                    state
-                        .errors_total
-                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                    let err_status = StatusCode::GATEWAY_TIMEOUT;
-                    crate::metrics::record_request(
-                        err_status.as_u16(),
-                        &method_str,
-                        start.elapsed().as_secs_f64(),
-                    );
-                    crate::metrics::record_upstream_error("timeout");
-                    error!(
-                        error = %e,
-                        attempts = MAX_UPSTREAM_ATTEMPTS,
-                        "upstream timeout after all retries"
-                    );
-                    return error_response(
-                        err_status,
-                        &format!(
-                            "upstream timeout after {}s ({MAX_UPSTREAM_ATTEMPTS} attempts)",
-                            state.timeout.as_secs()
-                        ),
-                        &request_id,
-                    );
-                }
-                Err(e) => {
+                Ok(Err(e)) => {
                     state
                         .errors_total
                         .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -389,6 +427,34 @@ pub async fn proxy_request(
                     return error_response(
                         err_status,
                         &format!("upstream error: {e}"),
+                        &request_id,
+                    );
+                }
+                Err(_elapsed) => {
+                    if attempt < MAX_UPSTREAM_ATTEMPTS - 1 {
+                        continue;
+                    }
+                    state
+                        .errors_total
+                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    let err_status = StatusCode::GATEWAY_TIMEOUT;
+                    crate::metrics::record_request(
+                        err_status.as_u16(),
+                        &method_str,
+                        start.elapsed().as_secs_f64(),
+                    );
+                    crate::metrics::record_upstream_error("timeout");
+                    error!(
+                        timeout_secs = state.timeout.as_secs(),
+                        attempts = MAX_UPSTREAM_ATTEMPTS,
+                        "upstream response timeout after all retries"
+                    );
+                    return error_response(
+                        err_status,
+                        &format!(
+                            "upstream response timeout after {}s ({MAX_UPSTREAM_ATTEMPTS} attempts)",
+                            state.timeout.as_secs()
+                        ),
                         &request_id,
                     );
                 }
@@ -442,11 +508,14 @@ fn build_buffered_response(
 }
 
 /// Build a streaming response (used for success and passthrough error responses).
+/// Wraps the upstream byte stream with an idle timeout that terminates the stream
+/// if no data arrives within the given duration.
 fn build_streaming_response(
     status: StatusCode,
     resp_headers: &reqwest::header::HeaderMap,
     upstream_response: reqwest::Response,
     request_id: &str,
+    idle_timeout: Duration,
 ) -> Response {
     let mut response = Response::builder().status(status);
     for (name, value) in resp_headers {
@@ -454,10 +523,9 @@ fn build_streaming_response(
             response = response.header(name, value);
         }
     }
+    let idle_stream = IdleTimeoutStream::new(upstream_response.bytes_stream(), idle_timeout);
     response
-        .body(axum::body::Body::from_stream(
-            upstream_response.bytes_stream(),
-        ))
+        .body(axum::body::Body::from_stream(idle_stream))
         .unwrap_or_else(|e| {
             error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,

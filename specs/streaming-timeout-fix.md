@@ -1,6 +1,6 @@
 # Spec: Streaming Timeout Fix
 
-**Status:** Active
+**Status:** Complete
 **Created:** 2026-02-13
 
 ---

@@ -4,13 +4,13 @@ Previous build history archived at IMPLEMENTATION_PLAN_v1.md (81 audits, 111 tes
 
 ## Current Spec
 
-`specs/anthropic-oauth-gateway.md` (Complete) — evolve the proxy from static header injector to full OAuth 2.0 gateway with subscription pooling.
+`specs/streaming-timeout-fix.md` (Complete) — three-phase timeout model replacing wall-clock reqwest timeout.
 
 ## Baseline
 
-v0.0.123: 198 tests pass (125 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean. `kubectl kustomize k8s/` validates clean. rand migrated from 0.9 to 0.10 (RngExt trait rename in pkce.rs).
+v0.0.125: 199 tests pass (126 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean. `cargo fmt --all --check` clean, `cargo clippy --workspace -- -D warnings` clean.
 
-Completed specs: `oauth-proxy.md` (Complete), `operator-migration.md` (Complete), `operator-migration-addendum.md` (Complete — dual proxy conflict resolved, Ingress live), `anthropic-oauth-gateway.md` (Phases 1–6 complete), `rand-0.10-migration.md` (Complete — rand::Rng → rand::RngExt, single call site in pkce.rs).
+Completed specs: `oauth-proxy.md` (Complete), `operator-migration.md` (Complete), `operator-migration-addendum.md` (Complete — dual proxy conflict resolved, Ingress live), `anthropic-oauth-gateway.md` (Phases 1–6 complete), `rand-0.10-migration.md` (Complete — rand::Rng → rand::RngExt, single call site in pkce.rs), `streaming-timeout-fix.md` (Complete — three-phase timeout model replacing wall-clock reqwest timeout).
 
 ## All Phases Complete
 
@@ -25,7 +25,7 @@ The full OAuth 2.0 gateway implementation is code-complete across all six phases
 - `crates/common/` — Error types only (`Config`, `Io`, `Toml` variants). 4 tests.
 - `crates/provider/` — Provider trait (with `prepare_request` returning `Option<String>` account_id, and `report_error` accepting `account_id: &str`), ErrorClassification, ProviderError, ProviderHealth. PassthroughProvider wraps header injection. Uses named lifetime `'a` on `prepare_request` for dyn-compatibility with multiple mutable references. Added `needs_body()` method for zero-overhead passthrough. 9 tests.
 - `services/oauth-proxy/src/config.rs` — `[proxy]`, `[[headers]]`, optional `[oauth]`, optional `[admin]`. AuthMode detection. OAuthConfig/AdminConfig structs with validation. 27 tests covering all validation paths.
-- `services/oauth-proxy/src/proxy.rs` — Failover loop: outer loop iterates accounts (capped at `max_failover_attempts`), inner loop handles timeout retries. Error classification buffers HTTP error response bodies for quota/permanent detection. Streams success responses for SSE. `build_buffered_response` and `build_streaming_response` helpers. 9 tests.
+- `services/oauth-proxy/src/proxy.rs` — Failover loop: outer loop iterates accounts (capped at `max_failover_attempts`), inner loop handles timeout retries. Error classification buffers HTTP error response bodies for quota/permanent detection. Streams success responses for SSE. `build_buffered_response` and `build_streaming_response` helpers. Three-phase timeout model: (1) connect_timeout(5s) on Client, (2) tokio::time::timeout around send() for initial response, (3) IdleTimeoutStream wrapper on bytes_stream() for streaming body idle detection. Removed per-request wall-clock .timeout(). Added futures-util, bytes, pin-project-lite dependencies. 9 tests.
 - `services/oauth-proxy/src/provider_impl.rs` — `AnthropicOAuthProvider` implementing Provider trait. Bearer token injection, `anthropic-beta` merge/dedup, system prompt injection (Opus/Sonnet get prefix, Haiku skipped), `anthropic-dangerous-direct-browser-access`, `user-agent`, `anthropic-version` headers. Delegates classify/report to pool. 19 unit tests.
 - `services/oauth-proxy/src/main.rs` — OAuth mode wiring: loads CredentialStore, creates Pool from config providers (falls back to all credential store accounts), spawns background refresh task, creates AnthropicOAuthProvider. Spawns admin API listener on separate port when `admin.enabled` and OAuth mode. Health endpoint includes pool details in OAuth mode. 78 tests (including 2 ignored perf tests).
 - `services/oauth-proxy/src/admin.rs` — Admin API on separate listener (default :9090). AdminState holds `Arc<Pool>`, `reqwest::Client`, `Arc<Mutex<HashMap<String, PkceState>>>`. Five endpoints: GET /admin/accounts (list with status, no tokens), POST /admin/accounts/init-oauth (PKCE flow initiation, account ID `claude-max-{timestamp}`), POST /admin/accounts/complete-oauth (code exchange, credential storage, pool addition), DELETE /admin/accounts/{id} (pool + credential removal), GET /admin/pool (pool health summary). Lazy PKCE state cleanup on init-oauth. 12 tests.

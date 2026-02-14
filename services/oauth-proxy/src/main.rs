@@ -3294,4 +3294,121 @@ mod tests {
         assert_eq!(json["pool"]["accounts_available"], 2);
         assert_eq!(json["pool"]["status"], "healthy");
     }
+
+    #[tokio::test]
+    async fn proxy_stream_idle_timeout_terminates_stalled_stream() {
+        // Verify the IdleTimeoutStream terminates when the upstream stops sending
+        // mid-stream. The mock sends HTTP 200 + 2 SSE chunks then holds the
+        // connection open without further data.
+        use std::io::Write;
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream_url = format!("http://{addr}");
+
+        let _server = tokio::spawn(async move {
+            loop {
+                let (mut socket, _) = listener.accept().await.unwrap();
+                tokio::spawn(async move {
+                    // Read the full HTTP request (consume until we see \r\n\r\n)
+                    let mut buf = vec![0u8; 4096];
+                    let mut total = 0;
+                    loop {
+                        let n = tokio::io::AsyncReadExt::read(&mut socket, &mut buf[total..])
+                            .await
+                            .unwrap_or(0);
+                        if n == 0 {
+                            return;
+                        }
+                        total += n;
+                        if total >= 4 && buf[..total].windows(4).any(|w| w == b"\r\n\r\n") {
+                            break;
+                        }
+                    }
+
+                    // Send HTTP response with 2 SSE chunks then stall
+                    let response = "HTTP/1.1 200 OK\r\n\
+                        content-type: text/event-stream\r\n\
+                        transfer-encoding: chunked\r\n\
+                        \r\n";
+                    let _ =
+                        tokio::io::AsyncWriteExt::write_all(&mut socket, response.as_bytes()).await;
+
+                    // Send chunk 1
+                    let chunk1 = b"data: chunk1\n\n";
+                    let mut encoded = Vec::new();
+                    write!(encoded, "{:x}\r\n", chunk1.len()).unwrap();
+                    encoded.extend_from_slice(chunk1);
+                    encoded.extend_from_slice(b"\r\n");
+                    let _ = tokio::io::AsyncWriteExt::write_all(&mut socket, &encoded).await;
+                    let _ = tokio::io::AsyncWriteExt::flush(&mut socket).await;
+
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+
+                    // Send chunk 2
+                    let chunk2 = b"data: chunk2\n\n";
+                    let mut encoded2 = Vec::new();
+                    write!(encoded2, "{:x}\r\n", chunk2.len()).unwrap();
+                    encoded2.extend_from_slice(chunk2);
+                    encoded2.extend_from_slice(b"\r\n");
+                    let _ = tokio::io::AsyncWriteExt::write_all(&mut socket, &encoded2).await;
+                    let _ = tokio::io::AsyncWriteExt::flush(&mut socket).await;
+
+                    // Stall: hold the connection open but send nothing
+                    tokio::time::sleep(Duration::from_secs(30)).await;
+                    drop(socket);
+                });
+            }
+        });
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
+        let metrics = ServiceMetrics::new();
+        let state = AppState {
+            proxy: ProxyState {
+                client: reqwest::Client::new(),
+                upstream_url,
+                provider: Arc::new(provider::PassthroughProvider::new(vec![])),
+                timeout: Duration::from_millis(200), // Short idle timeout
+                requests_total: metrics.requests_total.clone(),
+                errors_total: metrics.errors_total.clone(),
+                in_flight: metrics.in_flight.clone(),
+                max_failover_attempts: 1,
+            },
+            metrics,
+            prometheus: test_prometheus_handle(),
+        };
+
+        let app = build_router(state, 1000);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/v1/messages")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // Collect the full body — the idle timeout should terminate the stream
+        // after ~200ms of silence following the second chunk
+        let body = tokio::time::timeout(
+            Duration::from_secs(5),
+            axum::body::to_bytes(response.into_body(), 1024 * 1024),
+        )
+        .await
+        .expect("body collection must not hang (idle timeout should fire)")
+        .expect("body bytes must be readable");
+
+        let body_str = String::from_utf8(body.to_vec()).unwrap();
+        assert!(
+            body_str.contains("data: chunk1"),
+            "must receive first chunk before idle timeout"
+        );
+        assert!(
+            body_str.contains("data: chunk2"),
+            "must receive second chunk before idle timeout"
+        );
+    }
 }
