@@ -6,7 +6,7 @@
 
 IMPORTANT: Plan only. Do NOT implement anything. Do NOT assume functionality is missing; confirm with code search first. Prefer consolidated, idiomatic implementations in `crates/common/` over ad-hoc copies.
 
-ULTIMATE GOAL: Evolve the anthropic-oauth-proxy from a static header injector into a full OAuth 2.0 gateway with subscription pooling. The gateway manages its own OAuth credentials: PKCE auth, automatic token refresh, round-robin subscription pool with quota failover, and the full Anthropic header contract. Clients send bare requests; the gateway handles everything. See specs/anthropic-oauth-gateway.md for all requirements. Previous specs (oauth-proxy.md, operator-migration.md) are Complete — do NOT re-implement them.
+ULTIMATE GOAL: Implement remaining Active specs for the OAuth gateway. The core gateway is code-complete (PKCE, token refresh, subscription pooling, quota failover, full header contract — see specs/anthropic-oauth-gateway.md, Complete). Current Active work: replace the wall-clock timeout with a three-phase idle timeout model for SSE streaming (specs/streaming-timeout-fix.md). Completed specs (oauth-proxy.md, operator-migration.md, operator-migration-addendum.md, anthropic-oauth-gateway.md, rand-0.10-migration.md, generic-client-support.md) — do NOT re-implement them. Check specs/README.md for current status of all specs.
 
 999999999. Keep @IMPLEMENTATION_PLAN.md current with learnings using a subagent — future work depends on this to avoid duplicating efforts.
 
