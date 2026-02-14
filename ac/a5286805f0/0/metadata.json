@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "aca5286805f0",
+  "session_id": "3862df9d-30bf-4257-b008-787c8d160bb2",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-14T11:25:46.270632Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "services/oauth-proxy/Cargo.toml",
+    "services/oauth-proxy/src/main.rs",
+    "services/oauth-proxy/src/proxy.rs",
+    "specs/streaming-timeout-fix.md"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 1857,
+    "cache_creation_tokens": 97230,
+    "cache_read_tokens": 3484800,
+    "output_tokens": 515,
+    "api_call_count": 46
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-14T11:25:46.004426Z",
+    "agent_lines": 209,
+    "human_added": 26,
+    "human_modified": 5,
+    "human_removed": 0,
+    "total_committed": 240,
+    "agent_percentage": 87.08333333333333
+  },
+  "transcript_path": ".claude/projects/-Users-basher8383-dev-forge-tailnet-microservices/3862df9d-30bf-4257-b008-787c8d160bb2.jsonl"
+}

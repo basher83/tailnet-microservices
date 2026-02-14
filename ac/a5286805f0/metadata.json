@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "aca5286805f0",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "services/oauth-proxy/Cargo.toml",
+    "services/oauth-proxy/src/main.rs",
+    "services/oauth-proxy/src/proxy.rs",
+    "specs/streaming-timeout-fix.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ac/a5286805f0/0/metadata.json",
+      "transcript": "/ac/a5286805f0/0/full.jsonl",
+      "context": "/ac/a5286805f0/0/context.md",
+      "content_hash": "/ac/a5286805f0/0/content_hash.txt",
+      "prompt": "/ac/a5286805f0/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1857,
+    "cache_creation_tokens": 97230,
+    "cache_read_tokens": 3484800,
+    "output_tokens": 515,
+    "api_call_count": 46
+  }
+}
