@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.3",
+  "checkpoint_id": "11eeaefee198",
+  "session_id": "0572b5e5-f947-41d2-a9bf-b9ed83dd2f02",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-12T15:52:13.572584Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "RUNBOOK.md",
+    "specs/anthropic-oauth-gateway.md"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "dca424c3-82de-47aa-9df8-3bf441d3e765",
+  "token_usage": {
+    "input_tokens": 150,
+    "cache_creation_tokens": 304044,
+    "cache_read_tokens": 14413095,
+    "output_tokens": 4170,
+    "api_call_count": 119
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-12T15:52:13.199118Z",
+    "agent_lines": 125,
+    "human_added": 56,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 181,
+    "agent_percentage": 69.06077348066299
+  },
+  "transcript_path": ".claude/projects/-Users-basher8383-dev-personal-ralph-tailnet-microservices/0572b5e5-f947-41d2-a9bf-b9ed83dd2f02.jsonl"
+}
