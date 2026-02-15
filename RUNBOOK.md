@@ -26,15 +26,32 @@ In passthrough mode, the proxy injects the `anthropic-beta: oauth-2025-04-20` he
 
 ## Deployment
 
-### Initial Deploy
+### How Deployments Work
 
-No secrets are required. The container image is public on GHCR (anonymous pull). Tailnet authentication is handled by the Tailscale Operator.
+Commits to `main` trigger a CI pipeline (`.github/workflows/ci.yml`) that runs lint, audit, test, and build. On success, the `docker` job builds a container image and pushes it to GHCR tagged `sha-<7char>`. The `deploy` job then updates `k8s/kustomization.yaml` with the new tag and pushes a `[skip ci]` commit to `main`.
+
+ArgoCD watches `main` at path `k8s/` with automated sync, prune, and self-heal enabled. When the tag commit lands, ArgoCD reconciles the cluster to the new image.
+
+```text
+code commit on main
+  → CI: lint + audit + test + build
+  → CI: docker build + push to ghcr.io (tagged sha-<7char>)
+  → CI: deploy job updates kustomization.yaml newTag, commits [skip ci]
+  → ArgoCD: auto-sync from main, path k8s/
+  → Cluster: reconciled to new image
+```
+
+The `newTag` field in `k8s/kustomization.yaml` is machine-managed by CI. Do not edit it manually — the next CI run will overwrite it.
+
+### Bootstrap Deploy
+
+For first-time setup before ArgoCD is configured, or to apply manifests directly:
 
 ```bash
 kubectl apply -k k8s/
 ```
 
-This creates the namespace, ServiceAccount, ConfigMap, PVC, Deployment, Services (proxy + admin), and Ingress. The Tailscale Operator detects the Ingress and creates a StatefulSet to proxy from the tailnet to the ClusterIP.
+No secrets are required. The container image is public on GHCR (anonymous pull). Tailnet authentication is handled by the Tailscale Operator. This creates the namespace, ServiceAccount, ConfigMap, PVC, Deployment, Services (proxy + admin), and Ingress. The Tailscale Operator detects the Ingress and creates a StatefulSet to proxy from the tailnet to the ClusterIP.
 
 ### Verify Deployment
 
@@ -93,34 +110,39 @@ Common failures at this stage:
 
 ### Switching to OAuth Mode
 
-To switch from passthrough to OAuth mode, update the ConfigMap to uncomment the `[oauth]` and `[admin]` sections (and optionally remove `[[headers]]` — `[oauth]` takes precedence automatically). Then restart the deployment:
-
-```bash
-kubectl apply -k k8s/
-kubectl -n anthropic-oauth-proxy rollout restart deployment/anthropic-oauth-proxy
-```
+To switch from passthrough to OAuth mode, edit `k8s/config.toml` to uncomment the `[oauth]` and `[admin]` sections (and optionally remove `[[headers]]` — `[oauth]` takes precedence automatically). Commit and push to `main`. CI will update the ConfigMap hash, and ArgoCD will roll out the new pod.
 
 The proxy starts in OAuth mode with an empty pool. Add accounts via the admin API (see below).
 
 ### Updating Configuration
 
-The ConfigMap at `k8s/configmap.yaml` holds the TOML configuration. After editing:
+The ConfigMap is generated from `k8s/config.toml` by kustomize. To change configuration, edit the file, commit, and push to `main`. ArgoCD detects the ConfigMap hash change and triggers a rollout.
+
+To force a restart without a config change (e.g., to pick up refreshed credentials from the PVC):
 
 ```bash
-kubectl apply -k k8s/
 kubectl -n anthropic-oauth-proxy rollout restart deployment/anthropic-oauth-proxy
 ```
 
+ArgoCD will not revert a manual restart — the Deployment spec hasn't changed, only the pod template annotation has.
+
 ### Rollback
 
-If a deployment introduces issues, roll back to the previous revision:
+ArgoCD's self-heal will revert manual `rollout undo` commands within seconds. To roll back, revert the code commit on `main` and push. CI builds the previous code, updates the image tag, and ArgoCD syncs the rollback.
 
 ```bash
-kubectl -n anthropic-oauth-proxy rollout undo deployment/anthropic-oauth-proxy
-kubectl -n anthropic-oauth-proxy rollout status deployment/anthropic-oauth-proxy
+git revert HEAD
+git push origin main
 ```
 
-Kubernetes retains the previous ReplicaSet by default, so `rollout undo` restores both the container image and the ConfigMap hash from the prior revision. For rollbacks beyond one revision, use `rollout undo --to-revision=<N>` where `N` is from `rollout history`.
+For emergencies where you need to act faster than the CI pipeline, disable ArgoCD auto-sync first:
+
+```bash
+kubectl -n argocd patch application anthropic-oauth-proxy --type merge -p '{"spec":{"syncPolicy":null}}'
+kubectl -n anthropic-oauth-proxy rollout undo deployment/anthropic-oauth-proxy
+```
+
+Re-enable auto-sync after the situation is resolved. Any manual state will be overwritten when sync resumes.
 
 ## OAuth Account Management
 
