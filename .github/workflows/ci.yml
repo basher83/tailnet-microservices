@@ -7,11 +7,21 @@ on:
     paths-ignore:
       - "**.md"
       - "LICENSE"
+      - "specs/**"
+      - "renovate.json"
+      - ".gitignore"
+      - "loop.sh"
+      - "*.example.toml"
   pull_request:
     branches: [main]
     paths-ignore:
       - "**.md"
       - "LICENSE"
+      - "specs/**"
+      - "renovate.json"
+      - ".gitignore"
+      - "loop.sh"
+      - "*.example.toml"
 
 env:
   CARGO_TERM_COLOR: always
