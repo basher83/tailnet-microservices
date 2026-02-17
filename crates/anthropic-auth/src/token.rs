@@ -137,7 +137,7 @@ mod tests {
     fn exchange_uses_correct_endpoint() {
         assert_eq!(
             TOKEN_ENDPOINT,
-            "https://console.anthropic.com/v1/oauth/token"
+            "https://platform.claude.com/v1/oauth/token"
         );
     }
 
@@ -151,7 +151,7 @@ mod tests {
     fn exchange_includes_redirect_uri() {
         assert_eq!(
             REDIRECT_URI,
-            "https://console.anthropic.com/oauth/code/callback"
+            "https://platform.claude.com/oauth/code/callback"
         );
     }
 

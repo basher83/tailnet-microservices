@@ -8,19 +8,20 @@
 pub const ANTHROPIC_CLIENT_ID: &str = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
 
 /// OAuth redirect URI (Anthropic's hosted callback page)
-pub const REDIRECT_URI: &str = "https://console.anthropic.com/oauth/code/callback";
+pub const REDIRECT_URI: &str = "https://platform.claude.com/oauth/code/callback";
 
 /// Token endpoint for code exchange and token refresh
-pub const TOKEN_ENDPOINT: &str = "https://console.anthropic.com/v1/oauth/token";
+pub const TOKEN_ENDPOINT: &str = "https://platform.claude.com/v1/oauth/token";
 
 /// Authorization endpoint for Pro/Max subscriptions (claude.ai, not console)
 pub const AUTHORIZE_ENDPOINT: &str = "https://claude.ai/oauth/authorize";
 
 /// OAuth scopes required for inference access.
 /// `user:sessions:claude_code` is required for Sonnet/Opus access.
+/// `user:mcp_servers` is required by the authorization grant.
 /// `org:create_api_key` is deliberately excluded — that's for Console OAuth
 /// (API key creation), which is out of scope for this gateway.
-pub const SCOPES: &str = "user:profile user:inference user:sessions:claude_code";
+pub const SCOPES: &str = "user:profile user:inference user:sessions:claude_code user:mcp_servers";
 
 /// Required system prompt prefix for Opus/Sonnet access.
 /// Anthropic requires this exact string at the start of the system prompt
