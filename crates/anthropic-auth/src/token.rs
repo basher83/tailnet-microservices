@@ -135,10 +135,7 @@ mod tests {
 
     #[test]
     fn exchange_uses_correct_endpoint() {
-        assert_eq!(
-            TOKEN_ENDPOINT,
-            "https://platform.claude.com/v1/oauth/token"
-        );
+        assert_eq!(TOKEN_ENDPOINT, "https://platform.claude.com/v1/oauth/token");
     }
 
     #[test]
