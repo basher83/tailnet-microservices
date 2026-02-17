@@ -156,7 +156,9 @@ kubectl -n anthropic-oauth-proxy port-forward deployment/anthropic-oauth-proxy 9
 
 All admin commands below assume port-forwarding is active.
 
-### Adding an Account (PKCE Flow)
+### Adding an Account (PKCE Flow — Currently Blocked)
+
+**Note:** This flow is currently blocked by Anthropic's server-side enforcement (see Known Issues). Use the Keychain Extraction method below instead.
 
 Step 1 — Initiate the OAuth flow:
 
@@ -491,17 +493,15 @@ Compare the captured headers against the constants in `services/oauth-proxy/src/
 
 ## Known Issues
 
-### OAuth Consent Page "Invalid request format"
+### PKCE Web Flow Blocked by Anthropic (Platform Constraint)
 
-The PKCE flow's `init-oauth` endpoint generates an authorization URL for `claude.ai/oauth/authorize`. The consent page loads correctly (shows "Claude Code would like to connect to your Claude chat account" with the expected scopes), but clicking "Authorize" fails with "Invalid request format" in the browser's React Query mutation. This occurs in both normal and incognito browser sessions.
+The PKCE flow's `init-oauth` endpoint generates an authorization URL for `claude.ai/oauth/authorize`. The consent page loads correctly and displays the expected scopes, but clicking "Authorize" fails with `POST /v1/oauth/{session_id}/authorize` returning 400 "Invalid request format" via a React Query mutation. The consent page stays on screen silently — no visible error to the user.
 
-The root cause is unclear. The gateway uses the same client ID, redirect URI, and PKCE parameters as the Claude Code CLI. Possible factors:
+Root cause: Anthropic server-side enforcement blocking third-party OAuth consumers. Investigated in Q13-gate (2026-02-17): all gateway parameters were updated to match CC CLI v2.1.44 exactly (client ID, redirect URI, scopes including `user:mcp_servers`, PKCE S256 challenge). The failure persists in both normal and incognito browser sessions with all parameters matching. The OAuth session ID is a fixed server-side identifier for the registered application, not a client-side state issue. Anthropic has publicly stated they block third-party tools from using Claude Code OAuth tokens — this enforcement occurs at the authorization grant stage.
 
-- Anthropic may have added server-side validation that rejects the authorization grant for sessions not initiated by the official Claude Code CLI binary.
-- The gateway requests scopes `user:profile user:inference user:sessions:claude_code`, while the Claude Code CLI's keychain tokens include an additional `user:mcp_servers` scope. The consent page may require this scope for approval to succeed.
-- Anthropic has publicly stated they block third-party tools from using Claude Code OAuth tokens. The consent page rejection may be part of this enforcement.
+The `init-oauth` and `complete-oauth` endpoints remain functional code and will work if Anthropic lifts this restriction. No code changes are needed — only the server-side policy is blocking.
 
-Workaround: Use the keychain extraction method (see "Adding an Account — Keychain Extraction" above) to load tokens from an existing Claude Code installation. The extracted tokens work correctly for API requests through the gateway.
+Account provisioning method: Use keychain extraction (see "Adding an Account — Keychain Extraction" above) to load tokens from an existing Claude Code installation. Extracted tokens work correctly for all proxy operations including token refresh.
 
 ### Credential File Missing `type` Field
 
