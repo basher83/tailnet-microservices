@@ -8,7 +8,7 @@
 # Tailscale Operator via Service annotations (not a sidecar).
 
 # ---------- builder ----------
-FROM rust:1-bookworm@sha256:d0a4aa3ca2e1088ac0c81690914a0d810f2eee188197034edf366ed010a2b382 AS builder
+FROM rust:1-bookworm@sha256:c38b1b917cb749e50aea7dd6e87f6e315d62a4bc84e38d63f5eb8b1908db1b9a AS builder
 
 WORKDIR /src
 COPY . .
