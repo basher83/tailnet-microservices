@@ -169,11 +169,19 @@ fn extract_model(body: &serde_json::Value) -> Option<&str> {
 
 /// Inject the required system prompt prefix for OAuth credential compliance.
 ///
+/// The Anthropic API accepts `system` as either a plain string or an array of
+/// content blocks (`[{"type":"text","text":"..."}]`). This function handles both.
+///
 /// Rules:
 /// - No model field: skip (can't determine if injection is needed)
-/// - No `system` field: create with required prefix
-/// - Existing `system` without prefix: prepend prefix + space + existing
-/// - Existing `system` already has prefix: no modification
+/// - No `system` field: create as array with required prefix block
+/// - String `system` without prefix: convert to array, prepend prefix block
+/// - String `system` with prefix: convert to array (preserve prefix)
+/// - Array `system` whose first text block lacks prefix: prepend prefix block
+/// - Array `system` already has prefix: no modification
+///
+/// The output is always an array of content blocks so that cache_control and
+/// other per-block metadata survive round-tripping through the proxy.
 ///
 /// Applied to ALL models including Haiku. While Haiku doesn't require the
 /// prefix for model access, consistent injection avoids credential validation
@@ -184,21 +192,50 @@ fn inject_system_prompt(body: &mut serde_json::Value) {
         return;
     }
 
+    let prefix = REQUIRED_SYSTEM_PROMPT_PREFIX;
+
     match body.get("system") {
         None => {
-            body["system"] = serde_json::Value::String(REQUIRED_SYSTEM_PROMPT_PREFIX.to_string());
+            body["system"] = serde_json::json!([
+                { "type": "text", "text": prefix }
+            ]);
             debug!("injected system prompt (no existing system field)");
         }
-        Some(existing) => {
-            if let Some(existing_str) = existing.as_str()
-                && !existing_str.starts_with(REQUIRED_SYSTEM_PROMPT_PREFIX)
-            {
-                body["system"] = serde_json::Value::String(format!(
-                    "{REQUIRED_SYSTEM_PROMPT_PREFIX} {existing_str}"
-                ));
-                debug!("prepended system prompt prefix to existing system field");
+        Some(existing) if existing.is_string() => {
+            let existing_str = existing.as_str().unwrap();
+            if existing_str.starts_with(prefix) {
+                // Already has prefix — convert to array preserving content
+                body["system"] = serde_json::json!([
+                    { "type": "text", "text": existing_str }
+                ]);
+            } else {
+                // Prepend prefix as separate block, keep original as second block
+                body["system"] = serde_json::json!([
+                    { "type": "text", "text": prefix },
+                    { "type": "text", "text": existing_str }
+                ]);
+                debug!("prepended system prompt prefix to existing string system field");
             }
-            // Already has prefix or non-string system field: leave as-is
+        }
+        Some(existing) if existing.is_array() => {
+            let arr = existing.as_array().unwrap();
+            // Check if the first text block already starts with the prefix
+            let has_prefix = arr.iter().any(|block| {
+                block.get("type").and_then(|t| t.as_str()) == Some("text")
+                    && block
+                        .get("text")
+                        .and_then(|t| t.as_str())
+                        .is_some_and(|t| t.starts_with(prefix))
+            });
+            if !has_prefix {
+                let mut new_arr = vec![serde_json::json!({ "type": "text", "text": prefix })];
+                new_arr.extend(arr.iter().cloned());
+                body["system"] = serde_json::Value::Array(new_arr);
+                debug!("prepended system prompt prefix to existing array system field");
+            }
+        }
+        _ => {
+            // Non-string, non-array system field: leave as-is
         }
     }
 }
@@ -285,7 +322,34 @@ mod tests {
         assert_eq!(extract_model(&body), None);
     }
 
-    // --- System prompt injection tests ---
+    // --- System prompt injection helpers ---
+
+    /// Extract all text values from a system prompt array.
+    fn system_texts(body: &serde_json::Value) -> Vec<String> {
+        body["system"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|b| b.get("type").and_then(|t| t.as_str()) == Some("text"))
+            .map(|b| b["text"].as_str().unwrap().to_string())
+            .collect()
+    }
+
+    /// Assert the system field is an array whose first text block is the prefix.
+    fn assert_has_prefix(body: &serde_json::Value) {
+        let texts = system_texts(body);
+        assert!(
+            !texts.is_empty(),
+            "system array must have at least one text block"
+        );
+        assert!(
+            texts[0].starts_with(REQUIRED_SYSTEM_PROMPT_PREFIX),
+            "first text block must start with prefix, got: {}",
+            texts[0]
+        );
+    }
+
+    // --- System prompt injection tests (string input) ---
 
     #[test]
     fn inject_no_system_field() {
@@ -294,27 +358,27 @@ mod tests {
             "messages": [{"role": "user", "content": "hello"}]
         });
         inject_system_prompt(&mut body);
-        assert_eq!(
-            body["system"].as_str().unwrap(),
-            REQUIRED_SYSTEM_PROMPT_PREFIX
-        );
+        assert_has_prefix(&body);
+        assert_eq!(system_texts(&body).len(), 1);
     }
 
     #[test]
-    fn inject_existing_system_without_prefix() {
+    fn inject_existing_string_system_without_prefix() {
         let mut body = serde_json::json!({
             "model": "claude-sonnet-4-20250514",
             "system": "You are a helpful assistant.",
             "messages": []
         });
         inject_system_prompt(&mut body);
-        let system = body["system"].as_str().unwrap();
-        assert!(system.starts_with(REQUIRED_SYSTEM_PROMPT_PREFIX));
-        assert!(system.contains("You are a helpful assistant."));
+        assert_has_prefix(&body);
+        let texts = system_texts(&body);
+        assert_eq!(texts.len(), 2);
+        assert_eq!(texts[0], REQUIRED_SYSTEM_PROMPT_PREFIX);
+        assert_eq!(texts[1], "You are a helpful assistant.");
     }
 
     #[test]
-    fn inject_existing_system_with_prefix_noop() {
+    fn inject_existing_string_system_with_prefix_preserved() {
         let existing = format!("{REQUIRED_SYSTEM_PROMPT_PREFIX} You are a helpful assistant.");
         let mut body = serde_json::json!({
             "model": "claude-sonnet-4-20250514",
@@ -322,7 +386,10 @@ mod tests {
             "messages": []
         });
         inject_system_prompt(&mut body);
-        assert_eq!(body["system"].as_str().unwrap(), existing);
+        assert_has_prefix(&body);
+        let texts = system_texts(&body);
+        assert_eq!(texts.len(), 1);
+        assert_eq!(texts[0], existing);
     }
 
     #[test]
@@ -332,10 +399,7 @@ mod tests {
             "messages": [{"role": "user", "content": "hello"}]
         });
         inject_system_prompt(&mut body);
-        assert_eq!(
-            body["system"].as_str().unwrap(),
-            REQUIRED_SYSTEM_PROMPT_PREFIX
-        );
+        assert_has_prefix(&body);
     }
 
     #[test]
@@ -345,10 +409,7 @@ mod tests {
             "messages": []
         });
         inject_system_prompt(&mut body);
-        assert_eq!(
-            body["system"].as_str().unwrap(),
-            REQUIRED_SYSTEM_PROMPT_PREFIX
-        );
+        assert_has_prefix(&body);
     }
 
     #[test]
@@ -358,10 +419,7 @@ mod tests {
             "messages": []
         });
         inject_system_prompt(&mut body);
-        assert_eq!(
-            body["system"].as_str().unwrap(),
-            REQUIRED_SYSTEM_PROMPT_PREFIX
-        );
+        assert_has_prefix(&body);
     }
 
     #[test]
@@ -374,15 +432,88 @@ mod tests {
     }
 
     #[test]
-    fn inject_haiku_with_existing_system_gets_prefix() {
+    fn inject_haiku_with_existing_string_system_gets_prefix() {
         let mut body = serde_json::json!({
             "model": "claude-3-haiku-20240307",
             "system": "Custom system prompt",
             "messages": []
         });
         inject_system_prompt(&mut body);
-        let system = body["system"].as_str().unwrap();
-        assert!(system.starts_with(REQUIRED_SYSTEM_PROMPT_PREFIX));
-        assert!(system.contains("Custom system prompt"));
+        assert_has_prefix(&body);
+        let texts = system_texts(&body);
+        assert!(texts.iter().any(|t| t.contains("Custom system prompt")));
+    }
+
+    // --- System prompt injection tests (array input) ---
+
+    #[test]
+    fn inject_array_system_without_prefix() {
+        let mut body = serde_json::json!({
+            "model": "claude-sonnet-4-20250514",
+            "system": [
+                { "type": "text", "text": "Custom instructions." },
+            ],
+            "messages": []
+        });
+        inject_system_prompt(&mut body);
+        assert_has_prefix(&body);
+        let texts = system_texts(&body);
+        assert_eq!(texts.len(), 2);
+        assert_eq!(texts[0], REQUIRED_SYSTEM_PROMPT_PREFIX);
+        assert_eq!(texts[1], "Custom instructions.");
+    }
+
+    #[test]
+    fn inject_array_system_with_prefix_noop() {
+        let mut body = serde_json::json!({
+            "model": "claude-sonnet-4-20250514",
+            "system": [
+                { "type": "text", "text": REQUIRED_SYSTEM_PROMPT_PREFIX },
+                { "type": "text", "text": "Extra context." },
+            ],
+            "messages": []
+        });
+        inject_system_prompt(&mut body);
+        // Should not add another prefix block
+        let texts = system_texts(&body);
+        assert_eq!(texts.len(), 2);
+        assert_eq!(texts[0], REQUIRED_SYSTEM_PROMPT_PREFIX);
+    }
+
+    #[test]
+    fn inject_array_system_preserves_cache_control() {
+        let mut body = serde_json::json!({
+            "model": "claude-opus-4-6",
+            "system": [
+                {
+                    "type": "text",
+                    "text": "You are a coding assistant.",
+                    "cache_control": { "type": "ephemeral" }
+                }
+            ],
+            "messages": []
+        });
+        inject_system_prompt(&mut body);
+        assert_has_prefix(&body);
+        let arr = body["system"].as_array().unwrap();
+        // Original block with cache_control should be preserved as second element
+        assert_eq!(arr.len(), 2);
+        assert!(arr[1].get("cache_control").is_some());
+        assert_eq!(
+            arr[1]["text"].as_str().unwrap(),
+            "You are a coding assistant."
+        );
+    }
+
+    #[test]
+    fn inject_array_system_empty_array() {
+        let mut body = serde_json::json!({
+            "model": "claude-sonnet-4-20250514",
+            "system": [],
+            "messages": []
+        });
+        inject_system_prompt(&mut body);
+        assert_has_prefix(&body);
+        assert_eq!(system_texts(&body).len(), 1);
     }
 }

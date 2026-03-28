@@ -3010,10 +3010,13 @@ mod tests {
         // The echo server returns the body as a string — parse it to check system prompt
         let upstream_body: serde_json::Value =
             serde_json::from_str(json["body"].as_str().unwrap()).unwrap();
-        let system = upstream_body["system"].as_str().unwrap();
+        let system_arr = upstream_body["system"]
+            .as_array()
+            .expect("system must be an array of content blocks");
+        let first_text = system_arr[0]["text"].as_str().unwrap();
         assert!(
-            system.starts_with("You are Claude Code"),
-            "system prompt prefix must be injected for Sonnet: {system}"
+            first_text.starts_with("You are Claude Code"),
+            "system prompt prefix must be injected for Sonnet: {first_text}"
         );
     }
 
@@ -3058,8 +3061,11 @@ mod tests {
             serde_json::from_str(json["body"].as_str().unwrap()).unwrap();
 
         // Haiku gets system prompt prefix under OAuth (consistent with Loom)
+        let system_arr = upstream_body["system"]
+            .as_array()
+            .expect("system must be an array of content blocks");
         assert_eq!(
-            upstream_body["system"].as_str().unwrap(),
+            system_arr[0]["text"].as_str().unwrap(),
             anthropic_auth::REQUIRED_SYSTEM_PROMPT_PREFIX,
             "system prompt prefix must be injected for Haiku under OAuth"
         );
