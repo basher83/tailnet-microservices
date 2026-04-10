@@ -1,7 +1,7 @@
 [proxy]
 listen_addr = "0.0.0.0:8080"
 upstream_url = "https://api.anthropic.com"
-timeout_secs = 60
+timeout_secs = 180
 max_connections = 1000
 
 # --- Passthrough mode (default) ---

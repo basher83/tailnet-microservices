@@ -74,7 +74,7 @@ pub struct AdminConfig {
 }
 
 fn default_timeout() -> u64 {
-    60
+    180
 }
 
 fn default_max_connections() -> usize {
@@ -245,7 +245,7 @@ value = "oauth-2025-04-20"
 
         let config = Config::load(&path).unwrap();
         assert_eq!(config.proxy.upstream_url, "https://api.anthropic.com");
-        assert_eq!(config.proxy.timeout_secs, 60);
+        assert_eq!(config.proxy.timeout_secs, 180);
         assert_eq!(config.proxy.max_connections, 1000);
         assert_eq!(config.headers.len(), 1);
         assert_eq!(config.headers[0].name, "anthropic-beta");
