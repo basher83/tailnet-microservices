@@ -6,7 +6,7 @@
 
 IMPORTANT: Plan only. Do NOT implement anything. Do NOT assume functionality is missing; confirm with code search first. Prefer consolidated, idiomatic implementations in `crates/common/` over ad-hoc copies.
 
-ULTIMATE GOAL: Implement remaining Active specs for the OAuth gateway. The core gateway is code-complete (PKCE, token refresh, subscription pooling, quota failover, full header contract — see specs/anthropic-oauth-gateway.md, Complete). Current Active work: replace the wall-clock timeout with a three-phase idle timeout model for SSE streaming (specs/streaming-timeout-fix.md). Completed specs (oauth-proxy.md, operator-migration.md, operator-migration-addendum.md, anthropic-oauth-gateway.md, rand-0.10-migration.md, generic-client-support.md) — do NOT re-implement them. Check specs/README.md for current status of all specs.
+ULTIMATE GOAL: Implement remaining Active specs for the OAuth gateway. The core gateway is code-complete (PKCE, token refresh, subscription pooling, quota failover, full header contract, streaming timeout fix — all Complete). Current Active work: add OTLP trace span emission to the proxy (specs/otel-trace-instrumentation.md). Completed specs (oauth-proxy.md, operator-migration.md, operator-migration-addendum.md, anthropic-oauth-gateway.md, rand-0.10-migration.md, generic-client-support.md, streaming-timeout-fix.md) — do NOT re-implement them. Check specs/README.md for current status of all specs.
 
 999999999. Keep @IMPLEMENTATION_PLAN.md current with learnings using a subagent — future work depends on this to avoid duplicating efforts.
 

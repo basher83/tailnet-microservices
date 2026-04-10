@@ -9,4 +9,5 @@
 | [tailnet.md](./tailnet.md) | Superseded by operator-migration | (deleted) | Tailnet integration via tailscaled sidecar (Option B) |
 | [rand-0.10-migration.md](./rand-0.10-migration.md) | **Complete** | crates/anthropic-auth/ | Migrate rand 0.9 → 0.10 (breaking API renames) |
 | [generic-client-support.md](./generic-client-support.md) | **Complete** | services/oauth-proxy/ | Transform generic client requests to pass Claude Max OAuth credential validation |
-| [streaming-timeout-fix.md](./streaming-timeout-fix.md) | **Active** | services/oauth-proxy/ | Replace wall-clock timeout with three-phase idle timeout for SSE streaming |
+| [streaming-timeout-fix.md](./streaming-timeout-fix.md) | **Complete** | services/oauth-proxy/ | Replace wall-clock timeout with three-phase idle timeout for SSE streaming |
+| [otel-trace-instrumentation.md](./otel-trace-instrumentation.md) | **Active** | services/oauth-proxy/ | OTLP trace span emission to Phoenix — env var toggle, metadata JSON dict, gRPC export |
