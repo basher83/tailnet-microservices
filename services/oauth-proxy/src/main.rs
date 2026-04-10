@@ -13,6 +13,7 @@ mod metrics;
 mod provider_impl;
 mod proxy;
 mod service;
+pub mod telemetry;
 
 use anyhow::{Context, Result};
 use axum::Router;
@@ -69,6 +70,14 @@ fn build_router(state: AppState, max_connections: usize) -> Router {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Initialize OTel tracing if OTEL_EXPORTER_OTLP_ENDPOINT is set.
+    // The layer is Option<L> — None is a no-op with zero overhead (structural
+    // absence per spec validation criterion 6).
+    let (otel_provider, otel_layer) = match telemetry::init_tracer() {
+        Some((provider, layer)) => (Some(provider), Some(layer)),
+        None => (None, None),
+    };
+
     // Initialize tracing with JSON output and LOG_LEVEL / RUST_LOG support
     tracing_subscriber::registry()
         .with(
@@ -77,7 +86,19 @@ async fn main() -> Result<()> {
                 .unwrap_or_else(|_| EnvFilter::new("info")),
         )
         .with(tracing_subscriber::fmt::layer().json())
+        .with(otel_layer)
         .init();
+
+    if otel_provider.is_some() {
+        // OTel SDK export failures are automatically routed through the tracing
+        // subscriber via the `internal-logs` feature (default in opentelemetry-otlp).
+        // Export errors appear as WARN-level structured log entries without
+        // additional wiring.
+        info!(
+            endpoint = %std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT").unwrap_or_default(),
+            "OTel trace export enabled"
+        );
+    }
 
     info!("starting anthropic-oauth-proxy");
 
@@ -293,6 +314,18 @@ async fn main() -> Result<()> {
                 drain_timeout_secs = DRAIN_TIMEOUT.as_secs(),
                 "drain timeout exceeded, forcing shutdown"
             );
+        }
+    }
+
+    // Flush any buffered OTel spans before exit. Without this, every deploy
+    // loses an average of 2.5s of trailing spans (half the 5s BSP flush
+    // interval). The shutdown has a built-in timeout to prevent hanging on an
+    // unreachable export endpoint.
+    if let Some(provider) = otel_provider {
+        if let Err(e) = provider.shutdown() {
+            warn!(error = %e, "OTel tracer provider shutdown failed");
+        } else {
+            info!("OTel tracer provider shut down, spans flushed");
         }
     }
 

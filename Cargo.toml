@@ -43,6 +43,12 @@ metrics-exporter-prometheus = "0.18"
 # Middleware
 tower = { version = "0.5", features = ["limit"] }
 
+# OpenTelemetry
+opentelemetry = "0.31"
+opentelemetry_sdk = "0.31"
+opentelemetry-otlp = { version = "0.31", default-features = false, features = ["grpc-tonic", "trace"] }
+tracing-opentelemetry = "0.32"
+
 # Error handling
 thiserror = "2"
 anyhow = "1"

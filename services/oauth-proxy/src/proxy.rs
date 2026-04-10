@@ -53,6 +53,37 @@ pub struct ProxyState {
     pub max_failover_attempts: usize,
 }
 
+/// RAII guard that records OTel span attributes when dropped, ensuring every
+/// exit path from proxy_request produces a complete span. When OTel is disabled
+/// (no OpenTelemetryLayer in subscriber), all set_attribute calls are no-ops.
+struct SpanRecorder {
+    method: String,
+    path: String,
+    server_address: String,
+    request_id: String,
+    pool_mode: String,
+    status_code: u16,
+    account_id: Option<String>,
+    error_type: Option<&'static str>,
+    failover_attempt: usize,
+}
+
+impl Drop for SpanRecorder {
+    fn drop(&mut self) {
+        crate::telemetry::record_span(
+            &self.method,
+            &self.path,
+            &self.server_address,
+            self.status_code,
+            self.account_id.as_deref(),
+            self.error_type,
+            self.failover_attempt,
+            &self.request_id,
+            &self.pool_mode,
+        );
+    }
+}
+
 /// RAII guard that decrements the in-flight counter when dropped, ensuring the
 /// counter stays accurate even if the handler returns early or panics.
 struct InFlightGuard(Arc<std::sync::atomic::AtomicU64>);
@@ -162,6 +193,26 @@ pub async fn proxy_request(
     let method = request.method().clone();
     let method_str = method.to_string();
     let uri = request.uri().clone();
+    let path_str = uri.path().to_string();
+    let pool_mode = if state.provider.needs_body() {
+        "oauth"
+    } else {
+        "passthrough"
+    };
+
+    // SpanRecorder sets OTel span attributes on drop — every exit path gets a
+    // complete span regardless of how the function returns.
+    let mut span_recorder = SpanRecorder {
+        method: method_str.clone(),
+        path: path_str,
+        server_address: state.upstream_url.clone(),
+        request_id: request_id.clone(),
+        pool_mode: pool_mode.to_string(),
+        status_code: 500, // default; overwritten before every return
+        account_id: None,
+        error_type: None,
+        failover_attempt: 0,
+    };
 
     // Build the upstream URL by appending the request path and query
     let upstream_url = if let Some(pq) = uri.path_and_query() {
@@ -204,6 +255,7 @@ pub async fn proxy_request(
                 start.elapsed().as_secs_f64(),
             );
             crate::metrics::record_upstream_error("invalid_request");
+            span_recorder.status_code = status.as_u16();
             return error_response(status, &format!("invalid request body: {e}"), &request_id);
         }
     };
@@ -224,6 +276,7 @@ pub async fn proxy_request(
                     start.elapsed().as_secs_f64(),
                 );
                 crate::metrics::record_upstream_error("invalid_request");
+                span_recorder.status_code = status.as_u16();
                 return error_response(status, &format!("Invalid JSON body: {e}"), &request_id);
             }
         }
@@ -236,6 +289,8 @@ pub async fn proxy_request(
     let max_failovers = state.max_failover_attempts;
 
     for failover in 0..max_failovers {
+        span_recorder.failover_attempt = failover;
+
         // Start from original headers each attempt so provider injection is clean.
         // Without this, headers from a previous failed account (e.g. wrong Bearer
         // token) would carry over into the next attempt.
@@ -259,9 +314,13 @@ pub async fn proxy_request(
                     start.elapsed().as_secs_f64(),
                 );
                 error!(error = %e, "provider prepare_request failed");
+                span_recorder.status_code = status.as_u16();
                 return error_response(status, &format!("provider error: {e}"), &request_id);
             }
         };
+
+        // Track the account used for this attempt in the span
+        span_recorder.account_id = account_id.clone();
 
         let final_body = if state.provider.needs_body() {
             serde_json::to_vec(&body_value)
@@ -319,6 +378,9 @@ pub async fn proxy_request(
                                         acct,
                                         "cooling_down",
                                     );
+                                    // Track for span in case this is the last failover
+                                    span_recorder.error_type = Some("quota_exhausted");
+                                    span_recorder.status_code = status.as_u16();
                                     // Store response in case this is the last failover
                                     last_error_response = Some((status, resp_headers, error_body));
                                     break; // exit timeout retry loop, continue failover loop
@@ -338,6 +400,8 @@ pub async fn proxy_request(
                                     state
                                         .errors_total
                                         .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                                    span_recorder.error_type = Some("permanent");
+                                    span_recorder.status_code = status.as_u16();
                                     return build_buffered_response(
                                         status,
                                         &resp_headers,
@@ -358,6 +422,8 @@ pub async fn proxy_request(
                                         latency_ms = elapsed.as_millis() as u64,
                                         "request completed (transient error)"
                                     );
+                                    span_recorder.error_type = Some("transient");
+                                    span_recorder.status_code = status.as_u16();
                                     return build_buffered_response(
                                         status,
                                         &resp_headers,
@@ -379,6 +445,7 @@ pub async fn proxy_request(
                                 latency_ms = elapsed.as_millis() as u64,
                                 "request completed"
                             );
+                            span_recorder.status_code = status.as_u16();
                             return build_streaming_response(
                                 status,
                                 &resp_headers,
@@ -404,6 +471,8 @@ pub async fn proxy_request(
                         latency_ms = elapsed.as_millis() as u64,
                         "request completed"
                     );
+                    span_recorder.status_code = status.as_u16();
+                    span_recorder.error_type = None;
                     return build_streaming_response(
                         status,
                         &resp_headers,
@@ -424,6 +493,7 @@ pub async fn proxy_request(
                     );
                     crate::metrics::record_upstream_error("connection");
                     error!(error = %e, "upstream request failed");
+                    span_recorder.status_code = err_status.as_u16();
                     return error_response(
                         err_status,
                         &format!("upstream error: {e}"),
@@ -449,6 +519,7 @@ pub async fn proxy_request(
                         attempts = MAX_UPSTREAM_ATTEMPTS,
                         "upstream response timeout after all retries"
                     );
+                    span_recorder.status_code = err_status.as_u16();
                     return error_response(
                         err_status,
                         &format!(
@@ -464,10 +535,14 @@ pub async fn proxy_request(
         // If we broke out of the timeout loop due to quota exhaustion but have
         // more failover attempts, continue to the next account
         if last_error_response.is_some() && failover < max_failovers - 1 {
+            // Reset error_type for next attempt — success on next account
+            // will clear it via the success path
+            span_recorder.error_type = None;
             continue;
         }
 
-        // Last failover attempt exhausted — return the last error response
+        // Last failover attempt exhausted — return the last error response.
+        // span_recorder already has error_type/status_code from the break above.
         if let Some((status, resp_headers, error_body)) = last_error_response {
             state
                 .errors_total

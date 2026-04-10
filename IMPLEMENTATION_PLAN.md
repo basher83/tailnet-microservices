@@ -4,10 +4,14 @@ Previous build history archived at IMPLEMENTATION_PLAN_v2.md (v0.0.125, 199 test
 
 ## Current Spec
 
-`specs/otel-trace-instrumentation.md` (Active) — OTLP trace span emission to Phoenix. Env var toggle, metadata JSON dict, gRPC export, failover semantics.
+None active.
 
 ## Baseline
 
-v0.0.125: 203 tests pass (130 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean.
+v0.0.126: 209 tests pass (136 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean.
 
-Completed specs: oauth-proxy.md, operator-migration.md, operator-migration-addendum.md, anthropic-oauth-gateway.md, rand-0.10-migration.md, generic-client-support.md, streaming-timeout-fix.md.
+## Completed Specs
+
+oauth-proxy.md, operator-migration.md, operator-migration-addendum.md, anthropic-oauth-gateway.md, rand-0.10-migration.md, generic-client-support.md, streaming-timeout-fix.md, otel-trace-instrumentation.md.
+
+**otel-trace-instrumentation.md** — OTel OTLP trace instrumentation with env var toggle, metadata JSON dict, gRPC export via BatchSpanProcessor, SpanRecorder drop guard for reliable attribute emission, graceful shutdown flush.

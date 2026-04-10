@@ -27,6 +27,10 @@ uuid = { workspace = true }
 metrics = { workspace = true }
 metrics-exporter-prometheus = { workspace = true }
 tower = { workspace = true }
+opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+opentelemetry-otlp = { workspace = true }
+tracing-opentelemetry = { workspace = true }
 futures-util = "0.3"
 bytes = "1"
 pin-project-lite = "0.2"
