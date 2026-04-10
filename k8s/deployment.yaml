@@ -43,6 +43,8 @@ spec:
               value: /etc/anthropic-oauth-proxy/config.toml
             - name: LOG_LEVEL
               value: info
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://phoenix-helm-svc.phoenix.svc.cluster.local:4317"
           volumeMounts:
             - name: config
               mountPath: /etc/anthropic-oauth-proxy
