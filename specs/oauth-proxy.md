@@ -455,7 +455,7 @@ Single-container Deployment with zero secrets. Tailnet exposure via Tailscale Op
 1. **TLS termination** — Inbound TLS is handled by Aperture / tailnet WireGuard encryption. The proxy listens on plain TCP. Outbound to upstream uses `reqwest` with `rustls`.
 2. **Multi-tenant** — Single-tenant: one proxy instance injects a fixed set of headers from `[[headers]]` config. Deploy separate instances for different header sets.
 3. **Response streaming** — Response bodies are streamed using `reqwest::Response::bytes_stream()` converted to `axum::body::Body::from_stream()`. Metrics (status code, duration) are recorded before the stream begins since headers are available immediately. This avoids buffering entire responses in memory and enables real-time SSE forwarding for Claude API streaming responses.
-4. **Tailnet integration** — Originally implemented as a `tailscaled` sidecar with `tailscale-localapi` (Option B from `specs/tailnet.md`). Superseded by the Tailscale Operator via `specs/operator-migration.md`. The Rust binary no longer contains any tailnet code. The Operator handles tailnet authentication, identity, and connectivity externally via Service annotations.
+4. **Tailnet integration** — Originally implemented as a `tailscaled` sidecar with `tailscale-localapi` (Option B from `specs/tailnet.md`). Superseded by the Tailscale Operator via `specs/operator-migration.md` and the Ingress-only routing addendum. The Rust binary no longer contains any tailnet code. The Operator handles tailnet authentication, identity, and connectivity externally via Tailscale Ingress.
 
 ---
 

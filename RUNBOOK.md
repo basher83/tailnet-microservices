@@ -377,7 +377,7 @@ If `pool_token_refreshes_total{result="failure"}` is incrementing, accounts are 
 
 The refresh token itself has expired or been revoked. Remove the account and load fresh credentials using keychain extraction. The admin API PKCE flow remains available in code, but it is currently blocked by Anthropic policy at the browser authorization step.
 
-The Anthropic token endpoint (`https://console.anthropic.com/v1/oauth/token`) is unreachable. Check outbound network connectivity from the pod. Transient failures are retried on the next refresh cycle (default: every 5 minutes).
+The Anthropic token endpoint (`https://platform.claude.com/v1/oauth/token`) is unreachable. Check outbound network connectivity from the pod. Transient failures are retried on the next refresh cycle (default: every 5 minutes).
 
 An account marked `disabled` in the pool health indicates its refresh token is permanently invalid. Remove it and re-authenticate.
 
