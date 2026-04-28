@@ -6,6 +6,10 @@
 
 ---
 
+> Current-state note: This is historical design context for the retired `tailscaled` sidecar approach. The Rust service no longer owns tailnet connectivity, has no `tailnet.rs` module, and does not use `tailscale-localapi`. Current tailnet exposure is managed outside the binary by Kubernetes manifests and the Tailscale Operator, with the current traffic path documented in `RUNBOOK.md` and `specs/operator-migration-addendum.md`.
+
+---
+
 ## Overview
 
 Abstraction layer that connects a Rust service to a Tailscale tailnet. Provides the service with a tailnet identity (hostname, IP) and the ability to accept incoming connections from other tailnet nodes.
