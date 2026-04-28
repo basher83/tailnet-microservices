@@ -28,14 +28,15 @@ In passthrough mode, the proxy injects the `anthropic-beta: oauth-2025-04-20` he
 
 ### How Deployments Work
 
-Commits to `main` trigger a CI pipeline (`.github/workflows/ci.yml`) that runs lint, audit, test, and build. On success, the `docker` job builds a container image and pushes it to GHCR tagged `sha-<7char>`. The `deploy` job then updates `k8s/kustomization.yaml` with the new tag and pushes a `[skip ci]` commit to `main`.
+Commits to `main` trigger a CI pipeline (`.github/workflows/ci.yml`) that runs lint, audit, test, build, and Kubernetes manifest validation. The `docker` job currently depends on lint, audit, test, and build; manifest validation runs as a separate check. On success, the `docker` job builds a container image and pushes it to GHCR tagged `sha-<7char>`. The `deploy` job then updates `k8s/kustomization.yaml` with the new tag and pushes a `[skip ci]` commit to `main`.
 
 ArgoCD watches `main` at path `k8s/` with automated sync, prune, and self-heal enabled. When the tag commit lands, ArgoCD reconciles the cluster to the new image.
 
 ```text
 code commit on main
-  → CI: lint + audit + test + build
-  → CI: docker build + push to ghcr.io (tagged sha-<7char>)
+  → CI required by docker: lint + audit + test + build
+  → CI separate check: manifest validation
+  → CI docker job: build + push to ghcr.io (tagged sha-<7char>)
   → CI: deploy job updates kustomization.yaml newTag, commits [skip ci]
   → ArgoCD: auto-sync from main, path k8s/
   → Cluster: reconciled to new image
@@ -108,11 +109,11 @@ Common failures at this stage:
 | 401 Unauthorized | Token expired or invalid — check `curl -s http://localhost:9090/admin/pool \| jq .` (requires admin port-forward) |
 | 503 Service Unavailable | Pool exhausted — no available accounts |
 
-### Switching to OAuth Mode
+### Authentication Mode
 
-To switch from passthrough to OAuth mode, edit `k8s/config.toml` to uncomment the `[oauth]` and `[admin]` sections (and optionally remove `[[headers]]` — `[oauth]` takes precedence automatically). Commit and push to `main`. CI will update the ConfigMap hash, and ArgoCD will roll out the new pod.
+The committed Kubernetes config in `k8s/config.toml` runs OAuth mode by default. The `[oauth]` and `[admin]` sections are active, and `[[headers]]` is ignored automatically because `[oauth]` takes precedence. To run passthrough mode instead, remove or comment the `[oauth]` and `[admin]` sections and keep the `[[headers]]` section. Commit and push to `main`; ArgoCD will roll out the ConfigMap change.
 
-The proxy starts in OAuth mode with an empty pool. Add accounts via the admin API (see below).
+OAuth mode starts with whatever accounts exist in `/data/credentials.json` on the PVC. An empty credential file is valid, but the pool is unhealthy until an account is loaded. The working provisioning path is keychain extraction; the PKCE admin flow is implemented but currently blocked by Anthropic server-side policy.
 
 ### Updating Configuration
 
@@ -309,7 +310,7 @@ OAuth mode:
   "pool": {
     "accounts_total": 3,
     "accounts_available": 2,
-    "accounts_cooling": 1,
+    "accounts_cooling_down": 1,
     "accounts_disabled": 0,
     "accounts": [
       { "id": "claude-max-1", "status": "available" },
@@ -338,7 +339,7 @@ OAuth mode adds four additional metrics:
 
 `pool_account_status` (gauge) with labels `account_id` and `status`. Tracks the current state of each account in the pool (available, cooling_down, disabled).
 
-`pool_failovers_total` (counter) with labels `from_account` and `reason`. Incremented when the proxy fails over from one account to the next due to quota exhaustion or permanent error.
+`pool_failovers_total` (counter) with labels `from_account` and `reason`. Incremented when the proxy fails over from one account to the next due to quota exhaustion.
 
 `pool_token_refreshes_total` (counter) with labels `account_id` and `result`. Tracks token refresh attempts (success or failure).
 
@@ -352,7 +353,7 @@ Alert on sustained upstream errors:
 rate(proxy_upstream_errors_total[5m]) > 0.1
 ```
 
-Alert on p99 latency approaching the 60s timeout. The `sum by (le)` aggregation is required because the histogram carries a `status` label:
+Alert on p99 latency approaching the configured timeout. The production K8s config currently sets `timeout_secs = 180`. The `sum by (le)` aggregation is required because the histogram carries a `status` label:
 
 ```text
 histogram_quantile(0.99, sum by (le) (rate(proxy_request_duration_seconds_bucket[5m]))) > 30
@@ -374,7 +375,7 @@ rate(pool_failovers_total[5m]) > 0.05
 
 If `pool_token_refreshes_total{result="failure"}` is incrementing, accounts are failing to refresh their OAuth tokens. Common causes:
 
-The refresh token itself has expired or been revoked. The account must be removed and re-added via the admin API PKCE flow.
+The refresh token itself has expired or been revoked. Remove the account and load fresh credentials using keychain extraction. The admin API PKCE flow remains available in code, but it is currently blocked by Anthropic policy at the browser authorization step.
 
 The Anthropic token endpoint (`https://console.anthropic.com/v1/oauth/token`) is unreachable. Check outbound network connectivity from the pod. Transient failures are retried on the next refresh cycle (default: every 5 minutes).
 
@@ -423,7 +424,7 @@ If DNS or TLS fails inside the pod, check that the runtime image has `ca-certifi
 
 ### Proxy Returning 504 Gateway Timeout
 
-Upstream did not respond within the configured `timeout_secs` (default: 60s). The proxy automatically retries timeouts up to 2 times (3 total attempts) with 100ms backoff between attempts. If all attempts time out, it returns 504.
+Upstream did not respond within the configured `timeout_secs`. The code default is 180 seconds, and the production K8s config currently sets `timeout_secs = 180`. The proxy automatically retries initial-response timeouts up to 2 times (3 total attempts) with 100ms backoff between attempts. If all attempts time out, it returns 504.
 
 For sustained 504s, check Anthropic API status. If the API is healthy, consider increasing `timeout_secs` in the ConfigMap for long-running requests.
 
@@ -433,17 +434,17 @@ Either the request body exceeds the 10 MiB hardcoded limit, or the request is ma
 
 ### Proxy Returning 429 (OAuth Mode)
 
-In OAuth mode, the proxy attempts failover to the next available account when the current account's quota is exhausted (429 with quota message). If all accounts are exhausted, the proxy returns 429 to the client.
+In OAuth mode, the proxy attempts failover to the next available account when the current account's quota is exhausted (429 with quota message). If the last selected account returns a quota 429, that upstream response can pass through to the client. If no account can be selected because the pool is empty, cooling down, disabled, or missing credentials, the proxy returns 503 Service Unavailable.
 
 Check pool status via the health endpoint or admin API to see which accounts are cooling down and when they will become available again. Default cooldown is 2 hours (configurable via `cooldown_secs`).
 
 ### Pool Exhausted (OAuth Mode)
 
-When all accounts are in `cooling_down` or `disabled` state, the proxy returns 429 to all requests. To resolve:
+When all accounts are unavailable because they are in `cooling_down` or `disabled` state, or because the pool is empty, the proxy returns 503 Service Unavailable before forwarding the request. To resolve:
 
 - Wait for cooldown timers to expire (check `cooldown_remaining_secs` in pool health)
-- Add more accounts via the admin API PKCE flow
-- Remove and re-add disabled accounts (disabled means refresh token is permanently invalid)
+- Add more accounts by loading credentials through keychain extraction
+- Remove and re-add disabled accounts with fresh extracted credentials (disabled means refresh token is permanently invalid)
 
 ### High Latency
 
