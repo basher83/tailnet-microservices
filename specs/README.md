@@ -2,12 +2,14 @@
 
 | Spec | Status | Code | Purpose |
 |------|--------|------|---------|
-| [oauth-proxy.md](./oauth-proxy.md) | **Complete** | services/oauth-proxy/ | Anthropic OAuth header injection proxy |
-| [operator-migration.md](./operator-migration.md) | **Complete** | services/oauth-proxy/, k8s/ | Remove tailscaled sidecar, delegate to Tailscale Operator |
-| [operator-migration-addendum.md](./operator-migration-addendum.md) | **Manifests complete** | k8s/ | Tailscale Ingress for traffic routing (extends Spec A) |
-| [anthropic-oauth-gateway.md](./anthropic-oauth-gateway.md) | **Complete** | crates/, services/oauth-proxy/, k8s/ | OAuth pool gateway — PKCE, token refresh, subscription pooling (supersedes oauth-proxy.md) |
-| [tailnet.md](./tailnet.md) | Superseded by operator-migration | (deleted) | Tailnet integration via tailscaled sidecar (Option B) |
-| [rand-0.10-migration.md](./rand-0.10-migration.md) | **Complete** | crates/anthropic-auth/ | Migrate rand 0.9 → 0.10 (breaking API renames) |
-| [generic-client-support.md](./generic-client-support.md) | **Complete** | services/oauth-proxy/ | Transform generic client requests to pass Claude Max OAuth credential validation |
-| [streaming-timeout-fix.md](./streaming-timeout-fix.md) | **Complete** | services/oauth-proxy/ | Replace wall-clock timeout with three-phase idle timeout for SSE streaming |
-| [otel-trace-instrumentation.md](./otel-trace-instrumentation.md) | **Active** | services/oauth-proxy/ | OTLP trace span emission to Phoenix — env var toggle, metadata JSON dict, gRPC export |
+| [anthropic-oauth-gateway.md](./anthropic-oauth-gateway.md) | Current OAuth design, needs drift cleanup | crates/, services/oauth-proxy/, k8s/ | OAuth pool gateway: PKCE, token refresh, subscription pooling, admin API |
+| [generic-client-support.md](./generic-client-support.md) | Current behavior, minor cleanup needed | services/oauth-proxy/ | Request-shape compatibility for generic clients using Claude Max OAuth credentials |
+| [streaming-timeout-fix.md](./streaming-timeout-fix.md) | Implemented, runtime criteria need explicit evidence | services/oauth-proxy/ | Replace wall-clock timeout with initial-response timeout plus stream idle timeout |
+| [otel-trace-instrumentation.md](./otel-trace-instrumentation.md) | Implemented, needs Phoenix/runtime validation | services/oauth-proxy/, k8s/ | OTLP trace span emission to Phoenix via env-var-controlled OpenTelemetry setup |
+| [operator-migration-addendum.md](./operator-migration-addendum.md) | Current manifest shape, cluster validation partly open | k8s/ | Tailscale Ingress for traffic routing; Service annotations removed |
+| [operator-migration.md](./operator-migration.md) | Historical; superseded by addendum for traffic exposure | services/oauth-proxy/, k8s/ | Remove tailscaled sidecar and delegate tailnet identity/routing to the Tailscale Operator |
+| [oauth-proxy.md](./oauth-proxy.md) | Historical passthrough-era spec; superseded by OAuth gateway | services/oauth-proxy/ | Original Anthropic header injection proxy |
+| [tailnet.md](./tailnet.md) | Historical; superseded and retained for context | specs/ | Original tailscaled sidecar integration strategy |
+| [rand-0.10-migration.md](./rand-0.10-migration.md) | Complete | crates/anthropic-auth/ | Migrate rand 0.9 to 0.10 breaking API names |
+
+Use `RUNBOOK.md` for current operator procedures. Several older specs are retained as design history and still contain stale values or pre-addendum deployment assumptions.

@@ -7,6 +7,10 @@
 
 ---
 
+> Current-state note: This is a historical migration spec for removing the `tailscaled` sidecar. Its Service-annotation exposure plan was superseded by `specs/operator-migration-addendum.md` after a dual-proxy conflict was found. The current manifest shape is a plain ClusterIP Service plus Tailscale Ingress. Use `RUNBOOK.md` for operations and `specs/README.md` for current spec status.
+
+---
+
 ## Overview
 
 Remove the `tailscaled` sidecar from the anthropic-oauth-proxy and delegate tailnet exposure to the cluster's Tailscale Operator. The proxy becomes a single-container pod with zero secrets.

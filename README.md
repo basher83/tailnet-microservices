@@ -5,7 +5,7 @@
 >
 > This software is experimental, unstable, and under active development. APIs will change without notice. Features may be incomplete or broken. There is no support, no documentation guarantees, and no warranty of any kind. Use at your own risk.
 
-Single-binary Rust services that act as infrastructure proxies on a Tailscale tailnet. Tailnet exposure is handled by the Tailscale Operator via Kubernetes Service annotations. Each service includes Prometheus metrics and structured JSON logging.
+Single-binary Rust services that act as infrastructure proxies on a Tailscale tailnet. Tailnet exposure is handled by the Tailscale Operator via Kubernetes Ingress resources; Services remain plain ClusterIP backends. Each service includes Prometheus metrics and structured JSON logging.
 
 ## Services
 
@@ -37,7 +37,7 @@ k8s/                # Kubernetes deployment manifests
 
 ## Configuration
 
-Copy `anthropic-oauth-proxy.example.toml` to configure the proxy. See `specs/oauth-proxy.md` for the full configuration reference and `RUNBOOK.md` for operational guidance.
+Copy `anthropic-oauth-proxy.example.toml` to configure a local proxy. The committed Kubernetes config in `k8s/config.toml` runs OAuth mode with admin API enabled. See `RUNBOOK.md` for operational guidance and `specs/README.md` for current versus historical design specs.
 
 ## Deployment
 

@@ -1,23 +1,25 @@
 # Spec: Streaming Timeout Fix
 
-**Status:** Complete
+**Status:** Implemented; live long-session validation still open
 **Created:** 2026-02-13
 
 ---
 
 ## Why
 
-Claude Code sessions through the proxy work for small operations but hang and timeout on large operations (writing files, multi-tool sequences). Reverting to Anthropic's default OAuth flow eliminates the issue, confirming the proxy as the cause.
+Claude Code sessions through the proxy previously worked for small operations but hung and timed out on large operations such as writing files and multi-tool sequences. Reverting to Anthropic's default OAuth flow eliminated the issue, confirming the proxy as the cause at the time.
 
-The Anthropic API streams responses via SSE. Large operations produce streaming responses that last several minutes. The proxy kills these mid-stream after 60 seconds.
+The Anthropic API streams responses via SSE. Large operations produce streaming responses that can last several minutes. The source-level fix is now implemented: the proxy no longer applies a reqwest wall-clock timeout across the whole response body, and it protects stalled response bodies with `IdleTimeoutStream`.
 
 ---
 
-## Root Cause
+## Historical Root Cause
 
-`proxy.rs:223` applies `.timeout(state.timeout)` on the per-request reqwest builder. The config sets `timeout_secs = 60` (`k8s/config.toml:3`). reqwest's `.timeout()` is a wall-clock limit on the entire request lifecycle — connection, sending, and receiving all included. Once the 60-second mark is reached, reqwest aborts the underlying connection regardless of whether data is still flowing.
+The old implementation applied `.timeout(state.timeout)` on the per-request reqwest builder. At the time, the config set `timeout_secs = 60`. reqwest's `.timeout()` is a wall-clock limit on the entire request lifecycle: connection, sending, and receiving all included. Once the timeout mark was reached, reqwest aborted the underlying connection regardless of whether data was still flowing.
 
-For non-streaming or fast responses, this is invisible. For SSE streams that run longer than 60 seconds, the connection is killed mid-stream. The client sees a hang followed by a timeout error. Claude Code's retry logic cannot recover because the conversation state is already mid-operation.
+For non-streaming or fast responses, this was invisible. For SSE streams that ran longer than the timeout, the connection was killed mid-stream. The client saw a hang followed by a timeout error. Claude Code's retry logic could not recover because the conversation state was already mid-operation.
+
+Current code separates the phases: `proxy.rs` wraps `req.send()` in `tokio::time::timeout(state.timeout, ...)`, then streams response bodies through `IdleTimeoutStream`, which resets its idle deadline on every received chunk. Current `k8s/config.toml` sets `timeout_secs = 180`.
 
 ---
 
@@ -25,13 +27,13 @@ For non-streaming or fast responses, this is invisible. For SSE streams that run
 
 A proxied request has three phases, each needing different timeout behavior:
 
-| Phase | What happens | Current protection | Correct protection |
+| Phase | What happens | Previous protection | Current protection |
 |-------|-------------|-------------------|-------------------|
 | **1. Connection** | TCP handshake to upstream | `connect_timeout(5s)` on Client | Unchanged — `connect_timeout(5s)` |
 | **2. Initial response** | Request sent, waiting for upstream to return status + headers | `.timeout(state.timeout)` (wall-clock) | `tokio::time::timeout` around `req.send().await` |
-| **3. Body streaming** | SSE chunks flowing from upstream through proxy to client | `.timeout(state.timeout)` (wall-clock — **this is the bug**) | `IdleTimeoutStream` wrapper on `bytes_stream()` |
+| **3. Body streaming** | SSE chunks flowing from upstream through proxy to client | `.timeout(state.timeout)` (wall-clock bug) | `IdleTimeoutStream` wrapper on `bytes_stream()` |
 
-The current `.timeout()` covers phases 2 and 3 with a single wall-clock limit. This is wrong for phase 3 — a healthy stream sending bytes every few seconds gets killed at the wall-clock mark. The fix separates the phases so each gets the right timeout behavior.
+The important distinction is that the timeout is now an idle timeout during phase 3, not a wall-clock cap for the entire response. A healthy stream can run longer than `timeout_secs` as long as chunks continue arriving within the idle window.
 
 ---
 
@@ -39,15 +41,15 @@ The current `.timeout()` covers phases 2 and 3 with a single wall-clock limit. T
 
 **R1. Remove per-request wall-clock timeout**
 
-Remove `.timeout(state.timeout)` from the reqwest request builder at `proxy.rs:223`. This is the single change that fixes the immediate bug — SSE streams will no longer be killed at 60 seconds.
+Remove `.timeout(state.timeout)` from the reqwest request builder. This is implemented. SSE streams are no longer killed solely because total wall-clock response time exceeds `timeout_secs`.
 
 **R2. Protect the initial response phase**
 
-Wrap `req.send().await` in `tokio::time::timeout(state.timeout, ...)` inside the retry loop. This catches completely dead upstreams (accept connection but never send response headers) with the same timeout value and retry behavior as today. The timeout error from `tokio::time::timeout` must be mapped to the same code path that currently handles `e.is_timeout()` — the retry logic at `proxy.rs:349-375` must trigger identically.
+Wrap `req.send().await` in `tokio::time::timeout(state.timeout, ...)` inside the retry loop. This is implemented. Completely dead upstreams that accept a connection but never send response headers still return 504 after the existing three-attempt retry sequence.
 
 **R3. Protect the streaming body phase with idle timeout**
 
-Wrap the `upstream_response.bytes_stream()` in `build_streaming_response()` (`proxy.rs:458-459`) with an `IdleTimeoutStream` that resets a deadline on each chunk received. If no chunk arrives within the idle window, the stream terminates with an error. The idle timeout value is `state.timeout` (60s). The Anthropic API sends SSE heartbeat comments (`: ping`) during long streams, well within this window.
+Wrap the `upstream_response.bytes_stream()` in `build_streaming_response()` with an `IdleTimeoutStream` that resets a deadline on each chunk received. This is implemented. If no chunk arrives within the idle window, the stream terminates cleanly. The idle timeout value is `state.timeout`, currently 180 seconds in the committed Kubernetes config.
 
 **R4. No behavioral change for non-streaming responses**
 
@@ -63,7 +65,7 @@ The retry loop (`proxy.rs:213-396`) continues to retry exactly 3 times on timeou
 
 ### `services/oauth-proxy/src/proxy.rs`
 
-**Remove per-request timeout (line 223):**
+**Remove per-request timeout:**
 
 ```rust
 let req = state
@@ -242,21 +244,21 @@ No changes to the Client builder. The `connect_timeout(5s)` remains. No `read_ti
 
 ### `k8s/config.toml`
 
-No change. `timeout_secs = 60` is now the idle timeout value used for both initial response and stream idle detection. 60 seconds of zero activity is a reasonable dead-connection signal.
+Current committed config sets `timeout_secs = 180`. This value is used for both initial response timeout and stream idle detection. A stream can run longer than 180 seconds as long as data continues to arrive within each idle window.
 
 ### Tests
 
-**The following three timeout tests are affected** (verify each passes after the change):
+The following timeout tests cover the initial-response timeout behavior:
 
 1. `proxy_timeout_returns_504_gateway_timeout` (main.rs, searches for `fn proxy_timeout_returns_504`) — asserts 504 status and error message JSON
 2. `proxy_retries_timeout_exactly_three_attempts` (main.rs, searches for `fn proxy_retries_timeout`) — asserts `attempt_count` equals 3
 3. `proxy_resends_body_on_timeout_retry` (main.rs, searches for `fn proxy_resends_body`) — asserts request body is present on each retry attempt
 
-Additionally, `proxy_does_not_retry_non_timeout_errors` must continue to pass unchanged — connection refused errors now hit `Ok(Err(e))` instead of `Err(e)`, but the non-retry behavior should be identical.
+Additionally, `proxy_does_not_retry_non_timeout_errors` covers the non-timeout error path. Connection refused errors hit `Ok(Err(e))`, and the non-retry behavior remains unchanged.
 
-The tests currently rely on reqwest's `e.is_timeout()` check, which fires from the per-request `.timeout()`. After replacing with `tokio::time::timeout`, the error path changes.
+The tests now exercise the `tokio::time::timeout` path rather than reqwest's per-request `.timeout()` path.
 
-The current error flow in tests is:
+The old error flow was:
 
 ```text
 mock server accepts but never responds
@@ -265,7 +267,7 @@ mock server accepts but never responds
 → retry loop continues/returns 504
 ```
 
-The new error flow is:
+The current error flow is:
 
 ```text
 mock server accepts but never responds
@@ -274,42 +276,40 @@ mock server accepts but never responds
 → retry loop continues/returns 504
 ```
 
-The tests don't directly check the error variant — they check the HTTP response status (504) and the error message JSON. The retry count test checks `attempt_count.load()`. As long as the `Err(_elapsed)` arm triggers the same retry and 504 logic, the tests pass without changes to their assertions.
-
-**However**, the test `ProxyState` construction at `main.rs:423` uses `reqwest::Client::new()` and `timeout: Duration::from_secs(5)`. The `state.timeout` value is used by the `tokio::time::timeout` call. Individual timeout tests override with `Duration::from_millis(50)`. Verify that:
+The tests don't directly check the error variant. They check the HTTP response status, error message JSON, and retry count. The `state.timeout` value is used by the `tokio::time::timeout` call. Individual timeout tests override it with short durations. Current source-level verification is:
 
 1. `test_app_state()` at line 409 still sets `timeout: Duration::from_secs(5)` (used for non-timeout tests)
 2. The three timeout tests override with `timeout: Duration::from_millis(50)` via their own `ProxyState` construction
 3. The `reqwest::Client::new()` in tests no longer matters for timeout behavior — timeouts are now in the proxy code, not the reqwest client
 
-**The test client (`reqwest::Client::new()`) is fine.** Previously, the per-request `.timeout()` was applied by the proxy's request builder using the reqwest Client. That's removed. Now the proxy uses `tokio::time::timeout()` with `state.timeout`, which is independent of the reqwest Client configuration. Tests set `state.timeout = Duration::from_millis(50)`, so the `tokio::time::timeout` uses 50ms. No changes needed to test Client construction.
+The test client (`reqwest::Client::new()`) is fine because timeout behavior is now driven by `ProxyState.timeout`.
 
-**New test: stream idle timeout**
+**Stream idle timeout test**
 
-Add one test that verifies the `IdleTimeoutStream` terminates when the upstream stops sending mid-stream:
+The implementation includes `proxy_stream_idle_timeout_terminates_stalled_stream`, which verifies that `IdleTimeoutStream` terminates when the upstream stops sending mid-stream:
 
 ```text
 1. Start mock server that sends HTTP 200 + 2 SSE chunks, then stops (no more data, connection held open)
-2. Set state.timeout to 100ms
+2. Set `state.timeout` to a short test value
 3. Send request through proxy
 4. Verify: first 2 chunks arrive at the client
 5. Verify: after ~100ms of silence, the stream terminates (client sees connection close or error)
 ```
 
-This test exercises the `IdleTimeoutStream` directly, which no existing test covers.
+This test exercises the stream wrapper through the proxy response path.
 
 ---
 
 ## Success Criteria
 
-- [ ] Claude Code large operations (file writes, multi-tool) complete through the proxy without timeout
-- [ ] Dead upstream connections (zero bytes, never responds) still detected and return 504 within `timeout_secs`
-- [ ] Dead upstream connections mid-stream (stops sending after some chunks) detected within `timeout_secs` — client sees a cleanly closed stream (not a 504 or error frame)
-- [ ] Existing timeout retry behavior preserved (3 attempts on initial response timeout)
-- [ ] New stream idle timeout test passes
-- [ ] All existing tests pass (no changes to test assertions needed, only error path restructure in proxy code)
-- [ ] `cargo clippy --workspace -- -D warnings` clean
-- [ ] `state.timeout` field still used (by `tokio::time::timeout` and `IdleTimeoutStream`), no dead-field warning
+- [ ] Claude Code large operations (file writes, multi-tool) complete through the live deployed proxy without timeout
+- [x] Dead upstream connections (zero bytes, never responds) still detected and return 504 within `timeout_secs`
+- [x] Dead upstream connections mid-stream (stops sending after some chunks) detected within `timeout_secs` — client sees a cleanly closed stream
+- [x] Existing timeout retry behavior preserved (3 attempts on initial response timeout)
+- [x] Stream idle timeout test passes
+- [x] All existing tests pass
+- [x] `cargo clippy --workspace -- -D warnings` clean
+- [x] `state.timeout` field still used by `tokio::time::timeout` and `IdleTimeoutStream`
 
 ---
 
@@ -319,7 +319,7 @@ This test exercises the `IdleTimeoutStream` directly, which no existing test cov
 - Changing request body buffering or `MAX_BODY_SIZE`
 - Adding SSE-specific streaming logic (the `IdleTimeoutStream` is generic over any `Stream<Item = Result<Bytes, E>>`, not SSE-aware)
 - reqwest `read_timeout` on the Client builder (the `tokio::time::timeout` around `send()` and `IdleTimeoutStream` cover all phases without relying on reqwest's internal timeout propagation semantics)
-- Configurable per-phase timeouts (using `state.timeout` for both initial response and stream idle is correct — 60s of zero activity means dead in both cases)
+- Configurable per-phase timeouts (using `state.timeout` for both initial response and stream idle is the current design; the committed deployment currently uses 180 seconds)
 
 ---
 

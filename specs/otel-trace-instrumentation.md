@@ -1,5 +1,5 @@
 ---
-status: Active
+status: Implemented; Phoenix runtime validation still open
 created: 2026-04-09
 ---
 
@@ -11,9 +11,9 @@ Ensue context: `decisions/telemetry-wiring/d6-proxy-span-instrumentation`, `rese
 
 ## Overview
 
-Add OTLP trace span emission to the anthropic-oauth-proxy so that every proxied API request produces a trace span visible in Phoenix. This is the D6 (API-boundary) layer of the two-layer telemetry architecture — D5 (hook-level, Q42) captures tool call spans from Claude Code sessions, D6 captures API request spans from the proxy. The two layers produce independent trace trees (D5a Option C — disconnected traces, no cross-layer programmatic correlation).
+Add OTLP trace span emission to the anthropic-oauth-proxy so that every proxied API request produces a trace span visible in Phoenix. This is the D6 (API-boundary) layer of the two-layer telemetry architecture: D5 (hook-level, Q42) captures tool call spans from Claude Code sessions, and D6 captures API request spans from the proxy. The two layers produce independent trace trees (D5a Option C, disconnected traces, no cross-layer programmatic correlation).
 
-The instrumentation is additive. Existing Prometheus metrics are unchanged. The proxy's functional behavior (header injection, OAuth pooling, failover, streaming) is unaffected. Trace emission is controlled by an environment variable — when unset, the proxy behaves identically to pre-D6.
+The source implementation is complete. Existing Prometheus metrics are unchanged. The proxy's functional behavior (header injection, OAuth pooling, failover, streaming) is unaffected. Trace export is controlled by `OTEL_EXPORTER_OTLP_ENDPOINT`. When unset, `telemetry::init_tracer()` returns `None` and no OpenTelemetry layer is added to the tracing subscriber. The committed Kubernetes deployment currently sets the endpoint to Phoenix by default, so deployed pods attempt OTLP export unless that env var is removed or overridden.
 
 **Design constraints carried from the telemetry-wiring decision tree:**
 
@@ -57,7 +57,7 @@ These use standard OpenTelemetry semantic conventions and are set as top-level s
 | `server.address` | string | `state.upstream_url` (`proxy.rs:167`) | Upstream target (api.anthropic.com) |
 | `otel.status_code` | string | derived from final HTTP status | "OK" for 2xx, "ERROR" for 4xx/5xx. Derived independently from `proxy.error_type` — see attribute interaction table below. |
 
-Request duration is captured by the OTLP span's intrinsic timing (end_time minus start_time), not by an explicit attribute. The span starts when the Tower tracing layer intercepts the request and ends when the response is returned. This avoids drift between an explicit duration attribute and the span's intrinsic duration, and is consistent with how Phoenix displays span timing. The Prometheus `proxy_request_duration_seconds` histogram continues to use `start.elapsed()` independently.
+Request duration is captured by the OTLP span's intrinsic timing (end_time minus start_time), not by an explicit attribute. The span is created by the `#[instrument]` annotation on the proxy request path, and `SpanRecorder` writes attributes when that handler exits. This avoids drift between an explicit duration attribute and the span's intrinsic duration, and is consistent with how Phoenix displays span timing. The Prometheus `proxy_request_duration_seconds` histogram continues to use `start.elapsed()` independently.
 
 ### Metadata JSON Dict
 
@@ -109,7 +109,7 @@ The proxy runs on-cluster (Talos, namespace `anthropic-oauth-proxy`, pod on `tal
 
 | Setting | Value | Rationale |
 |---------|-------|-----------|
-| Endpoint | `phoenix-helm-svc.phoenix.svc.cluster.local:4317` | Cluster-internal service DNS. gRPC port per Phoenix Helm chart defaults. |
+| Endpoint | `http://phoenix-helm-svc.phoenix.svc.cluster.local:4317` | Cluster-internal service DNS. gRPC port per Phoenix Helm chart defaults. The committed deployment includes the scheme. |
 | Protocol | gRPC | `research/otel-protocol-tailscale/` confirms gRPC works cluster-internal. HTTP/protobuf is the alternative but gRPC provides streaming, flow control, and is the OTel default. |
 | Configuration | `OTEL_EXPORTER_OTLP_ENDPOINT` env var | Standard OTel SDK env var. Consistent with proxy's existing env var pattern (CONFIG_PATH, LOG_LEVEL). |
 
@@ -131,20 +131,19 @@ These match Q42's daemon configuration for consistency across the telemetry stac
 
 ## Runtime Toggle
 
-The proxy's OTel trace instrumentation is controlled entirely by the `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable.
+The proxy's OTel trace instrumentation is controlled entirely by the `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable. The code path is still toggleable, but the committed Kubernetes manifest currently enables export by setting this variable.
 
 ### When OTEL_EXPORTER_OTLP_ENDPOINT is UNSET
 
 - No OTel SDK initialization (no TracerProvider, no BatchSpanProcessor, no exporter)
-- No tracing instrumentation layer in the Tower stack
+- No OpenTelemetry layer in the tracing subscriber
 - Zero overhead — proxy behavior is identical to pre-D6
-- No new dependencies loaded at runtime
-- This is the default state after deployment until the operator explicitly enables tracing
+- This is not the current committed deployment state because `k8s/deployment.yaml` sets the endpoint by default
 
 ### When OTEL_EXPORTER_OTLP_ENDPOINT is SET
 
 - TracerProvider initialized with BatchSpanProcessor exporting to the configured endpoint
-- Tracing instrumentation layer added to the Tower service stack
+- OpenTelemetry layer added to the tracing subscriber registry
 - Each proxied request produces one OTLP span with the schema above
 - Prometheus metrics continue independently — additive, not a replacement
 
@@ -155,7 +154,7 @@ When tracing is enabled but the export endpoint is unreachable or returns errors
 - Spans are buffered in the BatchSpanProcessor queue (up to max queue size)
 - When the queue is full, new incoming spans are dropped (the OTel Rust SDK uses `try_send` on a bounded channel — newest spans are lost, not oldest)
 - The proxy continues serving requests normally — no cascading failure, no request blocking, no error propagation to clients
-- Export failures are logged at WARN level via `tracing` (already configured for JSON structured logging). This requires wiring the OTel SDK's error handler (`opentelemetry::global::set_error_handler`) to emit through the `tracing` subscriber so export errors appear in the proxy's structured log output
+- Export failures are logged at WARN level via `tracing` JSON output through the OTel SDK internal logging path used by the current `opentelemetry-otlp` configuration
 
 ### Graceful Shutdown
 
@@ -163,7 +162,7 @@ When the proxy receives a shutdown signal, `TracerProvider::shutdown()` must be 
 
 ### Deployment Risk Context
 
-The proxy is the sole API gateway — single pod, Recreate deployment strategy, automated ArgoCD sync from main branch (adversarial-review-4-lab evidence). A bad deploy means all CC sessions and CIAB eval runs lose API access until the operator notices and reverts. The env var toggle is the blast-radius containment: deploy the instrumented binary with `OTEL_EXPORTER_OTLP_ENDPOINT` unset, verify the proxy operates normally, then set the env var to enable tracing. If tracing causes issues, unset the env var — no code revert needed.
+The proxy is the sole API gateway — single pod, Recreate deployment strategy, automated ArgoCD sync from main branch (adversarial-review-4-lab evidence). A bad deploy means all CC sessions and CIAB eval runs lose API access until the operator notices and reverts. The env var toggle remains the blast-radius containment: if tracing causes issues, remove or override `OTEL_EXPORTER_OTLP_ENDPOINT` to disable OTel without a code revert. The committed deployment currently enables export by default, so the remaining validation target is Phoenix ingestion and queryability, not source wiring.
 
 ---
 
@@ -201,11 +200,11 @@ Forge must prove these when implementing. Each criterion names what to observe a
 
 5. **Memory bounded (design-time constraint).** The BatchSpanProcessor queue (2048 max spans) times estimated span size provides the theoretical memory ceiling. This is a design-time bound, not a runtime RSS measurement — Rust allocator behavior (arena retention, page faults, TLS cache) creates RSS noise in the 5-10MB range that would confound measurement. Document the calculated overhead (queue size * span size + exporter state) and confirm it is under 10MB.
 
-6. **Toggle off = structural absence.** With `OTEL_EXPORTER_OTLP_ENDPOINT` unset, the Tower `Router` must not include the tracing instrumentation layer. Verify structurally: the `build_router` (or equivalent) function conditionally applies the tracing layer only when the env var is set. A unit test or code review confirming the layer is absent from the service stack when the env var is unset satisfies this criterion. Behavioral verification (no spans, no logs) is supplementary but insufficient alone — a no-op layer still has per-request dispatch overhead.
+6. **Toggle off = structural absence.** With `OTEL_EXPORTER_OTLP_ENDPOINT` unset, `telemetry::init_tracer()` must return `None`, and the tracing subscriber must be initialized without an OpenTelemetry layer. This is a subscriber-layer condition, not a Tower Router condition; `build_router()` remains unconditional.
 
-7. **Toggle on = spans flow.** With `OTEL_EXPORTER_OTLP_ENDPOINT` set to `phoenix-helm-svc.phoenix.svc.cluster.local:4317`, spans appear in Phoenix within the BatchSpanProcessor flush interval (5s default).
+7. **Toggle on = spans flow.** With `OTEL_EXPORTER_OTLP_ENDPOINT` set to `http://phoenix-helm-svc.phoenix.svc.cluster.local:4317`, spans appear in Phoenix within the BatchSpanProcessor flush interval (5s default).
 
-8. **Export failure resilience.** With `OTEL_EXPORTER_OTLP_ENDPOINT` set to an unreachable endpoint: (a) the proxy continues serving requests normally with no client-visible errors, and (b) export failures are observable — the OTel SDK's error handler is wired into the `tracing` subscriber so that export failures produce WARN-level structured log entries. These are separate properties: (a) is resilience, (b) is observability.
+8. **Export failure resilience.** With `OTEL_EXPORTER_OTLP_ENDPOINT` set to an unreachable endpoint: (a) the proxy continues serving requests normally with no client-visible errors, and (b) export failures are observable through WARN-level structured log entries from the OTel SDK internal logging path. These are separate properties: (a) is resilience, (b) is observability.
 
 9. **No client-specific attribute extraction (code review).** The proxy source contains no conditional logic that inspects request origin, User-Agent, request body content, or any other property to vary span attributes per client. This is a code review criterion, not a runtime test — the proxy has no mechanism to distinguish clients by architecture (D5a Option C, adversarial-review-7-forge F4). Verify by reviewing the span creation code path for absence of client-identification logic.
 

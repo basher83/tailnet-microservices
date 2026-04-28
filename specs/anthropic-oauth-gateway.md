@@ -1,6 +1,6 @@
 # Spec: Anthropic OAuth Gateway
 
-**Status:** Complete
+**Status:** Implemented; runtime PKCE provisioning blocked by Anthropic policy
 **Created:** 2026-02-09
 **Author:** Brent + Cowork
 **Supersedes:** `oauth-proxy.md` (header injector → full OAuth gateway)
@@ -9,7 +9,7 @@
 
 ## Overview
 
-Evolve the anthropic-oauth-proxy from a static header injector into a full OAuth 2.0 gateway with subscription pooling. The proxy currently passes through client-provided `Authorization` headers and injects `anthropic-beta: oauth-2025-04-20`. The target state manages its own OAuth credentials: PKCE authentication flow, automatic token refresh, round-robin subscription pooling with quota failover, and the full Anthropic header contract.
+Evolve the anthropic-oauth-proxy from a static header injector into a full OAuth 2.0 gateway with subscription pooling. The proxy supports a backward-compatible passthrough mode, but the committed Kubernetes config currently runs OAuth mode. In OAuth mode the gateway manages its own credentials, refreshes access tokens, selects accounts from a round-robin pool, fails over on quota exhaustion, and injects the full Anthropic header contract.
 
 Clients on the tailnet send unauthenticated requests. The gateway handles everything.
 
@@ -88,6 +88,9 @@ The gateway is Anthropic-only but the provider abstraction is designed for futur
 ### Provider Trait
 
 ```rust
+use std::future::Future;
+use std::pin::Pin;
+
 /// Trait for LLM provider authentication and request preparation.
 /// Anthropic is the only implementation. Designed for future providers
 /// (OpenAI, Google) without breaking changes.
@@ -95,25 +98,29 @@ pub trait Provider: Send + Sync {
     /// Provider identifier (e.g., "anthropic")
     fn id(&self) -> &str;
 
+    /// Whether this provider needs to inspect/modify the request body.
+    fn needs_body(&self) -> bool;
+
     /// Prepare an outbound request: inject auth headers, modify body if needed.
-    /// Called once per proxy attempt (not per retry).
-    async fn prepare_request(
-        &self,
-        request: &mut RequestBuilder,
-        body: &mut serde_json::Value,
-    ) -> Result<(), ProviderError>;
+    /// Returns the account ID used for this request, or None for passthrough.
+    fn prepare_request<'a>(
+        &'a self,
+        headers: &'a mut reqwest::header::HeaderMap,
+        body: &'a mut serde_json::Value,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<String>>> + Send + 'a>>;
 
     /// Classify an upstream error for failover decisions.
     fn classify_error(&self, status: u16, body: &str) -> ErrorClassification;
 
     /// Report an error back to the provider (e.g., mark account as cooling).
-    async fn report_error(
+    fn report_error(
         &self,
+        account_id: &str,
         classification: ErrorClassification,
-    ) -> Result<(), ProviderError>;
+    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + '_>>;
 
     /// Health status for the /health endpoint.
-    async fn health(&self) -> ProviderHealth;
+    fn health(&self) -> Pin<Box<dyn Future<Output = ProviderHealth> + Send + '_>>;
 }
 ```
 
@@ -141,21 +148,24 @@ pub enum ErrorClassification {
 /// Anthropic's public OAuth client ID (same as Claude CLI)
 pub const ANTHROPIC_CLIENT_ID: &str = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
 
-/// OAuth redirect URI
-pub const REDIRECT_URI: &str = "https://console.anthropic.com/oauth/code/callback";
+/// OAuth redirect URI (Anthropic's hosted callback page)
+pub const REDIRECT_URI: &str = "https://platform.claude.com/oauth/code/callback";
 
-/// Token endpoint
-pub const TOKEN_ENDPOINT: &str = "https://console.anthropic.com/v1/oauth/token";
+/// Token endpoint for code exchange and token refresh
+pub const TOKEN_ENDPOINT: &str = "https://platform.claude.com/v1/oauth/token";
 
 /// Authorization endpoint (Pro/Max subscriptions)
 pub const AUTHORIZE_ENDPOINT: &str = "https://claude.ai/oauth/authorize";
 
-/// OAuth scopes (user:sessions:claude_code required for Sonnet/Opus)
+/// OAuth scopes required for inference access.
+/// `user:sessions:claude_code` is required for Sonnet/Opus access.
+/// `user:mcp_servers` is required by the authorization grant.
 /// Note: org:create_api_key is NOT included — that's for Console OAuth (API key creation),
 /// which is out of scope. This gateway only does Max (claude.ai) authorization.
-pub const SCOPES: &str = "user:profile user:inference user:sessions:claude_code";
+pub const SCOPES: &str =
+    "user:profile user:inference user:sessions:claude_code user:mcp_servers";
 
-/// Required system prompt prefix for Opus/Sonnet access
+/// Required system prompt prefix for Claude Code credential compatibility
 pub const REQUIRED_SYSTEM_PROMPT_PREFIX: &str =
     "You are Claude Code, Anthropic's official CLI for Claude.";
 ```
@@ -258,7 +268,7 @@ pub enum AccountStatus {
 |---------|---------|-----------|--------|
 | `Available` | Request succeeds | `Available` | None |
 | `Available` | 429 + quota message | `CoolingDown` | Log, failover to next |
-| `Available` | 401/403 | `Disabled` | Log error, failover |
+| `Available` | 401/403 | `Disabled` | Log error, return upstream error immediately |
 | `Available` | Transient error | `Available` | Retry (existing retry loop) |
 | `CoolingDown` | Cooldown expired | `Available` | Log recovery |
 | `CoolingDown` | Token refresh fails | `Disabled` | Log error |
@@ -281,7 +291,7 @@ State transitions apply uniformly: a 401/403 from token refresh (request-time or
     "pool": {
       "accounts_total": 2,
       "accounts_available": 0,
-      "accounts_cooling": 2,
+      "accounts_cooling_down": 2,
       "accounts_disabled": 0
     }
   }
@@ -323,7 +333,7 @@ Client-provided `anthropic-beta` values are merged (deduplicated) with the requi
 
 ### System Prompt Prefix Injection
 
-For Opus and Sonnet models, the system prompt **must** start with the exact phrase:
+OAuth mode injects the required system prompt prefix for all models, including Haiku. Earlier versions treated Haiku as exempt, but current code applies the prefix consistently to avoid credential-validation edge cases. The first text block must start with the exact phrase:
 
 ```text
 You are Claude Code, Anthropic's official CLI for Claude.
@@ -333,43 +343,64 @@ The gateway inspects the request body:
 
 | Condition | Action |
 |-----------|--------|
-| No `system` field | Inject `system` with required prefix |
-| `system` field exists, missing prefix | Prepend prefix + `" "` + existing content |
-| `system` field exists, has prefix | No modification |
-| Model is Haiku | No modification (prefix not required) |
+| No `model` field | Skip body modification |
+| No `system` field | Create `system` as an array with a prefix text block |
+| String `system` with prefix | Convert to a one-block array preserving content |
+| String `system` without prefix | Convert to an array and prepend the prefix block |
+| Array `system` with a prefixed text block | No modification |
+| Array `system` without a prefixed text block | Prepend a prefix text block and preserve existing blocks |
+| Other `system` shape | Leave unchanged |
 
 ```rust
-fn inject_system_prompt(body: &mut serde_json::Value, model: &str) {
-    // Haiku doesn't need the prefix
-    if model.contains("haiku") {
+fn inject_system_prompt(body: &mut serde_json::Value) {
+    if body.get("model").and_then(|m| m.as_str()).is_none() {
         return;
     }
 
     let prefix = REQUIRED_SYSTEM_PROMPT_PREFIX;
 
-    match body.get_mut("system") {
+    match body.get("system") {
         None => {
-            body["system"] = serde_json::Value::String(prefix.to_string());
+            body["system"] = serde_json::json!([
+                { "type": "text", "text": prefix }
+            ]);
         }
-        Some(system) => {
-            if let Some(s) = system.as_str() {
-                if !s.starts_with(prefix) {
-                    *system = serde_json::Value::String(
-                        format!("{} {}", prefix, s)
-                    );
-                }
+        Some(existing) if existing.is_string() => {
+            let existing_str = existing.as_str().unwrap();
+            if existing_str.starts_with(prefix) {
+                body["system"] = serde_json::json!([
+                    { "type": "text", "text": existing_str }
+                ]);
+            } else {
+                body["system"] = serde_json::json!([
+                    { "type": "text", "text": prefix },
+                    { "type": "text", "text": existing_str }
+                ]);
             }
         }
+        Some(existing) if existing.is_array() => {
+            let arr = existing.as_array().unwrap();
+            let has_prefix = arr.iter().any(|block| {
+                block.get("type").and_then(|t| t.as_str()) == Some("text")
+                    && block
+                        .get("text")
+                        .and_then(|t| t.as_str())
+                        .is_some_and(|t| t.starts_with(prefix))
+            });
+            if !has_prefix {
+                let mut next = vec![serde_json::json!({ "type": "text", "text": prefix })];
+                next.extend(arr.iter().cloned());
+                body["system"] = serde_json::Value::Array(next);
+            }
+        }
+        _ => {}
     }
 }
 ```
 
 ### Model Extraction
 
-The gateway extracts the model name from the request body to determine:
-
-1. Whether system prompt injection is needed (non-Haiku)
-2. Logging and metrics labels
+The gateway checks for a string `model` field before modifying the body. If the model is missing or not a string, system prompt injection is skipped because the request does not match the expected Anthropic messages shape.
 
 ```rust
 fn extract_model(body: &serde_json::Value) -> Option<&str> {
@@ -428,7 +459,7 @@ The task iterates all accounts, refreshing any token expiring within the thresho
 [proxy]
 listen_addr = "0.0.0.0:8080"
 upstream_url = "https://api.anthropic.com"
-timeout_secs = 60
+timeout_secs = 180
 max_connections = 1000
 
 # OAuth pool configuration (presence activates OAuth mode)
@@ -533,14 +564,14 @@ The existing `/health` endpoint expands to include pool status:
 ```json
 {
   "status": "healthy",
-  "mode": "oauth_pool",
+  "mode": "anthropic",
   "uptime_seconds": 3600,
   "requests_served": 12345,
   "errors_total": 0,
   "pool": {
     "accounts_total": 3,
     "accounts_available": 2,
-    "accounts_cooling": 1,
+    "accounts_cooling_down": 1,
     "accounts_disabled": 0,
     "accounts": [
       { "id": "claude-max-1", "status": "available" },
@@ -596,7 +627,7 @@ services/
       admin.rs          # NEW: Admin API routes
       provider_impl.rs  # NEW: AnthropicProvider implementing Provider trait
 specs/
-  oauth-proxy.md              # Original spec (Complete, preserved)
+  oauth-proxy.md              # Historical passthrough spec, preserved
   anthropic-oauth-gateway.md  # This spec
 ```
 
@@ -624,7 +655,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: anthropic-oauth-credentials
-  namespace: tailnet
+  namespace: anthropic-oauth-proxy
 spec:
   accessModes: [ReadWriteOnce]
   resources:
@@ -678,10 +709,10 @@ Same Deployment, same Ingress, same MagicDNS hostname, same container image tag 
 
 - [x] Implement `AnthropicOAuthProvider` using pool + auth crates
 - [x] Header injection: Bearer token, beta flags, User-Agent, dangerous-direct-browser-access
-- [x] System prompt prefix injection (body modification for Opus/Sonnet)
+- [x] System prompt prefix injection (body modification for all models, including Haiku)
 - [x] Model extraction from request body
 - [x] Extend config.rs with `[oauth]` section parsing
-- [x] Mode detection: passthrough vs oauth_pool
+- [x] Mode detection: passthrough vs OAuthPool config mode
 - [x] Extend health endpoint with pool status
 - [x] Add pool metrics
 - [x] Integration tests with mock Anthropic API
@@ -701,17 +732,17 @@ Same Deployment, same Ingress, same MagicDNS hostname, same container image tag 
 - [x] Update ConfigMap with `[oauth]` section
 - [x] Optional admin Service manifest
 - [x] Update RUNBOOK.md with OAuth operational procedures
-- [x] E2E test: add account → proxy request → verify Claude API response
+- [x] E2E test: load account credentials → proxy request → verify Claude API response
 
 ---
 
 ## Success Criteria
 
 - [x] Backward compatible: existing `[[headers]]` config works unchanged
-- [x] OAuth PKCE flow completes: admin adds account via CLI/API
+- [x] OAuth PKCE endpoints implemented: admin can initiate and complete the flow if Anthropic allows the authorization grant
 - [x] Token auto-refresh: no manual token management after initial auth
 - [x] Pool failover: quota exhaustion on account A → automatic switch to account B
-- [x] System prompt injection: Opus/Sonnet requests get required prefix
+- [x] System prompt injection: all model requests with a valid `model` field get the required prefix
 - [x] Health endpoint: reports pool status (available/cooling/disabled per account)
 - [x] Credential persistence: pod restart preserves OAuth tokens
 - [x] Zero client credentials: ForgeFlare/Claude Code send bare requests
@@ -724,7 +755,7 @@ Same Deployment, same Ingress, same MagicDNS hostname, same container image tag 
 2. **No credential exposure**: Admin API and health endpoint show account IDs and status, never tokens
 3. **File permissions**: Credential file 0600, owned by container user
 4. **Admin API isolation**: Separate port, not exposed via Tailscale Ingress
-5. **System prompt prefix**: Required by Anthropic for Opus/Sonnet — gateway handles this transparently
+5. **System prompt prefix**: Required for Claude Code credential compatibility — gateway handles this transparently for all models
 6. **PKCE**: All OAuth flows use S256 challenge to prevent code interception
 
 ---
@@ -733,7 +764,7 @@ Same Deployment, same Ingress, same MagicDNS hostname, same container image tag 
 
 - **Non-Anthropic providers** — multi-provider trait is designed in, but only Anthropic is implemented
 - **Web UI for account management** — admin API is CLI/curl-driven. Web UI is a future enhancement.
-- **Telemetry/session tracking** — Aperture handles this upstream. The gateway is auth-only.
+- **Session-level telemetry** — Aperture handles this upstream. This gateway emits API-boundary OpenTelemetry spans only; it does not own session reconstruction or user-level routing telemetry.
 - **Rate limiting / access control** — Aperture handles per-user access. The gateway serves all tailnet traffic equally.
 - **Console OAuth mode** — only Max (claude.ai) authorization is supported. API key creation via OAuth is not needed.
 
@@ -746,7 +777,7 @@ When Anthropic updates Claude CLI, required headers may change. Maintenance proc
 1. Install updated Claude CLI
 2. Sniff traffic via mitmproxy: `mitmdump --set flow_detail=4 -p 8888`
 3. Route CLI through proxy: `HTTPS_PROXY=http://127.0.0.1:8888 claude --print "hello"`
-4. Compare captured headers against constants in `anthropic-auth`
+4. Compare captured headers against constants in `services/oauth-proxy/src/provider_impl.rs` and `crates/anthropic-auth/src/constants.rs`
 5. Update constants, run tests
 
 ---
@@ -757,7 +788,10 @@ When Anthropic updates Claude CLI, required headers may change. Maintenance proc
 - Loom `specs/anthropic-oauth-pool.md` — Subscription pooling architecture
 - Loom `specs/anthropic-max-pool-management.md` — Admin API patterns
 - `aperture/aperture.md` — Multi-provider gateway reference architecture
-- `specs/oauth-proxy.md` — Current implementation (passthrough header injector)
+- `specs/oauth-proxy.md` — Historical passthrough header-injector spec
+- `specs/generic-client-support.md` — Follow-on request-shape findings for OAuth mode
+- `specs/streaming-timeout-fix.md` — Follow-on streaming timeout implementation
+- `specs/otel-trace-instrumentation.md` — Follow-on API-boundary tracing implementation
 - [OAuth 2.0 PKCE RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636)
 - [Anthropic MAX Plan Implementation Guide](https://raw.githubusercontent.com/nsxdavid/anthropic-max-router/main/ANTHROPIC-MAX-PLAN-IMPLEMENTATION-GUIDE.md)
 
