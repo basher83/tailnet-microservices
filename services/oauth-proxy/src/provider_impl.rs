@@ -27,6 +27,13 @@ const USER_AGENT: &str = "claude-cli/2.0.76 (external, sdk-cli)";
 /// Anthropic API version header value.
 const ANTHROPIC_VERSION: &str = "2023-06-01";
 
+/// Claude Code attribution header required for Claude Max plan usage routing.
+///
+/// Without this header, Anthropic classifies OAuth-token requests sent to the
+/// Messages API as extra usage even when the token came from a Max account.
+/// Claude Code emits this header for headless/SDK CLI requests.
+const ANTHROPIC_BILLING_HEADER: &str = "cc_version=2.1.128.f82; cc_entrypoint=sdk-cli; cch=00000;";
+
 /// OAuth provider backed by a subscription pool.
 ///
 /// Selects accounts round-robin, injects Bearer tokens, merges anthropic-beta
@@ -91,6 +98,10 @@ impl Provider for AnthropicOAuthProvider {
             headers.insert(
                 HeaderName::from_static("anthropic-version"),
                 HeaderValue::from_static(ANTHROPIC_VERSION),
+            );
+            headers.insert(
+                HeaderName::from_static("x-anthropic-billing-header"),
+                HeaderValue::from_static(ANTHROPIC_BILLING_HEADER),
             );
 
             // System prompt injection for all models

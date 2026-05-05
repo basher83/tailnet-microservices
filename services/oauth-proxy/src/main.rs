@@ -2938,6 +2938,10 @@ mod tests {
             "true"
         );
         assert_eq!(headers["anthropic-version"].as_str().unwrap(), "2023-06-01");
+        assert_eq!(
+            headers["x-anthropic-billing-header"].as_str().unwrap(),
+            "cc_version=2.1.128.f82; cc_entrypoint=sdk-cli; cch=00000;"
+        );
         assert!(
             headers["user-agent"]
                 .as_str()

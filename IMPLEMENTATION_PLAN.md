@@ -8,6 +8,8 @@ None active.
 
 ## Baseline
 
+v0.0.127: 209 tests pass (136 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). OAuth mode now injects Claude Code's `x-anthropic-billing-header` attribution so Max-plan OAuth requests route to plan usage instead of extra-usage rejection.
+
 v0.0.126: 209 tests pass (136 oauth-proxy + 4 common + 9 provider + 22 anthropic-auth + 38 anthropic-pool), 2 ignored (load test, memory soak). Pipeline clean.
 
 ## Completed Specs
