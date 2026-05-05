@@ -29,10 +29,11 @@ secrets/
 IMPLEMENTATION_PLAN.md
 TASK.md
 
-# Claude Code proprietary (skills, commands, docs)
+# Claude Code proprietary/local state (skills, commands, docs)
 .claude/commands/
 .claude/skills/
 .claude/README.md
+.claude/settings.local.json
 
 # Specstory
 .specstory/
