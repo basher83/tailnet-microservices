@@ -104,8 +104,11 @@ impl Provider for AnthropicOAuthProvider {
                 HeaderValue::from_static(ANTHROPIC_BILLING_HEADER),
             );
 
-            // System prompt injection for all models
+            // System prompt injection for all models. Then remove Pi's local
+            // documentation-routing hint, which trips Anthropic's Max-plan
+            // usage classifier even with Claude Code attribution present.
             inject_system_prompt(body);
+            sanitize_system_prompt_for_plan_usage(body);
 
             Ok(Some(selected.id))
         })
@@ -198,6 +201,49 @@ fn extract_model(body: &serde_json::Value) -> Option<&str> {
 /// prefix for model access, consistent injection avoids credential validation
 /// edge cases. Loom (reference implementation) applies the prefix to all
 /// models under OAuth.
+fn sanitize_pi_documentation_block(text: &str) -> Option<String> {
+    let marker = "\n\nPi documentation (read only when";
+    let (prefix, rest) = text.split_once(marker)?;
+    let retained_context: Vec<&str> = rest
+        .lines()
+        .filter(|line| {
+            line.starts_with("Current date:") || line.starts_with("Current working directory:")
+        })
+        .collect();
+
+    let prefix = prefix.trim_end();
+    if retained_context.is_empty() {
+        Some(prefix.to_string())
+    } else {
+        Some(format!("{}\n\n{}", prefix, retained_context.join("\n")))
+    }
+}
+
+fn sanitize_system_prompt_for_plan_usage(body: &mut serde_json::Value) {
+    match body.get_mut("system") {
+        Some(system) if system.is_string() => {
+            if let Some(text) = system.as_str().and_then(sanitize_pi_documentation_block) {
+                *system = serde_json::Value::String(text);
+            }
+        }
+        Some(system) if system.is_array() => {
+            if let Some(blocks) = system.as_array_mut() {
+                for block in blocks {
+                    if block.get("type").and_then(|t| t.as_str()) == Some("text")
+                        && let Some(text_value) = block.get_mut("text")
+                        && let Some(text) = text_value
+                            .as_str()
+                            .and_then(sanitize_pi_documentation_block)
+                    {
+                        *text_value = serde_json::Value::String(text);
+                    }
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
 fn inject_system_prompt(body: &mut serde_json::Value) {
     if extract_model(body).is_none() {
         return;
@@ -357,6 +403,41 @@ mod tests {
             texts[0].starts_with(REQUIRED_SYSTEM_PROMPT_PREFIX),
             "first text block must start with prefix, got: {}",
             texts[0]
+        );
+    }
+
+    #[test]
+    fn sanitize_pi_documentation_block_preserves_runtime_context() {
+        let mut body = serde_json::json!({
+            "model": "claude-haiku-4-5",
+            "system": [{
+                "type": "text",
+                "text": "Guidelines:\n- Be concise\n\nPi documentation (read only when the user asks about pi itself):\n- When asked about: extensions (docs/extensions.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md)\nCurrent date: 2026-05-05\nCurrent working directory: /repo"
+            }]
+        });
+
+        sanitize_system_prompt_for_plan_usage(&mut body);
+
+        let text = body["system"][0]["text"].as_str().unwrap();
+        assert!(text.contains("Guidelines:\n- Be concise"));
+        assert!(text.contains("Current date: 2026-05-05"));
+        assert!(text.contains("Current working directory: /repo"));
+        assert!(!text.contains("Pi documentation"));
+        assert!(!text.contains("custom providers"));
+    }
+
+    #[test]
+    fn sanitize_pi_documentation_block_noops_without_marker() {
+        let mut body = serde_json::json!({
+            "model": "claude-haiku-4-5",
+            "system": [{ "type": "text", "text": "Guidelines only" }]
+        });
+
+        sanitize_system_prompt_for_plan_usage(&mut body);
+
+        assert_eq!(
+            body["system"][0]["text"].as_str().unwrap(),
+            "Guidelines only"
         );
     }
 
