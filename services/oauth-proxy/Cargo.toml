@@ -37,5 +37,5 @@ pin-project-lite = "0.2"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
-libc = "=0.2.183"
+libc = "=0.2.186"
 tempfile = "=3.24.0"
