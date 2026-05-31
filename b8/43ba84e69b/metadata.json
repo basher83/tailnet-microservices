@@ -3,23 +3,24 @@
   "checkpoint_id": "b843ba84e69b",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 1,
+  "checkpoints_count": 0,
   "files_touched": [
-    "docs/audits/header-provenance.md"
+    "docs/audits/header-provenance.md",
+    "mise.toml"
   ],
   "sessions": [
     {
       "metadata": "/b8/43ba84e69b/0/metadata.json",
       "transcript": "/b8/43ba84e69b/0/full.jsonl",
       "content_hash": "/b8/43ba84e69b/0/content_hash.txt",
-      "prompt": "/b8/43ba84e69b/0/prompt.txt"
+      "prompt": ""
     }
   ],
   "token_usage": {
-    "input_tokens": 4085,
-    "cache_creation_tokens": 1668898,
-    "cache_read_tokens": 2018566,
-    "output_tokens": 335207,
-    "api_call_count": 29
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
   }
 }
