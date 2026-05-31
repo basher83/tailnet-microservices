@@ -7,6 +7,7 @@
   "files_touched": [
     ".gitignore",
     "docs/audits/header-provenance.md",
+    "mise.toml",
     "scripts/capture-cc-headers.sh"
   ],
   "sessions": [
@@ -14,14 +15,14 @@
       "metadata": "/27/70bfb20d9a/0/metadata.json",
       "transcript": "/27/70bfb20d9a/0/full.jsonl",
       "content_hash": "/27/70bfb20d9a/0/content_hash.txt",
-      "prompt": "/27/70bfb20d9a/0/prompt.txt"
+      "prompt": ""
     }
   ],
   "token_usage": {
-    "input_tokens": 467,
-    "cache_creation_tokens": 245228,
-    "cache_read_tokens": 1034406,
-    "output_tokens": 10845,
-    "api_call_count": 5
+    "input_tokens": 356,
+    "cache_creation_tokens": 552113,
+    "cache_read_tokens": 292457,
+    "output_tokens": 30514,
+    "api_call_count": 3
   }
 }

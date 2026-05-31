@@ -3,48 +3,40 @@
   "checkpoint_id": "2770bfb20d9a",
   "session_id": "1704c18e-1ef2-4aec-a61c-24463d3d6d39",
   "strategy": "manual-commit",
-  "created_at": "2026-05-31T07:58:49.619239Z",
+  "created_at": "2026-05-31T08:00:19.646266Z",
   "branch": "main",
   "checkpoints_count": 0,
   "files_touched": [
-    ".gitignore",
     "docs/audits/header-provenance.md",
-    "scripts/capture-cc-headers.sh"
+    "scripts/capture-cc-headers.sh",
+    "mise.toml",
+    ".gitignore"
   ],
   "agent": "Claude Code",
   "model": "claude-opus-4-8[1m]",
   "turn_id": "c6de1795e01c",
-  "checkpoint_transcript_start": 1132,
-  "transcript_lines_at_start": 1132,
+  "checkpoint_transcript_start": 1231,
+  "transcript_lines_at_start": 1231,
   "token_usage": {
-    "input_tokens": 467,
-    "cache_creation_tokens": 245228,
-    "cache_read_tokens": 1034406,
-    "output_tokens": 10845,
-    "api_call_count": 5
+    "input_tokens": 356,
+    "cache_creation_tokens": 552113,
+    "cache_read_tokens": 292457,
+    "output_tokens": 30514,
+    "api_call_count": 3
   },
   "session_metrics": {
     "turn_count": 8
   },
   "initial_attribution": {
-    "calculated_at": "2026-05-31T07:58:49.593961Z",
-    "agent_lines": 249,
-    "agent_removed": 5,
+    "calculated_at": "2026-05-31T08:00:19.614421Z",
+    "agent_lines": 8,
+    "agent_removed": 0,
     "human_added": 0,
     "human_modified": 0,
     "human_removed": 0,
-    "total_committed": 249,
-    "total_lines_changed": 254,
+    "total_committed": 8,
+    "total_lines_changed": 8,
     "agent_percentage": 100,
     "metric_version": 2
-  },
-  "prompt_attributions": [
-    {
-      "checkpoint_number": 1,
-      "user_lines_added": 0,
-      "user_lines_removed": 0,
-      "agent_lines_added": 0,
-      "agent_lines_removed": 0
-    }
-  ]
+  }
 }

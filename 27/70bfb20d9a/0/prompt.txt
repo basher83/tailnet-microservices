@@ -1,5 +1,0 @@
-Resume: check /tmp/mitm-check.txt and mitmdump install, then run the on-wire MITM capture on Claude Code v2.1.158
-
----
-
-Resume: read /tmp/capture-verdict.txt and /tmp/capture-run.log to get the on-wire MITM result for Claude Code v2.1.158 (whether x-anthropic-billing-header rides on POST /v1/messages), then report and finish.
