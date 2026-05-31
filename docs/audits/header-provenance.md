@@ -211,19 +211,61 @@ function po_(H) {
 - **Official kill-switch exists:** genuine Claude Code emits no attribution header at all when `CLAUDE_CODE_ATTRIBUTION_HEADER` is truthy — so the header is optional first-party telemetry, not a hard auth requirement. (Its *presence* still flipped Max-plan routing in the May-5 proxy curl test, so Anthropic's billing classifier does consume it when present.)
 - `cc_entrypoint` is pure `process.env.CLAUDE_CODE_ENTRYPOINT` (hence `sdk-cli` for headless `-p`/SDK calls — exactly the path this proxy serves). `cc_workload` only appears under an AsyncLocalStorage workload tag (e.g. `cron`); absent for normal traffic.
 
+### On-wire confirmation (RESOLVED 2026-05-31) — genuine CC does NOT send this header
+
+A fresh mitmproxy capture of **Claude Code v2.1.158** routed through `mitmdump`
+(`scripts/capture-cc-headers.sh`) settled the wire question. The actual
+`POST /v1/messages` request carried:
+
+```
+User-Agent: claude-cli/2.1.158 (external, sdk-cli)
+x-app: cli
+anthropic-version: 2023-06-01
+anthropic-beta: oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-...
+anthropic-dangerous-direct-browser-access: true
+```
+
+…and **did NOT contain `x-anthropic-billing-header`.** So the `[DEBUG] attribution
+header ...` line that `po_()` logs is **debug-only** — current Claude Code builds
+the attribution string but does not put it on the wire for the OAuth `/v1/messages`
+path. This corroborates the v2.1.132 May-9 capture (it was NOT a capture artifact),
+across two independent versions.
+
 ### Safety verdict
 
-The proxy injecting `cc_version=…; cc_entrypoint=sdk-cli; cch=00000;` is **faithfully replicating genuine Claude Code's first-party attribution**, not forging anything account-unique. `cch=00000` cannot single out or flag the Max account because it contains no account-specific bits. Consistent with 3+ weeks of Max usage through the proxy and no flagging observed as of 2026-05-31.
+`cch=00000` **cannot flag or identify the Max account** — it is a hardcoded
+constant with no account-specific bits (proven by decompilation above). That is the
+answer to the original concern, and it is unchanged.
+
+What the wire capture *corrects*: the proxy is **not** "faithfully replicating
+current genuine Claude Code wire behavior." Genuine CC v2.1.158 does not send
+`x-anthropic-billing-header` on `/v1/messages` at all. The proxy injects it anyway —
+a benign extra header (the May-5 curl test showed its presence returned 200 and did
+not trigger extra-usage classification). It is harmless, but it is an *addition*
+relative to real CC, not a mirror of it. No flagging observed in 3+ weeks of Max
+usage as of 2026-05-31.
 
 ### What `cch` abbreviates
 
-Still not literally spelled out in the bundle, but moot: the shipping value is a fixed `00000` placeholder (a reserved attribution sub-field zeroed in release builds, sibling to `cc_version`/`cc_entrypoint`/`cc_workload`). Not security-relevant either way.
+Still not literally spelled out in the bundle, but moot: the shipping value is a
+fixed `00000` placeholder (a reserved attribution sub-field zeroed in release
+builds, sibling to `cc_version`/`cc_entrypoint`/`cc_workload`). Not security-relevant
+either way — and it never reaches the wire from genuine CC regardless.
 
-### One remaining loose end (does not affect the verdict)
+### Other wire drift noticed in the same capture (out of scope, logged for later)
 
-A fresh on-wire MITM capture on v2.1.158 to re-check whether `x-anthropic-billing-header` actually rides on `POST /v1/messages` (the v2.1.132 May-9 capture found it absent) was **not** redone this session — `mitmproxy` is not installed (`mitmdump not found`, no `~/.mitmproxy` CA). The decompiled `po_()` returns the header string for attachment, so the v2.1.132 absence is most plausibly a per-process capture-scope artifact. If desired: `brew install mitmproxy`, then capture per the procedure in §2.
+Genuine CC v2.1.158 vs. what this proxy injects (`provider_impl.rs`):
+- **User-Agent:** real CC sends `claude-cli/2.1.158 (external, sdk-cli)`; proxy hardcodes `claude-cli/2.0.76 ...`. Old but accepted.
+- **`x-app: cli`** — real CC sends it; proxy does not inject it.
+- **anthropic-beta** — real CC now includes `thinking-token-count-2026-05-13`; proxy's `REQUIRED_BETA_FLAGS` does not.
+These are not security issues (requests succeed) but are fidelity gaps if exact CC mimicry is ever required.
 
-> Maintenance note: to keep the proxy's `ANTHROPIC_BILLING_HEADER` current, just run `claude -p --debug-file <tmp> 'hi'` after a Claude Code upgrade and copy the `[DEBUG] attribution header` line — only the `cc_version` suffix changes. The constant is in `services/oauth-proxy/src/provider_impl.rs` and mirrored in `~/.pi/agent/models.json`.
+> Maintenance / re-run: use **`scripts/capture-cc-headers.sh`** (or `mise run
+> headers:capture`) after a Claude Code upgrade. It captures both the
+> `[DEBUG] attribution header` line and the real on-wire `/v1/messages` headers and
+> diffs them against the proxy constants. The constants live in
+> `services/oauth-proxy/src/provider_impl.rs` and are mirrored in
+> `~/.pi/agent/models.json`.
 
 ---
 

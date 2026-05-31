@@ -35,6 +35,7 @@ TASK.md
 .claude/skills/
 .claude/README.md
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 
 # Specstory
 .specstory/

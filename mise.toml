@@ -134,6 +134,14 @@ run = "cargo zigbuild --workspace --release --target x86_64-unknown-linux-gnu"
 description = "Cross-compile release for aarch64-linux"
 run = "cargo zigbuild --workspace --release --target aarch64-unknown-linux-gnu"
 
+# ── Header audit ──────────────────────────────────────────
+# Re-run the Claude Code header capture (docs/audits/header-provenance.md):
+# captures the --debug-file attribution line + on-wire /v1/messages headers and
+# diffs them against the proxy constants. Needs mitmproxy (pipx:mitmproxy).
+[tasks."headers:capture"]
+description = "Capture & audit Claude Code Anthropic headers vs proxy constants"
+run = "./scripts/capture-cc-headers.sh"
+
 # ── Composite ─────────────────────────────────────────────
 [tasks.check]
 description = "Full pre-commit check: fmt → lint → build → test (sequential)"
