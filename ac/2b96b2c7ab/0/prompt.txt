@@ -1,0 +1,5 @@
+Resume: the mise.toml headers:capture task was just added and validated as TOML. Finish up: (1) confirm `mise tasks | grep headers` shows headers:capture, (2) amend the af451e8 commit to include mise.toml, (3) git fetch + rebase onto origin/main (it diverged, behind a bot commit), (4) push. Then report final state to the user — the scripts/ dir with capture-cc-headers.sh is the durable re-run script they asked for, and the on-wire MITM finding (x-anthropic-billing-header NOT on wire for v2.1.158) is recorded in header-provenance.md §3.
+
+---
+
+bump the proxy's cc_version constant 2.1.128.f82 → 2.1.158.c5c for fidelity
