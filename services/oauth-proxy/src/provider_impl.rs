@@ -21,17 +21,18 @@ const REQUIRED_BETA_FLAGS: &[&str] = &[
     "context-management-2025-06-27",
 ];
 
-/// User-Agent header value matching the Claude CLI identity.
+/// User-Agent captured from Claude CLI v2.0.76 `/v1/messages` traffic via
+/// the Loom mitmproxy procedure; see `docs/audits/header-provenance.md`.
 const USER_AGENT: &str = "claude-cli/2.0.76 (external, sdk-cli)";
 
 /// Anthropic API version header value.
 const ANTHROPIC_VERSION: &str = "2023-06-01";
 
-/// Claude Code attribution header required for Claude Max plan usage routing.
-///
-/// Without this header, Anthropic classifies OAuth-token requests sent to the
-/// Messages API as extra usage even when the token came from a Max account.
-/// Claude Code emits this header for headless/SDK CLI requests.
+/// Claude Code attribution header used by this proxy for Max-plan routing.
+/// Origin: Claude Code v2.1.128 `--debug-file` output plus a successful direct
+/// proxy curl. A later v2.1.132 MITM capture did not show this header on
+/// `/v1/messages`; `cch=00000` semantics remain unknown. See
+/// `docs/audits/header-provenance.md` before changing this literal.
 const ANTHROPIC_BILLING_HEADER: &str = "cc_version=2.1.128.f82; cc_entrypoint=sdk-cli; cch=00000;";
 
 /// OAuth provider backed by a subscription pool.

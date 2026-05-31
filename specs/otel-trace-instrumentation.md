@@ -1,5 +1,5 @@
 ---
-status: Implemented; Phoenix runtime validation still open
+status: Implemented; Phoenix runtime smoke validated 2026-05-09; controlled error/failover metadata coverage deferred
 created: 2026-04-09
 ---
 
@@ -162,7 +162,7 @@ When the proxy receives a shutdown signal, `TracerProvider::shutdown()` must be 
 
 ### Deployment Risk Context
 
-The proxy is the sole API gateway — single pod, Recreate deployment strategy, automated ArgoCD sync from main branch (adversarial-review-4-lab evidence). A bad deploy means all CC sessions and CIAB eval runs lose API access until the operator notices and reverts. The env var toggle remains the blast-radius containment: if tracing causes issues, remove or override `OTEL_EXPORTER_OTLP_ENDPOINT` to disable OTel without a code revert. The committed deployment currently enables export by default, so the remaining validation target is Phoenix ingestion and queryability, not source wiring.
+The proxy is the sole API gateway — single pod, Recreate deployment strategy, automated ArgoCD sync from main branch (adversarial-review-4-lab evidence). A bad deploy means all CC sessions and CIAB eval runs lose API access until the operator notices and reverts. The env var toggle remains the blast-radius containment: if tracing causes issues, remove or override `OTEL_EXPORTER_OTLP_ENDPOINT` to disable OTel without a code revert. The committed deployment currently enables export by default. Phoenix ingestion and success-span queryability were live-validated on 2026-05-09; controlled error/failover metadata and full Prometheus event-series coverage remain deferred until safe error/failover traffic is generated.
 
 ---
 
@@ -189,6 +189,17 @@ The 6 existing Prometheus metrics (`proxy_requests_total`, `proxy_request_durati
 ## Validation Criteria
 
 Forge must prove these when implementing. Each criterion names what to observe and how to measure it.
+
+### 2026-05-09 Live Evidence
+
+- Deployment env confirmed `OTEL_EXPORTER_OTLP_ENDPOINT=http://phoenix-helm-svc.phoenix.svc.cluster.local:4317`.
+- `px auth status --endpoint https://phoenix.tailfb3ea.ts.net` reported anonymous access available.
+- Phoenix `default` project showed recent `proxy_request` spans after Pi traffic through the deployed proxy.
+- A representative span had `status_code: OK`, `http.request.method: POST`, `http.response.status_code: 200`, `url.path: /v1/messages`, `server.address: https://api.anthropic.com`, and flattened metadata attributes `metadata.proxy.account_id`, `metadata.proxy.failover_attempt`, `metadata.proxy.pool_mode`, and `metadata.proxy.request_id`.
+- Phoenix CLI attribute filters returned results for `metadata.proxy.account_id:claude-max-local`, `metadata.proxy.pool_mode:oauth`, `http.request.method:POST`, and `url.path:/v1/messages`.
+- Prometheus `/metrics` remained reachable through a read-only port-forward and exposed observed proxy request metrics (`proxy_requests_total`, `proxy_request_duration_seconds_*`). Full error/failover/quota metric-series validation is deferred until those event types are safely generated; unobserved metrics may not render in `metrics_exporter_prometheus` output.
+- `metadata.proxy.error_type` is not present on successful spans because the source value is null; validating that key requires a controlled error span and is deferred.
+
 
 1. **Spans in Phoenix with correct attribute names.** After a proxied request, Phoenix shows a span with `service.name=anthropic-oauth-proxy`, `http.request.method` matching the request's HTTP method, and `http.response.status_code` matching the upstream response status. These exact attribute names (not legacy conventions like `http.method` or `http.status_code`) must be present.
 

@@ -22,7 +22,7 @@ The pod contains a single container. The Tailscale Operator manages tailnet conn
                             Proxy: 8080  |  Admin: 9090
 ```
 
-In passthrough mode, the proxy injects the `anthropic-beta: oauth-2025-04-20` header and forwards to `https://api.anthropic.com`. In OAuth mode, it manages Bearer tokens from a pool of Claude Max subscriptions, handles automatic token refresh, and injects the full Anthropic header contract (anthropic-beta, anthropic-version, user-agent, system prompt). TLS termination for inbound traffic is handled by the tailnet WireGuard encryption. Outbound TLS to Anthropic uses `reqwest` with `rustls`.
+In passthrough mode, the proxy injects the `anthropic-beta: oauth-2025-04-20` header and forwards to `https://api.anthropic.com`. In OAuth mode, it manages Bearer tokens from a pool of Claude Max subscriptions, handles automatic token refresh, and injects the full Anthropic header contract (anthropic-beta, anthropic-version, user-agent, billing attribution marker, system prompt). TLS termination for inbound traffic is handled by the tailnet WireGuard encryption. Outbound TLS to Anthropic uses `reqwest` with `rustls`.
 
 ## Deployment
 
@@ -551,15 +551,27 @@ The proxy binary is approximately 5MB and has minimal memory overhead. Increase 
 
 ## Header Discovery Maintenance
 
-When the Claude CLI updates, the required headers may change. To discover the current header contract:
+The current constants are documented in `docs/audits/header-provenance.md`.
+Short version: `USER_AGENT` came from a Loom mitmproxy capture of Claude CLI
+v2.0.76 `/v1/messages` traffic; `ANTHROPIC_BILLING_HEADER` came from Claude
+Code v2.1.128 `--debug-file` output and was curl-tested through this proxy.
+A later Claude Code v2.1.132 local MITM capture saw the same debug attribution
+shape but did not see `x-anthropic-billing-header` on the actual
+`/v1/messages` request. Treat `cch=00000` as debug-attribution data with
+unknown semantics, not as a proven on-wire Claude Code header.
+
+When the Claude CLI updates, refresh the header contract by capturing actual
+wire traffic, not by guessing from version numbers alone:
 
 ```bash
-# Install the updated Claude CLI, then sniff traffic
+# Install the updated Claude CLI, then sniff traffic.
 mitmdump --set flow_detail=4 -p 8888
 HTTPS_PROXY=http://127.0.0.1:8888 claude --print "hello"
 ```
 
-Compare the captured headers against the constants in `services/oauth-proxy/src/provider_impl.rs`. Update the constants and run tests if anything has changed.
+Compare the captured `/v1/messages` headers and any Claude Code `--debug-file`
+attribution line against `services/oauth-proxy/src/provider_impl.rs`. Update the
+constants only when evidence shows they changed, then run `mise run ci`.
 
 ## Known Issues
 

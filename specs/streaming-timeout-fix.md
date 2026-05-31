@@ -1,6 +1,6 @@
 # Spec: Streaming Timeout Fix
 
-**Status:** Implemented; live long-session validation still open
+**Status:** Implemented; Pi live file-write/tool smoke passed 2026-05-09; extended Claude Code long-session soak deferred
 **Created:** 2026-02-13
 
 ---
@@ -302,7 +302,8 @@ This test exercises the stream wrapper through the proxy response path.
 
 ## Success Criteria
 
-- [ ] Claude Code large operations (file writes, multi-tool) complete through the live deployed proxy without timeout
+- [ ] Claude Code large operations (file writes, multi-tool) complete through the live deployed proxy without timeout — deferred for an extended multi-minute Claude Code soak.
+  - 2026-05-09 partial live evidence: Pi headless traffic through `anthropic-proxy` returned `live-proxy-ok`; a scratch-dir Pi tool/file-write request created and read `live-validation.txt`; proxy logs showed POST `/v1/messages` status 200 and `rg -i 'timeout|error|504|gateway'` over recent proxy logs returned no matches.
 - [x] Dead upstream connections (zero bytes, never responds) still detected and return 504 within `timeout_secs`
 - [x] Dead upstream connections mid-stream (stops sending after some chunks) detected within `timeout_secs` — client sees a cleanly closed stream
 - [x] Existing timeout retry behavior preserved (3 attempts on initial response timeout)

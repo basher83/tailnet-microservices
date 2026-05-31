@@ -11,7 +11,7 @@ The OAuth proxy was built to sit in front of Claude Code specifically. Claude Co
 
 Non-Claude-Code clients (forgeflare, curl, custom agents) send requests through the same proxy but produce different request shapes. Anthropic validates that Claude Max OAuth credentials are used exclusively by Claude Code, rejecting requests that don't match the expected shape. The validation goes beyond headers — there's likely request body fingerprinting (system field format, tool schemas, or other structural checks).
 
-Observed behavior during the investigation: the proxy injected Bearer token, user-agent, system prompt prefix, beta flags, and the browser-access header, but Anthropic still returned 400 with "This credential is only authorized for use with Claude Code." The proxy correctly reported these as upstream 400s in its logs. Empirical testing isolated PascalCase Claude Code tool names as the remaining validation gate for generic clients that send tools.
+Observed behavior during the investigation: the proxy injected Bearer token, user-agent, system prompt prefix, beta flags, and the browser-access header, but Anthropic still returned 400 with "This credential is only authorized for use with Claude Code." The proxy later also kept the Claude Code billing attribution marker used for Max-plan routing. Empirical testing isolated PascalCase Claude Code tool names as the remaining validation gate for generic clients that send tools.
 
 ---
 
@@ -24,7 +24,10 @@ The proxy now injects the required Claude Code credential markers:
 3. `anthropic-dangerous-direct-browser-access: true` — injected
 4. `user-agent: claude-cli/2.0.76 (external, sdk-cli)` — injected
 5. `anthropic-version: 2023-06-01` — injected
-6. System prompt prefix: "You are Claude Code..." — injected for all requests with a string `model` field
+6. `x-anthropic-billing-header: cc_version=2.1.128.f82; cc_entrypoint=sdk-cli; cch=00000;` — injected as the current proxy attribution marker for Max-plan routing
+7. System prompt prefix: "You are Claude Code..." — injected for all requests with a string `model` field
+
+Header provenance caveat: a Claude Code v2.1.132 local MITM capture saw the billing-header debug attribution line but did not see `x-anthropic-billing-header` on the actual `/v1/messages` request. Treat `cch=00000` as debug-attribution data with unknown semantics; the proxy keeps the current injection unchanged until a separate live A/B validates a replacement or removal.
 
 What was evaluated:
 
@@ -111,7 +114,7 @@ Client (forgeflare, curl, Claude Code)
     ▼
 AnthropicOAuthProvider::prepare_request()
     │
-    ├── inject: Bearer token, user-agent, beta flags, browser-access
+    ├── inject: Bearer token, user-agent, beta flags, browser-access, billing attribution marker
     ├── normalize: system prompt prefix for supported body shapes
     ├── preserve: model, messages, tools, parameters, streaming flag
     │
@@ -123,6 +126,6 @@ api.anthropic.com
 
 Implemented code:
 
-1. `services/oauth-proxy/src/provider_impl.rs` — `prepare_request` injects OAuth headers and calls system prompt normalization for OAuth mode.
-2. `crates/anthropic-auth/src/constants.rs` — shared OAuth constants, including the Claude Code system prompt prefix and beta headers.
-3. Tests cover Haiku handling, string and array system prompts, cache-control preservation, and prefix de-duplication.
+1. `services/oauth-proxy/src/provider_impl.rs` — `prepare_request` injects OAuth headers, required beta flags, the current billing attribution marker, and calls system prompt normalization for OAuth mode.
+2. `crates/anthropic-auth/src/constants.rs` — shared OAuth constants, including the Claude Code system prompt prefix.
+3. Tests cover required header injection, Haiku handling, string and array system prompts, cache-control preservation, and prefix de-duplication.

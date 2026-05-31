@@ -326,10 +326,11 @@ The gateway modifies both headers and body before forwarding.
 | `Authorization` | `Bearer {access_token}` | From selected pool account. Client-provided Authorization is **ignored** (stripped before injection). |
 | `anthropic-beta` | `oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27` | Must include `oauth-2025-04-20` |
 | `anthropic-dangerous-direct-browser-access` | `true` | Required for OAuth |
-| `user-agent` | `claude-cli/2.0.76 (external, sdk-cli)` | Must match Claude CLI format |
+| `user-agent` | `claude-cli/2.0.76 (external, sdk-cli)` | Captured from Claude CLI traffic; see `docs/audits/header-provenance.md` |
 | `anthropic-version` | `2023-06-01` | API version |
+| `x-anthropic-billing-header` | `cc_version=2.1.128.f82; cc_entrypoint=sdk-cli; cch=00000;` | Current proxy attribution marker for Max-plan routing; `cch=00000` is debug-attribution data, not confirmed as a v2.1.132 `/v1/messages` wire header |
 
-Client-provided `anthropic-beta` values are merged (deduplicated) with the required set.
+Client-provided `anthropic-beta` values are merged (deduplicated) with the required set. The billing-header literal is intentionally unchanged until a separate live A/B proves a safer replacement/removal.
 
 ### System Prompt Prefix Injection
 
@@ -708,7 +709,7 @@ Same Deployment, same Ingress, same MagicDNS hostname, same container image tag 
 ### Phase 4: Gateway Integration
 
 - [x] Implement `AnthropicOAuthProvider` using pool + auth crates
-- [x] Header injection: Bearer token, beta flags, User-Agent, dangerous-direct-browser-access
+- [x] Header injection: Bearer token, beta flags, User-Agent, dangerous-direct-browser-access, Anthropic version, current billing attribution marker
 - [x] System prompt prefix injection (body modification for all models, including Haiku)
 - [x] Model extraction from request body
 - [x] Extend config.rs with `[oauth]` section parsing
@@ -772,13 +773,14 @@ Same Deployment, same Ingress, same MagicDNS hostname, same container image tag 
 
 ## Header Discovery Maintenance
 
-When Anthropic updates Claude CLI, required headers may change. Maintenance procedure:
+Current header provenance is documented in `docs/audits/header-provenance.md` and operationalized in `RUNBOOK.md`. Key closeout status:
 
-1. Install updated Claude CLI
-2. Sniff traffic via mitmproxy: `mitmdump --set flow_detail=4 -p 8888`
-3. Route CLI through proxy: `HTTPS_PROXY=http://127.0.0.1:8888 claude --print "hello"`
-4. Compare captured headers against constants in `services/oauth-proxy/src/provider_impl.rs` and `crates/anthropic-auth/src/constants.rs`
-5. Update constants, run tests
+- `USER_AGENT` came from a Loom mitmproxy capture of Claude CLI v2.0.76 `/v1/messages` traffic.
+- `x-anthropic-billing-header` came from Claude Code v2.1.128 `--debug-file` output plus a successful direct proxy curl.
+- A later Claude Code v2.1.132 local MITM capture saw the debug attribution line but did not see `x-anthropic-billing-header` on the actual `/v1/messages` request. Treat `cch=00000` as debug-attribution data with unknown semantics, not as a proven on-wire Claude Code header.
+- The current proxy injection remains unchanged until a separate operator-approved live A/B validates removal, replacement, or a runtime toggle.
+
+When Anthropic updates Claude CLI, required headers may change. Refresh by capturing actual `/v1/messages` wire traffic and comparing it with any Claude Code `--debug-file` attribution; do not infer constants from version numbers alone. Compare the captured values against `services/oauth-proxy/src/provider_impl.rs`, update only with evidence, and run `mise run ci`.
 
 ---
 

@@ -1,6 +1,6 @@
 # Spec Addendum: Operator Migration — Traffic Routing
 
-**Status:** Complete — Ingress-only tailnet exposure, live cluster checks still open
+**Status:** Complete — Ingress-only tailnet exposure live-validated 2026-05-09
 **Created:** 2026-02-08
 **Relates to:** Spec A (operator-migration.md v0.0.112)
 **Scope:** k8s/ directory only
@@ -13,7 +13,7 @@ Spec A (operator migration) successfully removed the `tailscaled` sidecar, but i
 
 The current manifest shape is Ingress-only tailnet exposure: `k8s/service.yaml` is a plain ClusterIP Service with no Tailscale annotations, and `k8s/ingress.yaml` uses `ingressClassName: tailscale` with `tls.hosts: [anthropic-oauth-proxy]`. The Ingress owns the MagicDNS hostname and routes tailnet HTTP traffic to the Service.
 
-The source manifests are complete. The remaining unchecked criteria require live cluster evidence: only one Tailscale proxy pod, Ingress routing to the Service, tailnet `/health` returning 200, and upstream proxy requests completing.
+The source manifests are complete and live cluster evidence was captured on 2026-05-09: one Tailscale proxy pod owned the hostname, Ingress routed to the Service backend, tailnet `/health` returned 200, and Pi traffic through the deployed proxy completed successfully.
 
 ---
 
@@ -163,10 +163,10 @@ The annotations block is removed entirely. The Service remains a plain ClusterIP
 - [x] `k8s/kustomization.yaml` updated to include ingress.yaml
 - [x] `kubectl kustomize k8s/` validates successfully
 - [x] `k8s/service.yaml` — remove `tailscale.com/expose` and `tailscale.com/hostname` annotations
-- [ ] Only one Tailscale proxy pod exists for `anthropic-oauth-proxy` (the Ingress one)
-- [ ] Ingress resolves to the Service ClusterIP (requires cluster deployment)
-- [ ] HTTP GET to `https://anthropic-oauth-proxy/health` from tailnet returns 200 (requires cluster deployment)
-- [ ] Upstream proxy requests (to api.anthropic.com) complete successfully (requires cluster deployment)
+- [x] Only one Tailscale proxy pod exists for `anthropic-oauth-proxy` (the Ingress one) — 2026-05-09: `ts-anthropic-oauth-proxy-mrcz2-0` was the only matching `tailscale-operator` pod.
+- [x] Ingress resolves to the Service ClusterIP — 2026-05-09 `kubectl describe ingress`: `/   anthropic-oauth-proxy:80 (10.244.1.109:8080)`.
+- [x] HTTP GET to `https://anthropic-oauth-proxy/health` from tailnet returns 200 — 2026-05-09: `HTTP/2 200` and health JSON reported `"status":"healthy"`.
+- [x] Upstream proxy requests (to api.anthropic.com) complete successfully — 2026-05-09 Pi `anthropic-proxy` smoke returned `live-proxy-ok`; proxy logs showed POST `/v1/messages` status 200.
 
 ---
 

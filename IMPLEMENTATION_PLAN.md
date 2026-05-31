@@ -4,7 +4,21 @@ Previous build history archived at IMPLEMENTATION_PLAN_v2.md (v0.0.125, 199 test
 
 ## Current Spec
 
-None active.
+Recently completed closeout: deployed proxy live validation and plan/spec evidence refresh.
+
+2026-05-09 live evidence:
+- `mise run live:validate` is the local/operator live gate. It is intentionally not a GitHub CI gate because it requires kube/Tailscale credentials; deterministic source gates remain in `mise run ci` and `.github/workflows/ci.yml`.
+- ArgoCD reported `anthropic-oauth-proxy` as `Synced` and `Healthy` at revision `43e62ca97ac27e118e44525beb02b7ddc60a0c51`.
+- Tailscale Ingress `anthropic-oauth-proxy` routed `/` to `anthropic-oauth-proxy:80 (10.244.1.109:8080)`; exactly one `ts-anthropic-oauth-proxy-*` pod was running.
+- Tailnet health returned `HTTP/2 200` with `status: healthy`, `mode: anthropic`, and one available account.
+- Pi traffic through `anthropic-proxy` returned `live-proxy-ok`; a scratch-dir Pi file-write/tool request created and read `live-validation.txt` successfully.
+- Phoenix `default` project showed recent `proxy_request` spans with `http.request.method=POST`, `http.response.status_code=200`, `url.path=/v1/messages`, `server.address=https://api.anthropic.com`, and flattened `metadata.proxy.*` fields.
+
+Remaining explicit deferrals:
+- Current Claude Code header drift capture remains a separate sooner-rather-than-later follow-up; runtime `x-anthropic-billing-header` behavior stays unchanged.
+- Extended multi-minute Claude Code long-session soak is deferred; the 2026-05-09 live smoke covered Pi file-write/tool traffic, not a broad soak.
+- Phoenix controlled error/failover metadata validation is deferred; successful spans omit `metadata.proxy.error_type` because the source value is null.
+- Full Prometheus event coverage is deferred until error/failover/quota events occur or are generated in a controlled test.
 
 ## Baseline
 

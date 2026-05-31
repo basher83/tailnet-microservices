@@ -31,8 +31,17 @@ run = "cargo build --workspace"
 description = "Release build + binary size check (15 MB limit, mirrors CI)"
 run = """
 cargo build --workspace --release
-SIZE=$(stat -c%s target/release/anthropic-oauth-proxy 2>/dev/null || echo 0)
+BIN=target/release/anthropic-oauth-proxy
 LIMIT=15728640
+if [ ! -f "$BIN" ]; then
+  echo "FAIL: release binary missing: $BIN"
+  exit 1
+fi
+if [ ! -s "$BIN" ]; then
+  echo "FAIL: release binary is empty: $BIN"
+  exit 1
+fi
+SIZE=$(wc -c < "$BIN" | tr -d '[:space:]')
 if [ "$SIZE" -gt "$LIMIT" ]; then
   echo "FAIL: binary ${SIZE} bytes exceeds ${LIMIT} byte limit"
   exit 1
@@ -58,6 +67,59 @@ kubectl kustomize k8s/ > /tmp/rendered.yaml
 echo "Kustomize render: OK"
 kubeconform -summary -output json /tmp/rendered.yaml
 echo "Kubeconform validate: OK"
+"""
+
+# Local/operator live gate. GitHub CI cannot run this because it needs
+# kube/Tailscale credentials; deterministic source gates remain in `ci`.
+[tasks."live:validate"]
+description = "Read-only live validation for deployed proxy path"
+run = """
+set -eu
+NS=anthropic-oauth-proxy
+APP=anthropic-oauth-proxy
+HOST=https://anthropic-oauth-proxy.tailfb3ea.ts.net
+kubectl config current-context
+kubectl -n argocd get app "$APP" \
+  -o 'jsonpath=ArgoCD app {.metadata.name}: sync={.status.sync.status} health={.status.health.status}{"\\n"}'
+kubectl -n "$NS" get ingress,svc,pods,pvc -o wide
+POD_COUNT=$(kubectl -n "$NS" get pods -l app=anthropic-oauth-proxy --no-headers | wc -l | tr -d '[:space:]')
+if [ "$POD_COUNT" -lt 1 ]; then
+  echo "FAIL: no anthropic-oauth-proxy pods found"
+  exit 1
+fi
+echo "Proxy pod count: $POD_COUNT"
+TS_COUNT=$(kubectl -n tailscale-operator get pods --no-headers | grep -c '^ts-anthropic-oauth-proxy-')
+if [ "$TS_COUNT" != "1" ]; then
+  echo "FAIL: expected 1 Tailscale proxy pod, found $TS_COUNT"
+  exit 1
+fi
+echo "Tailscale proxy pod count: $TS_COUNT"
+kubectl -n "$NS" describe ingress "$APP" | grep 'anthropic-oauth-proxy:80'
+STATUS=$(curl -fsS -o /tmp/anthropic-oauth-proxy-health.json -w '%{http_code}' "$HOST/health")
+if [ "$STATUS" != "200" ]; then
+  echo "FAIL: $HOST/health returned HTTP $STATUS"
+  exit 1
+fi
+echo "Tailnet health HTTP $STATUS"
+jq -c . /tmp/anthropic-oauth-proxy-health.json
+PI_OUT=$(pi -p --provider anthropic-proxy --model claude-haiku-4-5 --thinking off --no-tools --no-context-files --no-session 'Reply exactly: live-proxy-ok' | tail -1)
+if [ "$PI_OUT" != "live-proxy-ok" ]; then
+  echo "FAIL: Pi proxy smoke returned: $PI_OUT"
+  exit 1
+fi
+echo "Pi proxy smoke: $PI_OUT"
+PHOENIX_HOST=https://phoenix.tailfb3ea.ts.net PHOENIX_PROJECT=default \
+  npx -y @arizeai/phoenix-cli span list --last-n-minutes 30 \
+  --limit 50 --format raw --no-progress > /tmp/anthropic-oauth-proxy-phoenix-spans.json
+jq '[.[] | select(.name == "proxy_request" and .attributes["url.path"] == "/v1/messages" and .attributes["metadata.proxy.pool_mode"] == "oauth")]' \
+  /tmp/anthropic-oauth-proxy-phoenix-spans.json > /tmp/anthropic-oauth-proxy-phoenix-proxy-spans.json
+SPAN_COUNT=$(jq 'length' /tmp/anthropic-oauth-proxy-phoenix-proxy-spans.json)
+if [ "$SPAN_COUNT" -lt 1 ]; then
+  echo "FAIL: Phoenix span query returned no proxy spans"
+  exit 1
+fi
+echo "Phoenix proxy span count: $SPAN_COUNT"
+jq -c '.[0] | {name,status_code,attrs:{method:.attributes["http.request.method"],status:.attributes["http.response.status_code"],path:.attributes["url.path"],pool:.attributes["metadata.proxy.pool_mode"]}}' /tmp/anthropic-oauth-proxy-phoenix-proxy-spans.json
 """
 
 # ── Cross-compile ─────────────────────────────────────────

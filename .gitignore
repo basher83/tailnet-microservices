@@ -25,9 +25,10 @@ logs/
 *.key
 secrets/
 
-# Ralph artifacts
+# Ralph / local agent artifacts
 IMPLEMENTATION_PLAN.md
 TASK.md
+.until-done/
 
 # Claude Code proprietary/local state (skills, commands, docs)
 .claude/commands/
