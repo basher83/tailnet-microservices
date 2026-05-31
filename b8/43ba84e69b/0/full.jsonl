@@ -831,3 +831,4 @@
 {"type":"ai-title","aiTitle":"Check git status and report current state","sessionId":"1704c18e-1ef2-4aec-a61c-24463d3d6d39"}
 {"type":"mode","mode":"normal","sessionId":"1704c18e-1ef2-4aec-a61c-24463d3d6d39"}
 {"type":"permission-mode","permissionMode":"bypassPermissions","sessionId":"1704c18e-1ef2-4aec-a61c-24463d3d6d39"}
+{"type":"queue-operation","operation":"enqueue","timestamp":"2026-05-31T07:46:59.812Z","sessionId":"1704c18e-1ef2-4aec-a61c-24463d3d6d39","content":"<task-notification>\n<task-id>bdlepbxp2</task-id>\n<tool-use-id>REDACTED</tool-use-id>\n<output-file>/private/tmp/claude-501/-Users-basher8383-3I-forge-tailnet-microservices/1704c18e-1ef2-4aec-a61c-24463d3d6d39/tasks/bdlepbxp2.output</output-file>\n<status>completed</status>\n<summary>Background command \"Write mise.toml diffs to files\" completed (exit code 0)</summary>\n</task-notification>"}
