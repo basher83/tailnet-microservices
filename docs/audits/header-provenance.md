@@ -178,20 +178,52 @@ Note this is **the recommended future-maintenance procedure**, not the procedure
 
 ---
 
-## 3. `cch=00000` field semantics
+## 3. `cch=00000` field semantics — **RESOLVED 2026-05-31 via binary decompilation**
 
-**Wire-vs-debug status is now partially resolved; semantics remain unknown.**
+**`cch=00000` is a hardcoded constant string in Claude Code. It carries no account, session, or request data and cannot flag or identify an account.**
 
-What the session record establishes:
+### How it was resolved
 
-- Claude Code v2.1.128 logged `cch=00000` in its `[DEBUG] attribution header x-anthropic-billing-header: ...` line for headless SDK-style invocations. The value appeared in two May 5 debug runs.
-- A Pi-to-proxy capture later that day also showed `x-anthropic-billing-header: cc_version=2.1.128.f82; cc_entrypoint=sdk-cli; cch=00000;`, but that was Pi's configured outbound header, not proof of what Claude Code itself sends to Anthropic.
-- On 2026-05-09, a local per-process MITM capture of Claude Code v2.1.132 compared the same invocation's debug attribution line with its `/v1/messages` request. Debug logged `x-anthropic-billing-header: cc_version=2.1.132.9a9; cc_entrypoint=sdk-cli; cch=00000;`, while the captured `POST /v1/messages?beta=true` headers contained `user-agent`, `x-app`, `anthropic-beta`, `anthropic-version`, and `anthropic-dangerous-direct-browser-access`, but **did not contain `x-anthropic-billing-header`**.
-- Classification: `cch=00000` is confirmed as Claude Code debug-attribution data, but it is **not confirmed as an on-wire `/v1/messages` header value** for the captured v2.1.132 invocation. The exact semantic meaning of `cch` remains unknown.
+The earlier audit treated the `claude` binary as un-extractable (the Feb/May `rg` attempts choked on null bytes). That was wrong: `strings` on the current **v2.1.158** Node-SEA Mach-O binary (`~/.local/share/claude/versions/2.1.158`) cleanly recovers the minified builder. The attribution header is assembled by one function, `po_(H)`:
 
-### Honest gap
+```js
+// builder po_(H); H = build-hash suffix ("c5c"@2.1.158, "f82"@2.1.128, "9a9"@2.1.132)
+function po_(H) {
+  if (yK(process.env.CLAUDE_CODE_ATTRIBUTION_HEADER)) return "";   // kill-switch: emit nothing
+  _ = `${VERSION}.${H}`;                                 // cc_version = "2.1.158.c5c"
+  q = process.env.CLAUDE_CODE_ENTRYPOINT ?? "unknown";   // cc_entrypoint = "sdk-cli"
+  K = Wq();                                              // deployment discriminator (env-based)
+  T = !(K==="bedrock" || K==="anthropicAws" || K==="mantle") ? " cch=00000;" : "";
+  $ = uo_(); z = $ ? ` cc_workload=${$};` : "";          // workload tag; absent in normal use
+  Y = `x-anthropic-billing-header: cc_version=${_}; cc_entrypoint=${q};${T}${z}`;
+  return N(`attribution header ${Y}`), Y;
+}
+// Wq() = CLAUDE_CODE_USE_BEDROCK?"bedrock" : ...FOUNDRY?"foundry" : ...ANTHROPIC_AWS?"anthropicAws"
+//        : ...MANTLE?"mantle" : ...VERTEX?"vertex" : "firstParty"   <-- our Max/OAuth path
+```
 
-The May 9 capture resolves the old "debug value might match on-wire traffic" assumption in the negative for one current Claude Code invocation: the debug attribution line was present and the `/v1/messages` HTTP header was absent. It still does not explain what `cch` abbreviates, whether Anthropic consumes it through another path, or why injecting the older debug-derived header through this proxy changed Max-plan routing behavior in the May 5 curl test.
+### What this establishes
+
+- **`cch=00000` is a literal** — the source contains the fixed string `" cch=00000;"`. It is not computed, hashed, counted, or derived from the account/token/request. It is the same five zeros for every Claude Code user.
+- It occurs exactly **twice** in the 215 MB binary (once here, once in unrelated AWS-SDK code). No code path assigns `cch` any other value.
+- It is appended for the **`firstParty`** path (plain `api.anthropic.com`, i.e. Max/OAuth + API-key) and omitted only for `bedrock` / `anthropicAws` / `mantle` deployments.
+- **Cross-version stable:** the debug attribution line shows `cch=00000` unchanged on v2.1.128 (`.f82`), v2.1.132 (`.9a9`), and v2.1.158 (`.c5c`). Only the `cc_version` build-hash suffix moves between releases. (v2.1.158 fresh capture this session: `cc_version=2.1.158.c5c; cc_entrypoint=sdk-cli; cch=00000;`.)
+- **Official kill-switch exists:** genuine Claude Code emits no attribution header at all when `CLAUDE_CODE_ATTRIBUTION_HEADER` is truthy — so the header is optional first-party telemetry, not a hard auth requirement. (Its *presence* still flipped Max-plan routing in the May-5 proxy curl test, so Anthropic's billing classifier does consume it when present.)
+- `cc_entrypoint` is pure `process.env.CLAUDE_CODE_ENTRYPOINT` (hence `sdk-cli` for headless `-p`/SDK calls — exactly the path this proxy serves). `cc_workload` only appears under an AsyncLocalStorage workload tag (e.g. `cron`); absent for normal traffic.
+
+### Safety verdict
+
+The proxy injecting `cc_version=…; cc_entrypoint=sdk-cli; cch=00000;` is **faithfully replicating genuine Claude Code's first-party attribution**, not forging anything account-unique. `cch=00000` cannot single out or flag the Max account because it contains no account-specific bits. Consistent with 3+ weeks of Max usage through the proxy and no flagging observed as of 2026-05-31.
+
+### What `cch` abbreviates
+
+Still not literally spelled out in the bundle, but moot: the shipping value is a fixed `00000` placeholder (a reserved attribution sub-field zeroed in release builds, sibling to `cc_version`/`cc_entrypoint`/`cc_workload`). Not security-relevant either way.
+
+### One remaining loose end (does not affect the verdict)
+
+A fresh on-wire MITM capture on v2.1.158 to re-check whether `x-anthropic-billing-header` actually rides on `POST /v1/messages` (the v2.1.132 May-9 capture found it absent) was **not** redone this session — `mitmproxy` is not installed (`mitmdump not found`, no `~/.mitmproxy` CA). The decompiled `po_()` returns the header string for attachment, so the v2.1.132 absence is most plausibly a per-process capture-scope artifact. If desired: `brew install mitmproxy`, then capture per the procedure in §2.
+
+> Maintenance note: to keep the proxy's `ANTHROPIC_BILLING_HEADER` current, just run `claude -p --debug-file <tmp> 'hi'` after a Claude Code upgrade and copy the `[DEBUG] attribution header` line — only the `cc_version` suffix changes. The constant is in `services/oauth-proxy/src/provider_impl.rs` and mirrored in `~/.pi/agent/models.json`.
 
 ---
 

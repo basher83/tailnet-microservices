@@ -7,6 +7,9 @@ rust = { version = "stable", components = "rustfmt,clippy" }
 "cargo:cargo-audit" = "latest"
 "cargo:cargo-zigbuild" = "latest"
 kubeconform = "latest"
+# Header-capture tooling for RUNBOOK "Header Discovery Maintenance" and
+# docs/audits/header-provenance.md (sniff Claude CLI /v1/messages traffic).
+"pipx:mitmproxy" = "latest"
 
 # ── Format ────────────────────────────────────────────────
 [tasks.fmt]
