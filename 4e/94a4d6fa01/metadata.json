@@ -1,0 +1,35 @@
+{
+  "cli_version": "0.6.3",
+  "checkpoint_id": "4e94a4d6fa01",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".gitignore",
+    "IMPLEMENTATION_PLAN.md",
+    "RUNBOOK.md",
+    "mise.toml",
+    "services/oauth-proxy/src/provider_impl.rs",
+    "specs/README.md",
+    "specs/anthropic-oauth-gateway.md",
+    "specs/generic-client-support.md",
+    "specs/operator-migration-addendum.md",
+    "specs/otel-trace-instrumentation.md",
+    "specs/streaming-timeout-fix.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/4e/94a4d6fa01/0/metadata.json",
+      "transcript": "/4e/94a4d6fa01/0/full.jsonl",
+      "content_hash": "/4e/94a4d6fa01/0/content_hash.txt",
+      "prompt": "/4e/94a4d6fa01/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 5623,
+    "cache_creation_tokens": 27899,
+    "cache_read_tokens": 93774,
+    "output_tokens": 3282,
+    "api_call_count": 5
+  }
+}

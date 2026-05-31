@@ -1,0 +1,1 @@
+check git status and report current state
