@@ -45,6 +45,12 @@ spec:
               value: info
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://phoenix-helm-svc.phoenix.svc.cluster.local:4317"
+            # Phoenix project routing (lever B of the project taxonomy decision,
+            # llm-observability-stack friction-log entry 3). Rust SDK Resource::builder()
+            # includes EnvResourceDetector (opentelemetry_sdk 0.31), so this needs no
+            # code change. Reverses D5a Option C co-tenancy in `default` by design.
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "openinference.project.name=anthropic-oauth-proxy"
           volumeMounts:
             - name: config
               mountPath: /etc/anthropic-oauth-proxy
