@@ -1,3 +1,8 @@
+---
+status: Active
+created: 2026-02-08
+---
+
 # Spec: Anthropic OAuth Gateway
 
 **Status:** Implemented; runtime PKCE provisioning blocked by Anthropic policy
@@ -271,10 +276,11 @@ pub enum AccountStatus {
 | `Available` | 401/403 | `Disabled` | Log error, return upstream error immediately |
 | `Available` | Transient error | `Available` | Retry (existing retry loop) |
 | `CoolingDown` | Cooldown expired | `Available` | Log recovery |
-| `CoolingDown` | Token refresh fails | `Disabled` | Log error |
+| `CoolingDown` | Token refresh permanently rejected | `Disabled` | Log error |
+| `CoolingDown` | Token refresh fails transiently | `CoolingDown` | Log warning, retry next cycle |
 | `Disabled` | Admin removes | (removed) | Persist credential file |
 
-State transitions apply uniformly: a 401/403 from token refresh (request-time or background) transitions the account to `Disabled` regardless of previous state. `CoolingDown` accounts that fail background refresh go directly to `Disabled`.
+State transitions apply uniformly: a *permanent* token-refresh rejection — HTTP 401/403, or an OAuth `invalid_grant` (which Anthropic returns as HTTP **400**) — transitions the account to `Disabled` regardless of previous state, from both the request-time (inline) and background refresh paths. A *transient* refresh failure (network error, 5xx, 429) does **not** disable the account: the inline path skips it for that selection and the background task leaves it unchanged, so it is retried on the next request or refresh cycle.
 
 ### Account Selection (Round-Robin)
 
@@ -435,7 +441,8 @@ Before each proxied request, the gateway checks the selected account's token exp
 | Token valid (>60s remaining) | Use current access token |
 | Token expiring (<60s) or expired | Refresh via `POST /v1/oauth/token` with `grant_type=refresh_token` |
 | Refresh succeeds | Update in-memory + persist to credential file |
-| Refresh fails | Mark account `Disabled`, failover to next |
+| Refresh permanently rejected (`invalid_grant` / 401 / 403) | Mark account `Disabled`, failover to next |
+| Refresh fails transiently (network / 5xx / 429) | Leave account `Available`, skip this selection, failover to next |
 
 ### Proactive Background Refresh
 
@@ -446,7 +453,7 @@ A background tokio task runs independently of request flow:
 | Check interval | 5 minutes | `refresh_interval_secs` |
 | Refresh threshold | 15 minutes | `refresh_threshold_secs` |
 
-The task iterates all accounts, refreshing any token expiring within the threshold. This prevents mid-request refresh latency under normal operation.
+The task iterates all accounts, refreshing any token expiring within the threshold. This prevents mid-request refresh latency under normal operation. A permanent rejection (`invalid_grant` / 401 / 403) marks the account `Disabled`; a transient failure leaves the account unchanged and is retried on the next cycle, so a temporary token-endpoint outage never disables an otherwise-valid account.
 
 ---
 
