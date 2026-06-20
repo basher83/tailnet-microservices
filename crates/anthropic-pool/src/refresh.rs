@@ -14,8 +14,10 @@ use crate::pool::{AccountStatus, Pool};
 /// Spawn a background task that proactively refreshes expiring tokens.
 ///
 /// Runs every `interval` and refreshes any token expiring within `threshold`.
-/// On 401/403 from the token endpoint, the account is marked Disabled.
-/// On transient errors, the account is left unchanged (next cycle will retry).
+/// On a permanently-invalid refresh token (HTTP 401/403, or an OAuth
+/// `invalid_grant` — which Anthropic returns as HTTP 400), the account is marked
+/// Disabled. On transient errors, the account is left unchanged (next cycle will
+/// retry).
 ///
 /// Returns a `JoinHandle` for the spawned task.
 pub fn spawn_refresh_task(

@@ -88,17 +88,7 @@ pub async fn refresh_token(client: &reqwest::Client, refresh: &str) -> Result<To
             .text()
             .await
             .unwrap_or_else(|_| String::from("<no body>"));
-
-        // 401/403 means the refresh token is revoked or invalid
-        if status.as_u16() == 401 || status.as_u16() == 403 {
-            return Err(Error::InvalidCredentials(format!(
-                "refresh token rejected ({status}): {body}"
-            )));
-        }
-
-        return Err(Error::TokenExchange(format!(
-            "token refresh returned {status}: {body}"
-        )));
+        return Err(classify_token_endpoint_error(status, &body));
     }
 
     response
@@ -107,9 +97,116 @@ pub async fn refresh_token(client: &reqwest::Client, refresh: &str) -> Result<To
         .map_err(|e| Error::TokenExchange(format!("invalid refresh response: {e}")))
 }
 
+/// Classify a non-success response from the token endpoint.
+///
+/// A refresh token that is revoked, expired, or otherwise unusable is a
+/// *permanent* condition — retrying never succeeds, so the account must be
+/// disabled. Per OAuth 2.0 (RFC 6749 §5.2) the token endpoint signals this with
+/// an `invalid_grant` error code in the response body. Anthropic returns it with
+/// HTTP 400 (not 401/403), so the status code alone is insufficient; we also
+/// inspect the body's `error` field. A bare 401/403 is treated as permanent too.
+///
+/// Everything else (5xx, 429, other 400s such as `invalid_request`) is treated
+/// as transient: the background refresh task leaves the account unchanged and
+/// retries on the next cycle.
+fn classify_token_endpoint_error(status: reqwest::StatusCode, body: &str) -> Error {
+    let invalid_grant = serde_json::from_str::<serde_json::Value>(body)
+        .ok()
+        .and_then(|v| v.get("error").and_then(|e| e.as_str()).map(str::to_owned))
+        .as_deref()
+        == Some("invalid_grant");
+
+    if status == reqwest::StatusCode::UNAUTHORIZED
+        || status == reqwest::StatusCode::FORBIDDEN
+        || invalid_grant
+    {
+        Error::InvalidCredentials(format!("refresh token rejected ({status}): {body}"))
+    } else {
+        Error::TokenExchange(format!("token refresh returned {status}: {body}"))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use reqwest::StatusCode;
+
+    // --- Token-endpoint error classification ---
+
+    #[test]
+    fn classify_400_invalid_grant_is_permanent() {
+        // The real Anthropic response when a refresh token is dead: HTTP 400 with
+        // an OAuth `invalid_grant` code. Must disable the account, not retry.
+        let body =
+            r#"{"error":"invalid_grant","error_description":"Refresh token not found or invalid"}"#;
+        assert!(
+            matches!(
+                classify_token_endpoint_error(StatusCode::BAD_REQUEST, body),
+                Error::InvalidCredentials(_)
+            ),
+            "400 invalid_grant must be classified permanent (InvalidCredentials)"
+        );
+    }
+
+    #[test]
+    fn classify_401_is_permanent() {
+        assert!(matches!(
+            classify_token_endpoint_error(StatusCode::UNAUTHORIZED, "<no body>"),
+            Error::InvalidCredentials(_)
+        ));
+    }
+
+    #[test]
+    fn classify_403_is_permanent() {
+        assert!(matches!(
+            classify_token_endpoint_error(StatusCode::FORBIDDEN, ""),
+            Error::InvalidCredentials(_)
+        ));
+    }
+
+    #[test]
+    fn classify_invalid_grant_wins_over_status() {
+        // `invalid_grant` is permanent regardless of the accompanying status code.
+        assert!(matches!(
+            classify_token_endpoint_error(StatusCode::BAD_GATEWAY, r#"{"error":"invalid_grant"}"#),
+            Error::InvalidCredentials(_)
+        ));
+    }
+
+    #[test]
+    fn classify_400_invalid_request_is_transient() {
+        // A non-credential 400 (e.g. malformed request) must NOT disable the account.
+        let body = r#"{"error":"invalid_request","error_description":"missing field"}"#;
+        assert!(matches!(
+            classify_token_endpoint_error(StatusCode::BAD_REQUEST, body),
+            Error::TokenExchange(_)
+        ));
+    }
+
+    #[test]
+    fn classify_500_is_transient() {
+        assert!(matches!(
+            classify_token_endpoint_error(StatusCode::INTERNAL_SERVER_ERROR, "upstream boom"),
+            Error::TokenExchange(_)
+        ));
+    }
+
+    #[test]
+    fn classify_429_is_transient() {
+        assert!(matches!(
+            classify_token_endpoint_error(StatusCode::TOO_MANY_REQUESTS, "slow down"),
+            Error::TokenExchange(_)
+        ));
+    }
+
+    #[test]
+    fn classify_non_json_body_is_transient() {
+        // Malformed/non-JSON body must not panic and must default to transient.
+        assert!(matches!(
+            classify_token_endpoint_error(StatusCode::BAD_REQUEST, "not json at all"),
+            Error::TokenExchange(_)
+        ));
+    }
 
     #[test]
     fn token_response_deserializes() {

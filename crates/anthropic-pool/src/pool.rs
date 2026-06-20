@@ -65,6 +65,17 @@ pub struct Pool {
     http_client: reqwest::Client,
 }
 
+/// Whether a token-refresh failure is permanent (the refresh token is revoked or
+/// invalid) versus transient (network blip, 5xx, rate-limit).
+///
+/// Permanent failures disable the account; transient failures leave it Available
+/// so a later request or the background refresh task can retry. This mirrors the
+/// background refresh task's classification so the inline and background paths
+/// agree on what counts as fatal.
+fn refresh_failure_is_permanent(err: &anthropic_auth::Error) -> bool {
+    matches!(err, anthropic_auth::Error::InvalidCredentials(_))
+}
+
 impl Pool {
     /// Create a new pool backed by the given credential store.
     ///
@@ -95,8 +106,9 @@ impl Pool {
     ///
     /// Scans all accounts starting from `next_index`. Expired cooldowns are
     /// transitioned to Available automatically. If a selected account's token
-    /// expires within 60 seconds, attempts an inline refresh; on failure, the
-    /// account is disabled and the scan continues.
+    /// expires within 60 seconds, attempts an inline refresh; a permanent
+    /// rejection (invalid_grant / 401 / 403) disables the account, while a
+    /// transient failure leaves it Available, and the scan continues either way.
     ///
     /// Returns `PoolExhausted` with pool counts if no account is available.
     pub async fn select(&self) -> Result<SelectedAccount> {
@@ -187,11 +199,18 @@ impl Pool {
                         });
                     }
                     Err(e) => {
-                        warn!(account_id = id, error = %e, "inline refresh failed, disabling account");
-                        self.statuses
-                            .write()
-                            .await
-                            .insert(id.clone(), AccountStatus::Disabled);
+                        if refresh_failure_is_permanent(&e) {
+                            warn!(account_id = id, error = %e, "inline refresh rejected (permanent), disabling account");
+                            self.statuses
+                                .write()
+                                .await
+                                .insert(id.clone(), AccountStatus::Disabled);
+                        } else {
+                            // Transient failure: do not disable. Skip this account for
+                            // this selection; it stays Available so the next request or
+                            // the background refresh task can retry.
+                            warn!(account_id = id, error = %e, "inline refresh failed (transient), skipping account this round");
+                        }
                         continue;
                     }
                 }
@@ -794,10 +813,41 @@ mod tests {
         assert_eq!(health["accounts_disabled"], 1);
     }
 
+    #[test]
+    fn refresh_failure_invalid_credentials_is_permanent() {
+        assert!(refresh_failure_is_permanent(
+            &anthropic_auth::Error::InvalidCredentials("revoked".into())
+        ));
+    }
+
+    #[test]
+    fn refresh_failure_http_is_transient() {
+        // A network/transport failure must NOT be treated as fatal.
+        assert!(!refresh_failure_is_permanent(&anthropic_auth::Error::Http(
+            "connection reset".into()
+        )));
+    }
+
+    #[test]
+    fn refresh_failure_token_exchange_is_transient() {
+        // A non-credential token-endpoint error (5xx/429/other) is transient.
+        assert!(!refresh_failure_is_permanent(
+            &anthropic_auth::Error::TokenExchange("token refresh returned 503".into())
+        ));
+    }
+
     #[tokio::test]
-    async fn select_with_expired_token_attempts_refresh() {
-        // Token with past expiry triggers inline refresh, which will fail
-        // (no real token endpoint), causing the account to be disabled
+    async fn select_with_expired_token_skips_unrefreshable_account() {
+        // A past-expiry token triggers an inline refresh against the real token
+        // endpoint. That refresh fails, so "expired" is never returned and "valid"
+        // (future expiry, no refresh needed) is selected instead.
+        //
+        // Whether "expired" ends up Disabled or merely skipped depends on how the
+        // refresh failure is classified — a permanent rejection (invalid_grant /
+        // 401 / 403) disables it; a transient failure (e.g. offline) leaves it
+        // Available to retry. We assert only the network-robust invariant here; the
+        // classification decision is covered deterministically by the
+        // `refresh_failure_is_permanent` unit tests above.
         let dir = tempfile::tempdir().unwrap();
         let store = test_store(
             &dir,
@@ -811,13 +861,15 @@ mod tests {
             reqwest::Client::new(),
         );
 
-        // Should fail refresh on "expired", disable it, then select "valid"
         let s = pool.select().await.unwrap();
-        assert_eq!(s.id, "valid");
+        assert_eq!(
+            s.id, "valid",
+            "an unrefreshable account must not be selected"
+        );
 
-        // "expired" should now be disabled
+        // "valid" remains available regardless of how "expired" was handled.
         let health = pool.health().await;
-        assert_eq!(health["accounts_disabled"], 1);
-        assert_eq!(health["accounts_available"], 1);
+        assert_eq!(health["accounts_total"], 2);
+        assert!(health["accounts_available"].as_u64().unwrap() >= 1);
     }
 }
