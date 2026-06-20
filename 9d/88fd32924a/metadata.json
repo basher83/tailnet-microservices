@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.7.5",
+  "checkpoint_id": "9d88fd32924a",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "RUNBOOK.md",
+    "specs/anthropic-oauth-gateway.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/9d/88fd32924a/0/metadata.json",
+      "transcript": "/9d/88fd32924a/0/full.jsonl",
+      "content_hash": "/9d/88fd32924a/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 288,
+    "cache_creation_tokens": 30461,
+    "cache_read_tokens": 4046160,
+    "output_tokens": 20317,
+    "api_call_count": 15
+  }
+}
