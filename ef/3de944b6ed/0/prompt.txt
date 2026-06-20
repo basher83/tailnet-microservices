@@ -1,0 +1,83 @@
+# Agent orientation
+
+First-turn context priming for new agent sessions.
+
+You are analyzing an unfamiliar project.
+
+Do a thorough but focused investigation to infer the following:
+- Repo structure & purpose
+- Load-bearing sections
+- Git history signals
+- Anti-overfitting guidance: overfit is grounding that raises the agent's confidence faster than it raises its verification — the agent acts on what x asserts without touching the file x pointed at.
+
+Return a concise structured report for the user with:
+- Executive summary (2-3 sentences)
+- Git history insights with specific commit refs or date ranges where helpful
+- Smells (Optional, report if present only): brief statements on "this caught my eye as out of place and the human should be aware"
+
+---
+
+proxies unauthenticated tailnet clients' requests to api.anthropic.com - that is factually false. the client must be on the tailnet to reach the proxy therefor it must be authenticated. the repo is almost entirely authored by an autonomous agent loop ("Ralph"/Entire/Smithers) - what part is not autonomous agent loops? what is "Ralph"/Entire/Smithers? a fabricated x-anthropic-billing-header - whats fabricated about this? distilled.md / IMPLEMENTATION_PLAN.md assert "passed live validation" with concrete evidence (pod names, span counts). - you sure about that? You really made a lot of assertions here in your orientation, good luck proving them true
+
+---
+
+No new report needed, I just need you to not assert untrue claims as true. Thats misleading and not tolerated or appreciated.
+
+---
+
+I would appreciate that. I don't expect you to have the binary true/false for every assertion; thats unrealistic. I do expect assertions to be qualified and grounded in true if presenting them as such. It is a mutually held constraint for both of us. Moving on, I need to check the health of the proxy
+
+---
+
+run the admin/logs path to find the disable cause
+
+---
+
+orbstack? orbstack has nothing to do with kubectl?
+
+---
+
+i cleaned it up and re installed kubectl. that still doesn't make any sense to me, i was pretty sure i had it installed via brew before. guess not
+
+---
+
+pull the live /admin/pool view (port-forward via the Docker kubectl) to confirm there's nothing else in the pool before reauth
+
+---
+
+pull the live /admin/pool view (port-forward via the brew kubectl) to confirm there's nothing else in the pool before reauth
+
+---
+
+THeres literally instructions: Adding an Account (Keychain Extraction)
+
+---
+
+It wasn't a silent failure. thats why we are here I got a 503:  Error: 503 {"error":{"message":"provider error: pool exhausted: {\"error\":{\"message\":\"All accounts
+ exhausted\",\"pool\":{\"accounts_available\":0,\"accounts_cooling_down\":0,\"accounts_disabled\":1,\"accounts_total\":1},\"type\
+ ":\"pool_exhausted\"}}","request_id":"req_d55e19c7293b442aaad1c0df7e2ab416","type":"proxy_error"}}
+
+ Error: 503 {"error":{"message":"provider error: pool exhausted: {\"error\":{\"message\":\"All accounts
+ exhausted\",\"pool\":{\"accounts_available\":0,\"accounts_cooling_down\":0,\"accounts_disabled\":1,\"accounts_total\":1},\"type\
+ ":\"pool_exhausted\"}}","request_id":"req_196328039fb043138b019adea8f04ffe","type":"proxy_error"}}
+
+ Error: 503 {"error":{"message":"provider error: pool exhausted: {\"error\":{\"message\":\"All accounts
+ exhausted\",\"pool\":{\"accounts_available\":0,\"accounts_cooling_down\":0,\"accounts_disabled\":1,\"accounts_total\":1},\"type\
+ ":\"pool_exhausted\"}}","request_id":"req_2be8e25306da4539826c530c79612cbb","type":"proxy_error"}}
+
+ Error: 503 {"error":{"message":"provider error: pool exhausted: {\"error\":{\"message\":\"All accounts
+ exhausted\",\"pool\":{\"accounts_available\":0,\"accounts_cooling_down\":0,\"accounts_disabled\":1,\"accounts_total\":1},\"type\
+ ":\"pool_exhausted\"}}","request_id":"req_3701bb95043848479176814c5c55ee81","type":"proxy_error"}}
+
+ Error: Retry failed after 3 attempts: 503 {"error":{"message":"provider error: pool exhausted: {\"error\":{\"message\":\"All
+ accounts
+ exhausted\",\"pool\":{\"accounts_available\":0,\"accounts_cooling_down\":0,\"accounts_disabled\":1,\"accounts_total\":1},\"type\
+ ":\"pool_exhausted\"}}","request_id":"req_3701bb95043848479176814c5c55ee81","type":"proxy_error"}}
+
+---
+
+ah ok i see what you meant now. yeah lets tackle that one
+
+---
+
+the inline select() path still disables on any refresh error - yeah we should patch that too while here
