@@ -1,0 +1,422 @@
+generated: 2026-06-25T06:04:30.120Z
+goalId: ud-dzu6t0
+goal: OAuth-proxy proxy_request span emits native-typed, content-free
+  metadata.proxy.* request-parameter fields read from the pristine pre-mutation
+  parsed_body via the existing SpanRecorder/Drop, with proxy.effort resolved
+  from a real captured /v1/messages body, shape-safe and adding no new body
+  parse on the OAuth path.
+doneCriteria: "All of: (G1) a real /v1/messages body captured live via the
+  proxy's Claude OAuth creds, top-level keys + thinking block quoted (content
+  redacted), proxy.effort decision
+  (real-key/dropped/derived-from-thinking.budget_tokens) recorded with
+  reasoning; (G2/G3) source-quoted confirmation parsed_body (proxy.rs ~265,
+  pre-mutation) is the read site and SpanRecorder/Drop (~59/~71) is the emission
+  mechanism, new fields added there with no info_span!/span.record path; (I1-I4)
+  15 nullable fields populated from parsed_body, no fabricated defaults, literal
+  dotted proxy.<field> keys, no new from_slice, content-free (counts/bools/enums
+  only), shape-divergent body degrades to null with documented
+  proxy.body_parse_error semantics and never fails the request; (V2) unit tests
+  for param-rich/minimal/passthrough-None/shape-divergent inputs with
+  native-typed assertions where param-rich vs minimal field sets differ (delta
+  != 0); (V3) span-emission inspection shows new proxy.* fields rendered as
+  native int/bool/float (non-stringified) in the metadata dict; (V1) the
+  verifyCommand passes with output tails quoted; capture artifacts removed and
+  no dead code (clippy -D warnings); and all tests in the verifyCommand pass. P1
+  (post-deploy Phoenix landing) is operator-terminal and explicitly out of the
+  agent's done-criteria."
+verifyCommand: mise run ci
+phase: cleanup
+askBefore:
+  - git commit or git push
+  - merge to main or trigger any deploy/CD pipeline
+  - run more than a few live billable Anthropic capture requests
+  - edit files outside the oauth-proxy capture scope (proxy.rs, telemetry.rs,
+    new params module, mise.toml capture tasks)
+decisionStyle: Smallest correct change that satisfies the gate literally; ground
+  decisions in measured evidence over assumption; pick the faster of two
+  equally-correct options.
+budget:
+  used: 1
+  max: 20
+tasks:
+  - id: T-001
+    title: Verify automation foundation + local↔GitHub parity for the oauth-proxy
+      scope
+    phase: bootstrap
+    status: done
+    dependencies: []
+    blocks:
+      - T-002
+      - T-003
+    prerequisites:
+      - description: mise + cargo toolchain available
+        cleared: false
+    validationSteps:
+      - mise tasks ls --json resolves fmt/lint/build/test/ci/headers:capture
+      - cargo test -p anthropic-oauth-proxy compiles+runs as the affected dev
+        suite
+      - mise run ci defined as release suite
+        (check+audit+build:release+k8s:validate)
+      - .github/workflows/ci.yml mirrors
+        fmt:check/lint/test/build:release/k8s:validate stages
+      - Record parity confirmation (local mise tasks == GitHub workflow runs)
+    ciCommands:
+      - mise tasks ls --json
+      - mise run check
+    styleguideRules:
+      - No package.json scripts; automation lives in mise.toml
+    guardrails:
+      - Do not rebuild existing CI; only verify + record parity gaps
+      - No new tooling unless a real gap exists
+    learnings:
+      - Crate package name is oauth-proxy (binary anthropic-oauth-proxy);
+        affected dev suite = cargo test -p oauth-proxy, 138 passed in 2.24s
+        baseline. Local mise run ci maps 1:1 to .github/workflows/ci.yml jobs
+        (Lint/Audit/Test/Build/Validate-K8s); Docker+Update-K8s-Tag are excluded
+        CD mechanics. Parity holds as close as environments allow.
+    gotchas:
+      - audit needs network advisory DB; k8s:validate needs kubeconform — both
+        can be flaky and are unrelated to this change
+    context:
+      - path: mise.toml
+        why: "canonical gates: ci/check/test/headers:capture tasks"
+      - path: .github/workflows/ci.yml
+        why: GitHub Agentic Workflow to verify parity against
+  - id: T-002
+    title: Source-confirm pristine read site (G2) and SpanRecorder/Drop emission (G3)
+    phase: analysis
+    status: done
+    dependencies:
+      - T-001
+    blocks:
+      - T-004
+    prerequisites:
+      - description: proxy.rs readable
+        cleared: true
+    validationSteps:
+      - Quote proxy.rs parsed_body produced by serde_json::from_slice in OAuth
+        mode (~265)
+      - Quote body_value = parsed_body.clone() immediately before
+        prepare_request mutates the clone (~298-302)
+      - Confirm Q25 read site is parsed_body; state passthrough mode
+        (parsed_body None) -> all new fields null
+      - Quote SpanRecorder struct (~59) and impl Drop (~71) where proxy.*
+        attributes are emitted
+      - Quote one existing native-typed field (proxy.failover_attempt int) as
+        the type-discipline reference
+      - State Q25 adds fields to SpanRecorder, populated after the parse, no
+        info_span!/span.record path
+    ciCommands: []
+    styleguideRules:
+      - native-typed discipline mirrors proxy.failover_attempt
+    guardrails:
+      - Evidence only; no code change in this task
+    learnings:
+      - "G2: parsed_body produced at proxy.rs:265-266 via serde_json::from_slice
+        in OAuth mode (Ok(v)=>Some(v)); the proxy mutates a CLONE at :298
+        (parsed_body.clone()) before prepare_request at :302 - parsed_body stays
+        pristine. Passthrough -> needs_body()==false -> parsed_body None -> all
+        null. G3: SpanRecorder struct :59-68 (failover_attempt:usize native
+        int), impl Drop :71-83 calls telemetry::record_span which puts
+        proxy.failover_attempt into the metadata JSON dict as native int. Q25
+        adds fields to SpanRecorder, no info_span!/span.record."
+    gotchas:
+      - telemetry.record_span serializes proxy.* into a single metadata JSON
+        string — native types are JSON numbers/bools inside that dict
+    context:
+      - path: services/oauth-proxy/src/proxy.rs
+        why: read site + SpanRecorder/Drop
+      - path: services/oauth-proxy/src/telemetry.rs
+        why: record_span metadata JSON construction
+  - id: T-003
+    title: Live-capture a real /v1/messages body and resolve proxy.effort
+      empirically (G1)
+    phase: analysis
+    status: done
+    dependencies:
+      - T-001
+    blocks:
+      - T-004
+    prerequisites:
+      - description: claude CLI on PATH
+        cleared: true
+      - description: mitmproxy provisioned via mise
+        cleared: false
+      - description: Proxy Claude OAuth creds usable for a thinking-enabled request
+        cleared: false
+    validationSteps:
+      - Drive claude CLI through mitmproxy (mise run headers:capture / body-dump
+        variant) with a thinking-enabled request, using the proxy's Claude OAuth
+        creds
+      - Quote the redacted top-level keys + the thinking block of one captured
+        /v1/messages body
+      - State the effort wire key verbatim OR 'no top-level effort key present
+        on the wire' with captured evidence
+      - Record proxy.effort decision (real-key / dropped /
+        derived-from-thinking.budget_tokens) with one line of reasoning
+    ciCommands:
+      - mise run headers:capture
+    styleguideRules:
+      - No real request/response content lands in repo or workspace root
+    guardrails:
+      - Redact message content
+      - Few capture requests only (ask-before for more)
+      - Capture artifacts go to a scratch path, removed in T-007
+    learnings:
+      - "G1 captured real /v1/messages body from claude-sonnet-4-6 (CC 2.1.191)
+        via mitmproxy. Top-level keys: context_management, diagnostics,
+        max_tokens, messages, metadata, model, output_config, stream, system,
+        thinking, tools. NO top-level effort/reasoning key
+        (effort_keys_present=[]). thinking block = {type:'adaptive'} with NO
+        budget_tokens. DECISION: drop proxy.effort (no wire key; adaptive
+        thinking has no budget to derive from; would be permanently-null AP-07).
+        thinking_enabled = present && type!='disabled' (corrects handoff's
+        ==enabled, since CC uses adaptive). thinking_budget_tokens nullable,
+        null on adaptive wire."
+    gotchas:
+      - Anthropic Messages API has no top-level effort key; thinking ships as a
+        thinking block — but G1 demands a real captured body, not documentary
+        schema
+      - "#[serde(alias)] hedge is NOT an acceptable substitute for reading a
+        real body"
+      - Modern Claude Code thinking is {type:'adaptive'} with no budget_tokens;
+        a literal thinking.type=='enabled' check would be vacuously false on all
+        real CC traffic. temperature/top_p/top_k/stop_sequences/tool_choice
+        absent from this real sonnet request (nullable - param-rich test must
+        add them).
+    context:
+      - path: scripts/capture-cc-headers.sh
+        why: sanctioned capture mechanism; may need body-dump
+      - path: docs/audits/header-provenance.md
+        why: on-wire beta flags; headers-only precedent
+      - path: /Users/basher8383/3I/forge/Q25-gate.md
+        why: Notes section appended with G1 effort decision + thinking correction
+  - id: T-004
+    title: "RED: failing tests for param extraction + native-type metadata + span
+      emission (V2/V3)"
+    phase: red
+    status: done
+    dependencies:
+      - T-002
+      - T-003
+    blocks:
+      - T-005
+    prerequisites:
+      - description: field set + effort decision settled (T-002/T-003)
+        cleared: false
+    validationSteps:
+      - "Add tests: extract(param-rich), extract(minimal RUNBOOK E2E shape),
+        extract(None), extract(shape-divergent)"
+      - Param-rich asserts native types (max_tokens int, stream bool,
+        temperature float, tools_count length) and differs from minimal (delta
+        != 0)
+      - Add metadata-serialization/span-emission test asserting non-stringified
+        int/bool/float in the metadata dict
+      - Assert I4 body_parse_error behavior on the shape-divergent body
+      - Run cargo test -p anthropic-oauth-proxy and confirm the new tests FAIL
+        (RED before GREEN)
+    ciCommands:
+      - cargo test -p anthropic-oauth-proxy
+    styleguideRules:
+      - Tests target the extraction contract boundary (body Value -> param set),
+        not internals
+      - Deterministic, isolated, parallel-safe; no real external systems
+    guardrails:
+      - No production extraction code yet — tests only
+      - Tests must be able to fail (no vacuous green)
+    learnings:
+      - "RED achieved: 7/8 params tests fail against the Default stub (none_body
+        passes by coincidence). V2 covers
+        param-rich/adaptive/disabled/minimal/none/shape-divergent + delta!=0; V3
+        covered by write_into native-type test. Field set finalized: 14 fields
+        (gate's 15 minus dropped proxy.effort). body_parse_error semantics: set
+        when a present key has wrong type (present-but-wrong-type detection
+        makes the flag reachable)."
+    gotchas:
+      - "Binary crate: integration tests can't see private modules — use inline
+        #[cfg(test)] testing the public extract fn as the contract boundary"
+    context:
+      - path: services/oauth-proxy/src/telemetry.rs
+        why: existing metadata test patterns to mirror
+      - path: RUNBOOK.md
+        why: minimal E2E body shape (model + max_tokens + messages)
+  - id: T-005
+    title: "GREEN: implement params module; add SpanRecorder fields; wire
+      record_span (I1-I4)"
+    phase: green
+    status: done
+    dependencies:
+      - T-004
+    blocks:
+      - T-006
+      - T-007
+    prerequisites:
+      - description: RED tests exist and fail
+        cleared: false
+    validationSteps:
+      - "Create params.rs: ProxyParams struct + extract reading off the existing
+        parsed_body Value (defensive get/as_*; no unwrap/expect/? on field
+        access; no new from_slice)"
+      - 15 nullable fields, no fabricated defaults; literal dotted proxy.<field>
+        keys; content-free (counts/bools/enums only)
+      - Add fields to SpanRecorder; populate after parse; extend record_span to
+        serialize them into the metadata dict as native types
+      - Implement proxy.body_parse_error per I4 decision
+        (set-on-shape-divergence or removed-with-reasoning)
+      - Run cargo test -p anthropic-oauth-proxy and confirm T-004 tests now PASS
+    ciCommands:
+      - cargo test -p anthropic-oauth-proxy
+    styleguideRules:
+      - Nesting <=3, fns <=30 LOC, file <=200 LOC, single responsibility
+      - Capabilities/native-type discipline mirror existing proxy.* fields
+    guardrails:
+      - No new from_slice/from_str of the body beyond the existing ~265 parse
+      - MAX_BODY_SIZE unchanged
+      - No content capture
+      - Read parsed_body (pristine), not the mutated clone
+    learnings:
+      - "GREEN: 146 tests pass (138 baseline + 8 new). ProxyParams::extract
+        reads off existing parsed_body (proxy.rs: span_recorder.params =
+        extract(parsed_body.as_ref()) before the clone/mutate). record_span
+        merges params.write_into(map) as native JSON. I2: only body from_slice
+        is the pre-existing :269 (others are from_stream/test); MAX_BODY_SIZE
+        10MiB unchanged. I3: counts via len_field, system_present via
+        contains_key, tool_choice via .type only - no content. I4: defensive
+        get/as_* returning Option; present-but-wrong-type sets body_parse_error;
+        no unwrap/expect/? on field access."
+    gotchas:
+      - thinking.budget_tokens / max_tokens may arrive as unexpected types —
+        type-checked navigation yields null, not panic
+      - Drop must still emit on every exit path
+    context:
+      - path: services/oauth-proxy/src/proxy.rs
+        why: SpanRecorder + parsed_body population site
+      - path: services/oauth-proxy/src/telemetry.rs
+        why: record_span metadata serialization to extend
+  - id: T-006
+    title: "REFACTOR: enforce structural limits + dedupe; clippy-clean"
+    phase: refactor
+    status: done
+    dependencies:
+      - T-005
+    blocks:
+      - T-008
+    prerequisites:
+      - description: GREEN tests pass
+        cleared: false
+    validationSteps:
+      - Each new fn <=30 LOC; params.rs <=200 LOC; nesting <=3; single
+        responsibility (extract helpers as needed)
+      - Minimal additions to proxy.rs/telemetry.rs; no duplicated extraction
+        logic
+      - cargo clippy --workspace -- -D warnings clean
+      - cargo fmt --all --check clean
+    ciCommands:
+      - cargo clippy --workspace -- -D warnings
+      - cargo fmt --all --check
+    styleguideRules:
+      - Structural constraints HARD across the new file
+      - Faster equally-correct option preferred
+    guardrails:
+      - Behavior-preserving; tests stay green
+      - Do not split pre-existing 722-LOC proxy.rs beyond the minimal additions
+        (out of gate scope)
+    learnings:
+      - "REFACTOR: extracted pure build_metadata(...) -> Value in telemetry.rs
+        (testable boundary, record_span delegates). Split both test modules to
+        sibling files via #[cfg(test)] #[path] (params_tests.rs,
+        telemetry_tests.rs) so every file <=200 LOC: params.rs 186, telemetry.rs
+        134, params_tests 118, telemetry_tests 125. All new fns <=30 LOC,
+        nesting <=3. clippy -D warnings clean, fmt clean, 147 tests pass.
+        proxy.rs left at pre-existing 730 LOC (out of gate scope per guardrail;
+        additions minimal)."
+    gotchas:
+      - Adding metadata fields can push telemetry.rs over 200 LOC — move param
+        JSON construction into params.rs
+    context:
+      - path: services/oauth-proxy/src/params.rs
+        why: new module subject to structural limits
+  - id: T-007
+    title: "CLEANUP: remove G1 capture artifacts and any dead code"
+    phase: cleanup
+    status: done
+    dependencies:
+      - T-005
+    blocks:
+      - T-008
+    prerequisites:
+      - description: Implementation landed
+        cleared: false
+    validationSteps:
+      - No captured bodies / mitmproxy dumps / --debug-file tempfiles in repo or
+        workspace root
+      - If proxy.effort dropped per G1, no dead field/struct member remains
+        (clippy -D warnings enforces)
+      - git status clean of scratch artifacts; diff is production-shaped (no
+        debug prints/TODOs/commented blocks)
+    ciCommands:
+      - git status --porcelain
+      - cargo clippy --workspace -- -D warnings
+    styleguideRules:
+      - Nothing containing real request content lands in repo or workspace root
+    guardrails:
+      - No test repos or scratch clones; target/ build output is normal, not
+        cleanup
+    learnings:
+      - "CLEANUP: removed G1 mitmproxy scratch temp dir + /tmp trackers; no
+        stray mitmdump; no captured bodies in repo or workspace root. git status
+        shows only intended changes (M main.rs/proxy.rs/telemetry.rs; new
+        params.rs/params_tests.rs/telemetry_tests.rs). No dbg!/println!/TODO.
+        'effort' appears only in params.rs doc comment documenting the
+        deliberate G1 drop - clippy -D warnings clean confirms no dead
+        field/struct member."
+    gotchas:
+      - Capture artifacts may be written to /tmp by capture-cc-headers.sh --keep
+        — ensure removed
+    context:
+      - path: scripts/capture-cc-headers.sh
+        why: where capture temp files originate
+  - id: T-008
+    title: "VERIFY: run verifyCommand and confirm all done-criteria with quoted
+      evidence (V1)"
+    phase: cleanup
+    status: done
+    dependencies:
+      - T-006
+      - T-007
+    blocks: []
+    prerequisites:
+      - description: Refactor + cleanup complete
+        cleared: false
+    validationSteps:
+      - Run mise run ci (fallback mise run check only if audit/k8s:validate
+        environment-flaky, surfaced explicitly)
+      - "Quote tails: fmt --check clean, clippy zero warnings, build success,
+        test pass count incl. new tests"
+      - Confirm V2 delta != 0 (param-rich vs minimal) and V3 native
+        int/bool/float non-stringified
+      - Call until_done_complete with literal command output as evidence
+    ciCommands:
+      - mise run ci
+    styleguideRules:
+      - Quote real stdout/stderr bytes, not paraphrase
+    guardrails:
+      - Do not claim done on proxy signals; only verifyCommand passing counts
+      - P1 is operator-terminal — not an agent completion criterion
+    learnings:
+      - "VERIFY: mise run ci failed ONLY at audit stage on pre-existing
+        unrelated CVE RUSTSEC-2026-0185 (quinn-proto 0.11.14 via reqwest; Q25
+        added zero deps - empty Cargo.toml/Cargo.lock diff). Fell back to mise
+        run check per approved contract = the gate-V1 bar (fmt --check && clippy
+        -D warnings && build && test). Results: fmt clean (exit 0); clippy zero
+        warnings; build Finished; oauth-proxy 147 passed/0 failed; full
+        workspace 231 passed (30+41+4+147+9)/0 failed. V2 delta!=0
+        (param_rich_and_minimal_field_sets_differ) + native-typed asserts pass;
+        V3 build_metadata_merges_q25_params_as_native_types +
+        write_into_emits_native_typed_values pass."
+    gotchas:
+      - If fallback to mise run check is used, state why audit/k8s:validate were
+        excluded
+    context:
+      - path: mise.toml
+        why: ci/check task definitions

@@ -21,3 +21,4 @@ docs/until-done/
 | Date | Goal | Phase | goalId | Generated (UTC) |
 |------|------|-------|--------|-----------------|
 | 2026-05-09 | [Deployed proxy live-validation closeout](./2026-05-09_live-validation-closeout_ud-j6rdih/) | cleanup | `ud-j6rdih` | 2026-05-09T07:33:06.167Z |
+| 2026-06-25 | [Q25 — OAuth-Proxy Request-Parameter Span Capture (distilled)](./2026-06-25_q25-oauth-proxy-request-parameter-span-capture-distilled_ud-dzu6t0/) | cleanup | `ud-dzu6t0` | 2026-06-25T06:04:30.120Z |
