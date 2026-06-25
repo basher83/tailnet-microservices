@@ -1,6 +1,12 @@
 # Header Provenance Investigation
 
-Investigates how two hardcoded constants in `services/oauth-proxy/src/provider_impl.rs` were originally obtained.
+Investigates how the hardcoded header constants in `services/oauth-proxy/src/provider_impl.rs` were originally obtained.
+
+> **Summary — provenance for both constants is established below.**
+> - `USER_AGENT = "claude-cli/2.0.76 (external, sdk-cli)"` → §1 (mitmproxy capture, via Loom)
+> - `ANTHROPIC_BILLING_HEADER = "cc_version=...; cc_entrypoint=sdk-cli; cch=00000;"` → §2 (live `--debug-file` capture)
+> - Known, accepted wire drift vs. genuine current Claude Code → §3 / "wire drift" sections
+> - Re-capture/maintenance → `scripts/capture-cc-headers.sh` (`mise run headers:capture`); also cited from `RUNBOOK.md`.
 
 > **Note on commit SHAs.** The task names commit `16f3cba` for the `USER_AGENT` literal. That commit exists (`16f3cba8098da1355d25db1dfdd298699406c118`, "feat: Phase 4 — Gateway integration (AnthropicOAuthProvider)", 2026-02-08 21:45:37 -0500), but its sibling `3739e7379b...` carries the same message and timestamp and is what is reachable from `main` for the file. Both share content. Neither carries an `Entire-Checkpoint` trailer (`entire checkpoint explain --commit 3739e73` and `--commit df6435d` both return *"no Entire-Checkpoint trailer ... created outside of an Entire session"*), so this investigation relied on Pi/Claude Code session transcripts directly rather than the Entire CLI.
 

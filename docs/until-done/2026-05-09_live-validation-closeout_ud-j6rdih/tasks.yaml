@@ -1,0 +1,365 @@
+generated: 2026-05-09T07:33:06.167Z
+goalId: ud-j6rdih
+goal: Run deployed anthropic-oauth-proxy live validation and update current
+  plan/spec evidence.
+doneCriteria: The deployed proxy is validated through live
+  ArgoCD/Kubernetes/Tailscale/Pi/Phoenix surfaces; automatable checks are
+  captured in `mise run live:validate`; current plan/spec evidence is updated
+  without changing runtime header behavior; live-only gaps are either closed
+  with quoted evidence or explicitly deferred with reason; all tests in `mise
+  run live:validate` pass, with final evidence quoting real command output.
+verifyCommand: mise run live:validate
+phase: cleanup
+askBefore:
+  - changing runtime `x-anthropic-billing-header` literal or injection behavior
+  - running MITM/capture tooling or trusting/importing any CA
+  - modifying mothership-gitops
+  - destructive kubectl/argocd operations
+  - restarting/deleting production pods
+  - changing production OTLP/Phoenix configuration
+  - committing raw prompts, request bodies, tokens, cookies, certs, keys, or
+    debug logs
+  - git push
+decisionStyle: Prefer smallest non-destructive live checks that produce durable
+  evidence; defer rather than guess.
+budget:
+  used: 1
+  max: 200
+tasks:
+  - id: T-001
+    title: Inspect current automation foundation and live-validation scope.
+    phase: bootstrap
+    status: done
+    dependencies: []
+    blocks:
+      - T-002
+      - T-003
+      - T-004
+      - T-005
+      - T-006
+      - T-007
+    prerequisites:
+      - description: User approved kube/Argo/Tailscale/Phoenix/Pi/Claude surfaces.
+        cleared: true
+    validationSteps:
+      - Run `mise tasks ls --json`.
+      - Inspect `mise.toml` and `.github/workflows/`.
+      - Inspect current plan/spec files.
+      - Record bootstrap gaps and parity boundary.
+    ciCommands:
+      - mise tasks ls --json
+    styleguideRules:
+      - Use mise-first CLI policy.
+      - Quote outputs before claiming gates pass.
+    guardrails:
+      - Read-only inspection only.
+      - No production changes.
+    learnings:
+      - Bootstrap inspection found canonical local gates in mise.toml (fmt,
+        lint, build, test, audit, k8s:validate, ci), GitHub CI mirrors
+        deterministic gates via mise, and live validation is not yet represented
+        as a mise task or GitHub gate.
+    gotchas:
+      - Live checks may be local/operator-only because GitHub lacks credentials.
+      - Working tree already contains prior closeout modifications and untracked
+        docs/audits/header-provenance.md before this live-validation loop; avoid
+        conflating new live-validation edits with pre-existing changes.
+    context:
+      - path: mise.toml
+        why: Local gate definitions.
+      - path: .github/workflows/
+        why: GitHub parity.
+      - path: specs/README.md
+        why: Spec index/status router.
+      - path: IMPLEMENTATION_PLAN.md
+        why: Current/recent plan doc.
+    notes: Inspected mise.toml, .github/workflows/ci.yml, specs/README.md,
+      IMPLEMENTATION_PLAN.md, and live-validation target specs. `mise tasks ls
+      --json` showed no live:validate task.
+  - id: T-002
+    title: Bootstrap `live:validate` as canonical automatable live gate.
+    phase: bootstrap
+    status: done
+    dependencies:
+      - T-001
+    blocks:
+      - T-003
+      - T-004
+      - T-005
+      - T-006
+      - T-007
+    prerequisites:
+      - description: Existing mise task layout inspected.
+        cleared: true
+    validationSteps:
+      - Prove `live:validate` is absent or incomplete before editing.
+      - Add minimal read-only deterministic live gate.
+      - Run `mise run live:validate`.
+      - Quote output.
+    ciCommands:
+      - mise run live:validate
+    styleguideRules:
+      - Keep shell/YAML small and single-purpose.
+    guardrails:
+      - No destructive kubectl.
+      - No secrets in output.
+      - Do not hide failures with `|| true`.
+    learnings:
+      - Added `mise run live:validate` as a read-only live gate covering current
+        kube context, ArgoCD app sync/health, namespace resources, proxy pod
+        presence, and tailnet /health HTTP 200 with sanitized JSON output.
+    gotchas:
+      - Live gate is not hermetic; document this explicitly.
+      - The live gate writes transient health JSON to
+        /tmp/anthropic-oauth-proxy-health.json; final cleanup should remove or
+        tolerate this scratch file outside repo.
+    context:
+      - path: mise.toml
+        why: Add local live-validation task.
+    notes: "`mise run live:validate` passed and printed ArgoCD sync=Synced
+      health=Healthy, one running proxy pod, Tailnet health HTTP 200, and health
+      JSON."
+  - id: T-003
+    title: Establish local ↔ GitHub parity boundary.
+    phase: bootstrap
+    status: done
+    dependencies:
+      - T-002
+    blocks:
+      - T-004
+      - T-005
+      - T-006
+      - T-007
+    prerequisites:
+      - description: "`live:validate` exists."
+        cleared: true
+    validationSteps:
+      - Inspect GitHub workflows.
+      - Document regular deterministic gates vs local live gate.
+      - Avoid adding unavailable production credentials to GitHub.
+    ciCommands:
+      - mise run live:validate
+    styleguideRules:
+      - Do not invent CI parity.
+    guardrails:
+      - Do not gate image builds on flaky live external checks unless approved.
+    learnings:
+      - "Local/GitHub parity boundary: `.github/workflows/ci.yml` runs
+        deterministic source gates with mise (fmt:check, lint, audit, test,
+        build:release, k8s:validate); `live:validate` is local/operator-only
+        because it requires kube/Tailscale credentials unavailable to GitHub."
+    gotchas:
+      - Pi-config parity requires explicit scoped exception for live cluster
+        access.
+      - Do not add live cluster checks to normal GitHub image/deploy gates
+        without explicit approval; they would be credential-dependent and
+        externally flaky.
+    context:
+      - path: .github/workflows/
+        why: CI parity boundary.
+      - path: mise.toml
+        why: Local gate source.
+    notes: Added mise.toml comment documenting live gate as local/operator-only and
+      re-ran `mise run live:validate` successfully.
+  - id: T-004
+    title: Validate ArgoCD/Kubernetes/Tailscale deployed proxy path.
+    phase: red
+    status: done
+    dependencies:
+      - T-003
+    blocks:
+      - T-005
+      - T-006
+      - T-007
+    prerequisites:
+      - description: Live validation automation bootstrapped.
+        cleared: true
+    validationSteps:
+      - Run read-only ArgoCD/kubectl app health checks.
+      - Confirm ingress/service/pods/PVC resource state.
+      - Confirm tailnet `/health` returns 200.
+      - Capture quoted evidence.
+    ciCommands:
+      - mise run live:validate
+    styleguideRules:
+      - Quote live output literally.
+    guardrails:
+      - No pod restarts/deletes.
+      - No mothership-gitops edits.
+    learnings:
+      - "Live ArgoCD/Kubernetes/Tailscale path validated: ArgoCD app is
+        Synced/Healthy at revision 43e62ca..., Ingress class tailscale routes
+        `/` to service anthropic-oauth-proxy:80 and pod 10.244.1.109:8080,
+        exactly one `ts-anthropic-oauth-proxy-*` pod exists, tailnet /health
+        returns HTTP/2 200 with healthy JSON."
+    gotchas:
+      - If cluster state is unavailable, block or explicitly defer.
+      - A malformed intermediate shell command failed due quoting around /tmp
+        redirection; reran the count with correct single-quoted shell and
+        verified count=1. Do not cite the failed command as evidence except as a
+        gotcha.
+    context:
+      - path: k8s/
+        why: Expected source manifest shape.
+      - path: specs/operator-migration-addendum.md
+        why: Live Tailscale/Argo evidence target.
+    notes: Captured quoted live evidence from kubectl app, ingress describe,
+      tailscale pod count, and curl health.
+  - id: T-005
+    title: Validate Pi/Claude proxy traffic and streaming timeout behavior.
+    phase: red
+    status: done
+    dependencies:
+      - T-004
+    blocks:
+      - T-006
+      - T-007
+    prerequisites:
+      - description: Deployed proxy reachable.
+        cleared: true
+    validationSteps:
+      - Check Pi/Claude headless CLI refs before running.
+      - Run minimal proxy smoke request.
+      - Run longer streaming/tool/file-write style request in scratch space.
+      - Confirm no timeout failure; inspect logs if available.
+      - Capture quoted output.
+    ciCommands:
+      - mise run live:validate
+    styleguideRules:
+      - Tests target live boundary behavior, not internals.
+    guardrails:
+      - No MITM/capture.
+      - No source-tree mutation from test prompts.
+    learnings:
+      - Pi/Claude headless CLI refs verified (`pi -p`, `claude -p`). Minimal Pi
+        proxy smoke returned `live-proxy-ok`; a scratch-dir Pi tool/file-write
+        request created and read `/tmp/tailnet-live-pi.../live-validation.txt`
+        through the deployed proxy; recent proxy logs show POST /v1/messages
+        status=200 for each request and no timeout/error/504 lines in the last
+        10 minutes.
+    gotchas:
+      - HTTP 200 alone is insufficient for streaming timeout validation.
+      - Pi emits warnings for stale default model patterns
+        (`anthropic/claude-*`) before successful anthropic-proxy output; those
+        warnings are client config noise, not proxy failure.
+    context:
+      - path: specs/streaming-timeout-fix.md
+        why: Live timeout validation criteria.
+      - path: services/oauth-proxy/src/proxy.rs
+        why: Timeout behavior reference.
+    notes: Scratch file was outside repo under /tmp. No MITM/capture used and no
+      source-tree mutation.
+  - id: T-006
+    title: Validate Phoenix/OTel trace evidence for live proxy traffic.
+    phase: red
+    status: done
+    dependencies:
+      - T-005
+    blocks:
+      - T-007
+    prerequisites:
+      - description: Live proxy traffic generated.
+        cleared: true
+    validationSteps:
+      - Load phoenix-cli skill.
+      - Query recent `service.name=anthropic-oauth-proxy` spans.
+      - Verify HTTP attrs and proxy metadata are present/queryable.
+      - Check Prometheus metrics if accessible.
+      - Capture quoted output.
+    ciCommands:
+      - mise run live:validate
+    styleguideRules:
+      - Validate public telemetry boundary.
+    guardrails:
+      - Do not alter production OTLP config.
+      - Do not leak tokens/prompts.
+    learnings:
+      - Phoenix validation found recent `proxy_request` spans in Phoenix default
+        project for live Pi traffic. Spans include status_code=OK,
+        http.request.method=POST, http.response.status_code=200,
+        url.path=/v1/messages, server.address=https://api.anthropic.com, and
+        flattened Phoenix metadata keys for account_id, failover_attempt,
+        pool_mode, and request_id.
+    gotchas:
+      - OTel data is exported to Phoenix, not stored in-container unless logs
+        show it.
+      - Phoenix CLI output flattens the OTel metadata JSON into
+        `metadata.proxy.*` attributes and omits `metadata.proxy.error_type` for
+        successful spans where the source value is null; full all-five
+        metadata-key validation remains deferred unless a controlled error span
+        is generated.
+    context:
+      - path: specs/otel-trace-instrumentation.md
+        why: Phoenix runtime validation criteria.
+      - path: services/oauth-proxy/src/telemetry.rs
+        why: Expected trace attrs.
+      - path: k8s/deployment.yaml
+        why: OTLP configuration.
+    notes: Also confirmed deployment sets OTEL_EXPORTER_OTLP_ENDPOINT to Phoenix
+      gRPC endpoint and metrics endpoint exposes
+      proxy_requests_total/proxy_request_duration_seconds; full six-metric
+      Prometheus criterion remains partial because metrics_exporter only renders
+      observed series and no error/failover/quota events occurred during
+      validation.
+  - id: T-007
+    title: Update plan/spec evidence, cleanup, and run final verification.
+    phase: cleanup
+    status: done
+    dependencies:
+      - T-004
+      - T-005
+      - T-006
+    blocks: []
+    prerequisites:
+      - description: Live evidence gathered or explicit blockers recorded.
+        cleared: true
+    validationSteps:
+      - Update `IMPLEMENTATION_PLAN.md` as current/recent plan doc.
+      - Update `specs/README.md` only as index/status router if statuses changed.
+      - Update relevant spec evidence/checklists with quoted evidence or
+        deferrals.
+      - Remove scratch/debug artifacts.
+      - Run `git status --short`.
+      - Run `git diff --check`.
+      - Run `mise run live:validate`.
+      - Run `mise run ci` if automation/docs changes require release-readiness
+        confirmation.
+      - Confirm no forbidden artifacts.
+    ciCommands:
+      - git status --short
+      - git diff --check
+      - mise run live:validate
+      - mise run ci
+    styleguideRules:
+      - Completion evidence must quote real outputs.
+      - Do not close checkboxes without evidence.
+    guardrails:
+      - Runtime header behavior remains unchanged.
+      - If Phoenix/Pi/kube evidence is missing, block or defer instead of
+        completing.
+    learnings:
+      - Updated IMPLEMENTATION_PLAN.md as current/recent plan doc,
+        specs/README.md as status router, and evidence sections in operator
+        migration, streaming timeout, and OTel specs. Final `mise run
+        live:validate`, `mise run ci`, and `git diff --check` passed; forbidden
+        capture/cert/key artifact search returned no matches.
+    gotchas:
+      - Final judge sees only goal/done criteria/verify command/evidence.
+      - Working tree still includes pre-existing closeout changes from before
+        this until-done loop plus new live-validation edits; final status must
+        be interpreted as cumulative uncommitted work, not only this loop.
+    context:
+      - path: IMPLEMENTATION_PLAN.md
+        why: Current/recent plan evidence.
+      - path: specs/README.md
+        why: Status router.
+      - path: specs/operator-migration-addendum.md
+        why: Tailscale/Argo evidence.
+      - path: specs/streaming-timeout-fix.md
+        why: Streaming evidence.
+      - path: specs/otel-trace-instrumentation.md
+        why: Phoenix/OTel evidence.
+      - path: mise.toml
+        why: Verify command.
+    notes: Cleanup removed /tmp health, port-forward, and scratch Pi files. Runtime
+      header behavior was not changed.

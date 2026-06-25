@@ -142,6 +142,13 @@ run = "cargo zigbuild --workspace --release --target aarch64-unknown-linux-gnu"
 description = "Capture & audit Claude Code Anthropic headers vs proxy constants"
 run = "./scripts/capture-cc-headers.sh"
 
+# ── until-done archive ────────────────────────────────────
+# Promote the gitignored .until-done/ run (distilled.md + tasks.yaml) into the
+# durable docs/until-done/ archive. Idempotent; leaves originals in place.
+[tasks."until-done:promote"]
+description = "Promote current .until-done run into docs/until-done/ archive"
+run = "./scripts/promote-until-done.sh"
+
 # ── Composite ─────────────────────────────────────────────
 [tasks.check]
 description = "Full pre-commit check: fmt → lint → build → test (sequential)"
