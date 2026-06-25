@@ -72,6 +72,7 @@ pub fn record_span(
     failover_attempt: usize,
     request_id: &str,
     pool_mode: &str,
+    params: &crate::params::ProxyParams,
 ) {
     use opentelemetry::trace::Status;
     use tracing_opentelemetry::OpenTelemetrySpanExt;
@@ -93,124 +94,41 @@ pub fn record_span(
 
     // Metadata JSON dict — Phoenix deserializes via load_json_strings,
     // making keys queryable as metadata["proxy.account_id"] etc.
-    let metadata = serde_json::json!({
+    let metadata = build_metadata(
+        account_id,
+        error_type,
+        failover_attempt,
+        request_id,
+        pool_mode,
+        params,
+    );
+    span.set_attribute("metadata", metadata.to_string());
+}
+
+/// Build the `metadata` JSON dict attached to the span. Pure and testable: the
+/// base routing fields plus Q25's request-parameter fields, merged in as
+/// native-typed JSON values (numbers/bools stay non-stringified for Phoenix).
+fn build_metadata(
+    account_id: Option<&str>,
+    error_type: Option<&str>,
+    failover_attempt: usize,
+    request_id: &str,
+    pool_mode: &str,
+    params: &crate::params::ProxyParams,
+) -> serde_json::Value {
+    let mut metadata = serde_json::json!({
         "proxy.account_id": account_id,
         "proxy.error_type": error_type,
         "proxy.failover_attempt": failover_attempt,
         "proxy.request_id": request_id,
         "proxy.pool_mode": pool_mode,
     });
-    span.set_attribute("metadata", metadata.to_string());
+    if let Some(map) = metadata.as_object_mut() {
+        params.write_into(map);
+    }
+    metadata
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn init_tracer_returns_none_when_env_unset() {
-        // Ensure the env var is not set for this test.
-        // SAFETY: test runs in a single-threaded context; no other thread
-        // reads this env var concurrently during this test.
-        unsafe {
-            std::env::remove_var("OTEL_EXPORTER_OTLP_ENDPOINT");
-        }
-
-        let result: Option<(
-            SdkTracerProvider,
-            OpenTelemetryLayer<tracing_subscriber::Registry, _>,
-        )> = init_tracer();
-        assert!(
-            result.is_none(),
-            "init_tracer must return None when OTEL_EXPORTER_OTLP_ENDPOINT is unset"
-        );
-    }
-
-    #[test]
-    fn metadata_json_format_correct() {
-        let metadata = serde_json::json!({
-            "proxy.account_id": Some("acct_123"),
-            "proxy.error_type": None::<String>,
-            "proxy.failover_attempt": 0,
-            "proxy.request_id": "req_abc",
-            "proxy.pool_mode": "oauth",
-        });
-        let json_str = metadata.to_string();
-        let parsed: serde_json::Value = serde_json::from_str(&json_str).unwrap();
-
-        assert_eq!(parsed["proxy.account_id"], "acct_123");
-        assert!(parsed["proxy.error_type"].is_null());
-        assert_eq!(parsed["proxy.failover_attempt"], 0);
-        assert_eq!(parsed["proxy.request_id"], "req_abc");
-        assert_eq!(parsed["proxy.pool_mode"], "oauth");
-    }
-
-    #[test]
-    fn metadata_json_passthrough_mode() {
-        let metadata = serde_json::json!({
-            "proxy.account_id": None::<String>,
-            "proxy.error_type": None::<String>,
-            "proxy.failover_attempt": 0,
-            "proxy.request_id": "req_xyz",
-            "proxy.pool_mode": "passthrough",
-        });
-        let parsed: serde_json::Value = serde_json::from_str(&metadata.to_string()).unwrap();
-
-        assert!(parsed["proxy.account_id"].is_null());
-        assert_eq!(parsed["proxy.pool_mode"], "passthrough");
-    }
-
-    #[test]
-    fn metadata_json_error_with_failover() {
-        let metadata = serde_json::json!({
-            "proxy.account_id": Some("acct_456"),
-            "proxy.error_type": Some("quota_exhausted"),
-            "proxy.failover_attempt": 3,
-            "proxy.request_id": "req_fail",
-            "proxy.pool_mode": "oauth",
-        });
-        let parsed: serde_json::Value = serde_json::from_str(&metadata.to_string()).unwrap();
-
-        assert_eq!(parsed["proxy.account_id"], "acct_456");
-        assert_eq!(parsed["proxy.error_type"], "quota_exhausted");
-        assert_eq!(parsed["proxy.failover_attempt"], 3);
-    }
-
-    #[test]
-    fn record_span_does_not_panic_without_otel_layer() {
-        // When no OTel layer is installed, record_span should be a safe no-op
-        record_span(
-            "POST",
-            "/v1/messages",
-            "api.anthropic.com",
-            200,
-            Some("acct_test"),
-            None,
-            0,
-            "req_test",
-            "oauth",
-        );
-    }
-
-    #[test]
-    fn record_span_error_status_codes() {
-        // Verify various status codes don't panic
-        for status in [200, 301, 400, 401, 429, 500, 503] {
-            record_span(
-                "GET",
-                "/v1/messages",
-                "api.anthropic.com",
-                status,
-                None,
-                if status >= 400 {
-                    Some("transient")
-                } else {
-                    None
-                },
-                0,
-                "req_status",
-                "passthrough",
-            );
-        }
-    }
-}
+#[path = "telemetry_tests.rs"]
+mod tests;

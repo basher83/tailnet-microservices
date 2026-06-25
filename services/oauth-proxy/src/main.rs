@@ -10,6 +10,7 @@
 mod admin;
 mod config;
 mod metrics;
+mod params;
 mod provider_impl;
 mod proxy;
 mod service;

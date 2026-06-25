@@ -66,6 +66,7 @@ struct SpanRecorder {
     account_id: Option<String>,
     error_type: Option<&'static str>,
     failover_attempt: usize,
+    params: crate::params::ProxyParams,
 }
 
 impl Drop for SpanRecorder {
@@ -80,6 +81,7 @@ impl Drop for SpanRecorder {
             self.failover_attempt,
             &self.request_id,
             &self.pool_mode,
+            &self.params,
         );
     }
 }
@@ -212,6 +214,7 @@ pub async fn proxy_request(
         account_id: None,
         error_type: None,
         failover_attempt: 0,
+        params: crate::params::ProxyParams::default(),
     };
 
     // Build the upstream URL by appending the request path and query
@@ -283,6 +286,11 @@ pub async fn proxy_request(
     } else {
         None
     };
+
+    // Q25: capture content-free request parameters off the pristine, pre-mutation
+    // parsed_body (passthrough mode -> None -> all-null). No new body parse: this
+    // reads the serde_json::Value the OAuth path already produced above.
+    span_recorder.params = crate::params::ProxyParams::extract(parsed_body.as_ref());
 
     // Maximum failover attempts equals the pool size (each attempt uses a
     // different account). Passthrough mode uses 1 attempt (no failover).
