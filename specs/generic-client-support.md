@@ -24,7 +24,7 @@ The proxy now injects the required Claude Code credential markers:
 3. `anthropic-dangerous-direct-browser-access: true` — injected
 4. `user-agent: claude-cli/2.0.76 (external, sdk-cli)` — injected
 5. `anthropic-version: 2023-06-01` — injected
-6. `x-anthropic-billing-header: cc_version=2.1.158.c5c; cc_entrypoint=sdk-cli; cch=00000;` — injected as the current proxy attribution marker for Max-plan routing
+6. `x-anthropic-billing-header: cc_version=2.1.198.bb7; cc_entrypoint=sdk-cli; cch=00000;` — injected as the current proxy attribution marker for Max-plan routing
 7. System prompt prefix: "You are Claude Code..." — injected for all requests with a string `model` field
 
 Header provenance caveat: a Claude Code v2.1.132 local MITM capture saw the billing-header debug attribution line but did not see `x-anthropic-billing-header` on the actual `/v1/messages` request. Treat `cch=00000` as debug-attribution data with unknown semantics; the proxy keeps the current injection unchanged until a separate live A/B validates a replacement or removal.

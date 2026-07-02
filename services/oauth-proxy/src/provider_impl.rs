@@ -30,12 +30,12 @@ const ANTHROPIC_VERSION: &str = "2023-06-01";
 
 /// Claude Code attribution header used by this proxy for Max-plan routing.
 /// Origin: Claude Code `--debug-file` attribution line. `cc_version` tracks the
-/// CC release (bumped to 2.1.158 on 2026-05-31 via `scripts/capture-cc-headers.sh`);
+/// CC release (bumped to 2.1.198 on 2026-07-02 via `scripts/capture-cc-headers.sh`);
 /// `cc_entrypoint=sdk-cli` is the headless path; `cch=00000` is a hardcoded CC
 /// constant with no account data. Note: genuine CC does NOT send this header on
 /// the `/v1/messages` wire (debug-only) — the proxy injects it deliberately and
 /// it is accepted. See `docs/audits/header-provenance.md` before changing this.
-const ANTHROPIC_BILLING_HEADER: &str = "cc_version=2.1.158.c5c; cc_entrypoint=sdk-cli; cch=00000;";
+const ANTHROPIC_BILLING_HEADER: &str = "cc_version=2.1.198.bb7; cc_entrypoint=sdk-cli; cch=00000;";
 
 /// OAuth provider backed by a subscription pool.
 ///

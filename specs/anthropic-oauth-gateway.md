@@ -334,7 +334,7 @@ The gateway modifies both headers and body before forwarding.
 | `anthropic-dangerous-direct-browser-access` | `true` | Required for OAuth |
 | `user-agent` | `claude-cli/2.0.76 (external, sdk-cli)` | Captured from Claude CLI traffic; see `docs/audits/header-provenance.md` |
 | `anthropic-version` | `2023-06-01` | API version |
-| `x-anthropic-billing-header` | `cc_version=2.1.158.c5c; cc_entrypoint=sdk-cli; cch=00000;` | Current proxy attribution marker for Max-plan routing; `cch=00000` is a hardcoded CC constant (no account data) and genuine CC does not send this header on the `/v1/messages` wire — the proxy injects it deliberately. See `docs/audits/header-provenance.md`. |
+| `x-anthropic-billing-header` | `cc_version=2.1.198.bb7; cc_entrypoint=sdk-cli; cch=00000;` | Current proxy attribution marker for Max-plan routing; `cch=00000` is a hardcoded CC constant (no account data) and genuine CC does not send this header on the `/v1/messages` wire — the proxy injects it deliberately. See `docs/audits/header-provenance.md`. |
 
 Client-provided `anthropic-beta` values are merged (deduplicated) with the required set. The billing-header literal is intentionally unchanged until a separate live A/B proves a safer replacement/removal.
 
