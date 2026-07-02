@@ -2,6 +2,7 @@
 
 | Spec | Status | Code | Purpose |
 |------|--------|------|---------|
+| [openclaw-tool-rewrite.md](./openclaw-tool-rewrite.md) | Draft; I1–I3 investigations pending, implementation deferred | services/oauth-proxy/ | Per-client tool-name rewrite profile so OpenClaw's distinctive tool set passes Anthropic's fingerprint gate |
 | [anthropic-oauth-gateway.md](./anthropic-oauth-gateway.md) | Current OAuth design, needs drift cleanup | crates/, services/oauth-proxy/, k8s/ | OAuth pool gateway: PKCE, token refresh, subscription pooling, admin API |
 | [generic-client-support.md](./generic-client-support.md) | Current behavior, minor cleanup needed | services/oauth-proxy/ | Request-shape compatibility for generic clients using Claude Max OAuth credentials |
 | [streaming-timeout-fix.md](./streaming-timeout-fix.md) | Implemented; 2026-05-09 Pi file-write/tool live smoke passed; extended Claude Code long-session soak deferred | services/oauth-proxy/ | Replace wall-clock timeout with initial-response timeout plus stream idle timeout |
