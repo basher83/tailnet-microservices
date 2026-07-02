@@ -2948,6 +2948,10 @@ mod tests {
             beta.contains("prompt-caching-scope-2026-01-05"),
             "missing prompt-caching-scope beta flag"
         );
+        assert!(
+            beta.contains("thinking-token-count-2026-05-13"),
+            "missing thinking-token-count beta flag"
+        );
 
         assert_eq!(
             headers["anthropic-dangerous-direct-browser-access"]

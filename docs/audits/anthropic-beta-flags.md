@@ -30,6 +30,20 @@ cache-diagnosis-2026-04-07
 Proxy `REQUIRED_BETA_FLAGS` today injects **3 of 10**:
 `oauth-2025-04-20`, `interleaved-thinking-2025-05-14`, `context-management-2025-06-27`.
 
+> **Implementation status (2026-07-02).** Tiers 1 + 2 are now forced — proxy injects **8 of 10**.
+> Remaining: Tier 3 (`advisor-tool-2026-03-01`, `cache-diagnosis-2026-04-07`), deferred by design.
+>
+> **Tier 2 streaming check (`thinking-token-count-2026-05-13`).** Sent as a client flag through the
+> live proxy (haiku-4-5 + sonnet-4-6, thinking enabled) and captured raw SSE:
+> - Accepted, HTTP 200, well-formed stream (`content_block_start` thinking → `thinking_delta`×N →
+>   `signature_delta` → `message_delta` with `usage.output_tokens_details.thinking_tokens`).
+> - Effect is exactly one additive field: `thinking_delta.estimated_tokens` (`int | null`; observed
+>   **null** on both haiku and sonnet-4-6 even at a 3000-token thinking budget).
+> - Causation confirmed by control: without the flag, thinking deltas are `{type, thinking}`; with it,
+>   `{type, thinking, estimated_tokens}`.
+> - Client-safe: the proxy already forces `context-management`, which adds `context_management` to
+>   `message_delta`, and clients consume that today — `estimated_tokens` is the same additive class.
+
 ## Risk framing (read this first)
 
 There are three independent axes. A flag can be risky on one and inert on another.
@@ -57,11 +71,11 @@ There are three independent axes. A flag can be risky on one and inert on anothe
 | `oauth-2025-04-20` | ✅ have | Enables OAuth/subscription bearer-token auth on the request | Auth (required) | **required** |
 | `interleaved-thinking-2025-05-14` | ✅ have | Interleaved extended thinking between tool calls (Claude 4) | Response | keep |
 | `context-management-2025-06-27` | ✅ have | Server-side context editing / tool-result clearing | Request+Response | keep |
-| `claude-code-20250219` | ❌ missing | **Claude Code identity/mode** beta — most fingerprint-relevant; genuine CC always sends it | Identity | **Tier 1 — add** |
-| `advanced-tool-use-2025-11-20` | ❌ missing | Gates advanced tool-use body fields (tool-search, deferred/programmatic tool loading). Inert unless client sends those fields; forcing it *prevents* the "body field without header → 400" class | Request-dep (inert) | **Tier 1 — add** |
-| `extended-cache-ttl-2025-04-11` | ❌ missing | Unlocks 1-hour `cache_control.ttl:"1h"`. Inert unless body sets it. Billing: 1h cache writes cost more, but only when opted in | Request-dep (inert) | **Tier 1 — add** |
-| `prompt-caching-scope-2026-01-05` | ❌ missing | Controls prompt-cache breakpoint scoping. Additive/default; observed sent even when related CC settings off | Caching (near-inert) | **Tier 1 — add** |
-| `thinking-token-count-2026-05-13` | ❌ missing | Adds `estimated_tokens` to **streamed thinking deltas** (coarse hint; `usage.output_tokens` stays authoritative) | **Response-shape (unconditional)** | **Tier 2 — verify clients first** |
+| `claude-code-20250219` | ✅ forced | **Claude Code identity/mode** beta — most fingerprint-relevant; genuine CC always sends it | Identity | **Tier 1 — add** |
+| `advanced-tool-use-2025-11-20` | ✅ forced | Gates advanced tool-use body fields (tool-search, deferred/programmatic tool loading). Inert unless client sends those fields; forcing it *prevents* the "body field without header → 400" class | Request-dep (inert) | **Tier 1 — add** |
+| `extended-cache-ttl-2025-04-11` | ✅ forced | Unlocks 1-hour `cache_control.ttl:"1h"`. Inert unless body sets it. Billing: 1h cache writes cost more, but only when opted in | Request-dep (inert) | **Tier 1 — add** |
+| `prompt-caching-scope-2026-01-05` | ✅ forced | Controls prompt-cache breakpoint scoping. Additive/default; observed sent even when related CC settings off | Caching (near-inert) | **Tier 1 — add** |
+| `thinking-token-count-2026-05-13` | ✅ forced | Adds `estimated_tokens` to **streamed thinking deltas** (coarse hint; `usage.output_tokens` stays authoritative) | **Response-shape (unconditional)** | **Tier 2 — verify clients first** |
 | `advisor-tool-2026-03-01` | ❌ missing | Enables the advisor tool. Bare header inert (CC proves it); **400 `invalid_request_error`** only if the advisor tool is *invoked* with a bad executor/advisor model pairing | Feature-gate (inert) | **Tier 3 — fidelity only** |
 | `cache-diagnosis-2026-04-07` | ❌ missing | Client passes `diagnostics.previous_message_id`; API returns `diagnostics.cache_miss_reason` on misses. Inert unless client opts in | Request-dep + Response (opt-in) | **Tier 3 — fidelity only** |
 

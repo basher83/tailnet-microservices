@@ -19,8 +19,10 @@ use tracing::{debug, warn};
 /// The Tier 1 additions (2026-07-02) mirror genuine Claude Code 2.1.198 wire
 /// flags. Each is either a pure identity flag (`claude-code-20250219`) or inert
 /// unless the request body opts into the matching feature — verified accepted on
-/// the Max OAuth → api.anthropic.com path. Tier 2/3 flags (`thinking-token-count`,
-/// `advisor-tool`, `cache-diagnosis`) are deliberately NOT forced here; see
+/// the Max OAuth → api.anthropic.com path. Tier 2 (`thinking-token-count`) was
+/// promoted after a streaming check confirmed it only adds a nullable
+/// `estimated_tokens` field to thinking deltas. Tier 3 (`advisor-tool`,
+/// `cache-diagnosis`) remain deliberately NOT forced; see
 /// `docs/audits/anthropic-beta-flags.md` for the per-flag cause/effect analysis.
 const REQUIRED_BETA_FLAGS: &[&str] = &[
     "oauth-2025-04-20",
@@ -31,6 +33,9 @@ const REQUIRED_BETA_FLAGS: &[&str] = &[
     "prompt-caching-scope-2026-01-05",
     "advanced-tool-use-2025-11-20",
     "extended-cache-ttl-2025-04-11",
+    // Tier 2 — adds a nullable `estimated_tokens` field to thinking deltas;
+    // streaming check 2026-07-02 confirmed accepted + additive-only:
+    "thinking-token-count-2026-05-13",
 ];
 
 /// User-Agent injected on the `/v1/messages` wire. Kept in lock-step with the
@@ -337,7 +342,7 @@ mod tests {
         let beta = headers.get("anthropic-beta").unwrap().to_str().unwrap();
         assert_eq!(
             beta,
-            "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,claude-code-20250219,prompt-caching-scope-2026-01-05,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11"
+            "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,claude-code-20250219,prompt-caching-scope-2026-01-05,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,thinking-token-count-2026-05-13"
         );
     }
 
@@ -382,7 +387,7 @@ mod tests {
         let beta = headers.get("anthropic-beta").unwrap().to_str().unwrap();
         assert_eq!(
             beta,
-            "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,claude-code-20250219,prompt-caching-scope-2026-01-05,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11"
+            "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,claude-code-20250219,prompt-caching-scope-2026-01-05,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,thinking-token-count-2026-05-13"
         );
     }
 

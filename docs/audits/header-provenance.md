@@ -269,7 +269,7 @@ These are not security issues (requests succeed) but are fidelity gaps if exact 
 > **Update 2026-07-02 (fresh on-wire capture, CC v2.1.198).** Re-ran the capture against genuine Claude Code **2.1.198**; on-wire `POST /v1/messages` carried `User-Agent: claude-cli/2.1.198 (external, sdk-cli)`, `x-app: cli`, and `anthropic-beta: oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07` (still no `x-anthropic-billing-header` on the wire). Resolutions:
 > - **User-Agent drift RESOLVED** — bumped `USER_AGENT` 2.0.76 → 2.1.198 to lock-step with `cc_version` (also bumped 2.1.158 → 2.1.198.bb7).
 > - **`x-app: cli` — still not injected** by the proxy (open fidelity gap).
-> - **anthropic-beta — still stale:** proxy `REQUIRED_BETA_FLAGS` injects only 3 of the 10 flags genuine CC now sends (open fidelity gap). Beta flags can be behaviour-changing, so treat as a deliberate follow-up, not a blind sync. Full per-flag cause/effect analysis: `docs/audits/anthropic-beta-flags.md`.
+> - **anthropic-beta — 8 of 10 now forced (was 3).** Tier 1 + Tier 2 promoted 2026-07-02; only Tier 3 (`advisor-tool`, `cache-diagnosis`) remains deferred by design. Full per-flag cause/effect analysis + streaming-check evidence: `docs/audits/anthropic-beta-flags.md`.
 
 > Maintenance / re-run: use **`scripts/capture-cc-headers.sh`** (or `mise run
 > headers:capture`) after a Claude Code upgrade. It captures both the
