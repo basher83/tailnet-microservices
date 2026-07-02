@@ -2952,6 +2952,14 @@ mod tests {
             beta.contains("thinking-token-count-2026-05-13"),
             "missing thinking-token-count beta flag"
         );
+        assert!(
+            beta.contains("advisor-tool-2026-03-01"),
+            "missing advisor-tool beta flag"
+        );
+        assert!(
+            beta.contains("cache-diagnosis-2026-04-07"),
+            "missing cache-diagnosis beta flag"
+        );
 
         assert_eq!(
             headers["anthropic-dangerous-direct-browser-access"]

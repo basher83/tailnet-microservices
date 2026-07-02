@@ -30,8 +30,14 @@ cache-diagnosis-2026-04-07
 Proxy `REQUIRED_BETA_FLAGS` today injects **3 of 10**:
 `oauth-2025-04-20`, `interleaved-thinking-2025-05-14`, `context-management-2025-06-27`.
 
-> **Implementation status (2026-07-02).** Tiers 1 + 2 are now forced — proxy injects **8 of 10**.
-> Remaining: Tier 3 (`advisor-tool-2026-03-01`, `cache-diagnosis-2026-04-07`), deferred by design.
+> **Implementation status (2026-07-02).** All three tiers now forced — proxy injects **10 of 10**,
+> mirroring genuine Claude Code 2.1.198 exactly.
+>
+> **Tier 3 smoke check (`advisor-tool-2026-03-01`, `cache-diagnosis-2026-04-07`).** Both forced on
+> plain requests (no tools / no `diagnostics` opt-in field) through the live proxy, non-streaming and
+> streaming: **HTTP 200, `stop_reason: end_turn`, zero error events, well-formed stream.** Confirms
+> the bare headers are inert — they gate features the proxy never invokes, so forcing them is pure
+> fingerprint parity with no behavioural cost.
 >
 > **Tier 2 streaming check (`thinking-token-count-2026-05-13`).** Sent as a client flag through the
 > live proxy (haiku-4-5 + sonnet-4-6, thinking enabled) and captured raw SSE:
@@ -76,8 +82,8 @@ There are three independent axes. A flag can be risky on one and inert on anothe
 | `extended-cache-ttl-2025-04-11` | ✅ forced | Unlocks 1-hour `cache_control.ttl:"1h"`. Inert unless body sets it. Billing: 1h cache writes cost more, but only when opted in | Request-dep (inert) | **Tier 1 — add** |
 | `prompt-caching-scope-2026-01-05` | ✅ forced | Controls prompt-cache breakpoint scoping. Additive/default; observed sent even when related CC settings off | Caching (near-inert) | **Tier 1 — add** |
 | `thinking-token-count-2026-05-13` | ✅ forced | Adds `estimated_tokens` to **streamed thinking deltas** (coarse hint; `usage.output_tokens` stays authoritative) | **Response-shape (unconditional)** | **Tier 2 — verify clients first** |
-| `advisor-tool-2026-03-01` | ❌ missing | Enables the advisor tool. Bare header inert (CC proves it); **400 `invalid_request_error`** only if the advisor tool is *invoked* with a bad executor/advisor model pairing | Feature-gate (inert) | **Tier 3 — fidelity only** |
-| `cache-diagnosis-2026-04-07` | ❌ missing | Client passes `diagnostics.previous_message_id`; API returns `diagnostics.cache_miss_reason` on misses. Inert unless client opts in | Request-dep + Response (opt-in) | **Tier 3 — fidelity only** |
+| `advisor-tool-2026-03-01` | ✅ forced | Enables the advisor tool. Bare header inert (CC proves it); **400 `invalid_request_error`** only if the advisor tool is *invoked* with a bad executor/advisor model pairing | Feature-gate (inert) | **Tier 3 — fidelity only** |
+| `cache-diagnosis-2026-04-07` | ✅ forced | Client passes `diagnostics.previous_message_id`; API returns `diagnostics.cache_miss_reason` on misses. Inert unless client opts in | Request-dep + Response (opt-in) | **Tier 3 — fidelity only** |
 
 ## Recommendation
 

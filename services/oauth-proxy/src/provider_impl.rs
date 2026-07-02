@@ -18,12 +18,12 @@ use tracing::{debug, warn};
 ///
 /// The Tier 1 additions (2026-07-02) mirror genuine Claude Code 2.1.198 wire
 /// flags. Each is either a pure identity flag (`claude-code-20250219`) or inert
-/// unless the request body opts into the matching feature — verified accepted on
-/// the Max OAuth → api.anthropic.com path. Tier 2 (`thinking-token-count`) was
-/// promoted after a streaming check confirmed it only adds a nullable
-/// `estimated_tokens` field to thinking deltas. Tier 3 (`advisor-tool`,
-/// `cache-diagnosis`) remain deliberately NOT forced; see
-/// `docs/audits/anthropic-beta-flags.md` for the per-flag cause/effect analysis.
+/// unless the request body opts into the matching feature. Tier 2
+/// (`thinking-token-count`) was promoted after a streaming check confirmed it
+/// only adds a nullable `estimated_tokens` field to thinking deltas. Tier 3
+/// (`advisor-tool`, `cache-diagnosis`) was promoted after a smoke test (plain
+/// request → 200, no breakage) confirmed the bare headers are inert. The proxy
+/// now mirrors all 10 CC beta flags; see `docs/audits/anthropic-beta-flags.md`.
 const REQUIRED_BETA_FLAGS: &[&str] = &[
     "oauth-2025-04-20",
     "interleaved-thinking-2025-05-14",
@@ -36,6 +36,10 @@ const REQUIRED_BETA_FLAGS: &[&str] = &[
     // Tier 2 — adds a nullable `estimated_tokens` field to thinking deltas;
     // streaming check 2026-07-02 confirmed accepted + additive-only:
     "thinking-token-count-2026-05-13",
+    // Tier 3 — inert-unless-invoked (gates advisor tool / cache diagnostics);
+    // smoke-verified 2026-07-02 (plain request 200, no breakage):
+    "advisor-tool-2026-03-01",
+    "cache-diagnosis-2026-04-07",
 ];
 
 /// User-Agent injected on the `/v1/messages` wire. Kept in lock-step with the
@@ -342,7 +346,7 @@ mod tests {
         let beta = headers.get("anthropic-beta").unwrap().to_str().unwrap();
         assert_eq!(
             beta,
-            "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,claude-code-20250219,prompt-caching-scope-2026-01-05,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,thinking-token-count-2026-05-13"
+            "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,claude-code-20250219,prompt-caching-scope-2026-01-05,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,thinking-token-count-2026-05-13,advisor-tool-2026-03-01,cache-diagnosis-2026-04-07"
         );
     }
 
@@ -387,7 +391,7 @@ mod tests {
         let beta = headers.get("anthropic-beta").unwrap().to_str().unwrap();
         assert_eq!(
             beta,
-            "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,claude-code-20250219,prompt-caching-scope-2026-01-05,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,thinking-token-count-2026-05-13"
+            "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,claude-code-20250219,prompt-caching-scope-2026-01-05,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,thinking-token-count-2026-05-13,advisor-tool-2026-03-01,cache-diagnosis-2026-04-07"
         );
     }
 
