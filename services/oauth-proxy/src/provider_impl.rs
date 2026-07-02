@@ -15,10 +15,22 @@ use tracing::{debug, warn};
 
 /// Required anthropic-beta flags for OAuth mode. These are always injected and
 /// merged with any client-provided beta flags (deduplicated).
+///
+/// The Tier 1 additions (2026-07-02) mirror genuine Claude Code 2.1.198 wire
+/// flags. Each is either a pure identity flag (`claude-code-20250219`) or inert
+/// unless the request body opts into the matching feature — verified accepted on
+/// the Max OAuth → api.anthropic.com path. Tier 2/3 flags (`thinking-token-count`,
+/// `advisor-tool`, `cache-diagnosis`) are deliberately NOT forced here; see
+/// `docs/audits/anthropic-beta-flags.md` for the per-flag cause/effect analysis.
 const REQUIRED_BETA_FLAGS: &[&str] = &[
     "oauth-2025-04-20",
     "interleaved-thinking-2025-05-14",
     "context-management-2025-06-27",
+    // Tier 1 — CC-fidelity, inert-unless-opted-in (docs/audits/anthropic-beta-flags.md):
+    "claude-code-20250219",
+    "prompt-caching-scope-2026-01-05",
+    "advanced-tool-use-2025-11-20",
+    "extended-cache-ttl-2025-04-11",
 ];
 
 /// User-Agent injected on the `/v1/messages` wire. Kept in lock-step with the
@@ -325,7 +337,7 @@ mod tests {
         let beta = headers.get("anthropic-beta").unwrap().to_str().unwrap();
         assert_eq!(
             beta,
-            "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27"
+            "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,claude-code-20250219,prompt-caching-scope-2026-01-05,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11"
         );
     }
 
@@ -370,7 +382,7 @@ mod tests {
         let beta = headers.get("anthropic-beta").unwrap().to_str().unwrap();
         assert_eq!(
             beta,
-            "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27"
+            "oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27,claude-code-20250219,prompt-caching-scope-2026-01-05,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11"
         );
     }
 

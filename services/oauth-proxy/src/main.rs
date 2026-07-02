@@ -2931,6 +2931,23 @@ mod tests {
             beta.contains("context-management-2025-06-27"),
             "missing context beta flag"
         );
+        // Tier 1 CC-fidelity flags (docs/audits/anthropic-beta-flags.md)
+        assert!(
+            beta.contains("claude-code-20250219"),
+            "missing claude-code identity beta flag"
+        );
+        assert!(
+            beta.contains("advanced-tool-use-2025-11-20"),
+            "missing advanced-tool-use beta flag"
+        );
+        assert!(
+            beta.contains("extended-cache-ttl-2025-04-11"),
+            "missing extended-cache-ttl beta flag"
+        );
+        assert!(
+            beta.contains("prompt-caching-scope-2026-01-05"),
+            "missing prompt-caching-scope beta flag"
+        );
 
         assert_eq!(
             headers["anthropic-dangerous-direct-browser-access"]
