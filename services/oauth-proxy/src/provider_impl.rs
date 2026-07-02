@@ -31,6 +31,11 @@ const USER_AGENT: &str = "claude-cli/2.1.198 (external, sdk-cli)";
 /// Anthropic API version header value.
 const ANTHROPIC_VERSION: &str = "2023-06-01";
 
+/// `x-app` header that genuine Claude Code sends on every `/v1/messages` request
+/// (value `cli`). Injected to mirror real CC wire behaviour; confirmed present
+/// via on-wire capture 2026-07-02. See `docs/audits/header-provenance.md`.
+const X_APP: &str = "cli";
+
 /// Claude Code attribution header used by this proxy for Max-plan routing.
 /// Origin: Claude Code `--debug-file` attribution line. `cc_version` tracks the
 /// CC release (bumped to 2.1.198 on 2026-07-02 via `scripts/capture-cc-headers.sh`);
@@ -104,6 +109,10 @@ impl Provider for AnthropicOAuthProvider {
             headers.insert(
                 HeaderName::from_static("anthropic-version"),
                 HeaderValue::from_static(ANTHROPIC_VERSION),
+            );
+            headers.insert(
+                HeaderName::from_static("x-app"),
+                HeaderValue::from_static(X_APP),
             );
             headers.insert(
                 HeaderName::from_static("x-anthropic-billing-header"),
