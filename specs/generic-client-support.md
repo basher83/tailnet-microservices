@@ -22,7 +22,7 @@ The proxy now injects the required Claude Code credential markers:
 1. `Authorization: Bearer {access_token}` — injected
 2. `anthropic-beta: oauth-2025-04-20,...` — injected and merged
 3. `anthropic-dangerous-direct-browser-access: true` — injected
-4. `user-agent: claude-cli/2.0.76 (external, sdk-cli)` — injected
+4. `user-agent: claude-cli/2.1.198 (external, sdk-cli)` — injected
 5. `anthropic-version: 2023-06-01` — injected
 6. `x-anthropic-billing-header: cc_version=2.1.198.bb7; cc_entrypoint=sdk-cli; cch=00000;` — injected as the current proxy attribution marker for Max-plan routing
 7. System prompt prefix: "You are Claude Code..." — injected for all requests with a string `model` field

@@ -266,6 +266,11 @@ Genuine CC v2.1.158 vs. what this proxy injects (`provider_impl.rs`):
 - **anthropic-beta** — real CC now includes `thinking-token-count-2026-05-13`; proxy's `REQUIRED_BETA_FLAGS` does not.
 These are not security issues (requests succeed) but are fidelity gaps if exact CC mimicry is ever required.
 
+> **Update 2026-07-02 (fresh on-wire capture, CC v2.1.198).** Re-ran the capture against genuine Claude Code **2.1.198**; on-wire `POST /v1/messages` carried `User-Agent: claude-cli/2.1.198 (external, sdk-cli)`, `x-app: cli`, and `anthropic-beta: oauth-2025-04-20,interleaved-thinking-2025-05-14,thinking-token-count-2026-05-13,context-management-2025-06-27,prompt-caching-scope-2026-01-05,claude-code-20250219,advisor-tool-2026-03-01,advanced-tool-use-2025-11-20,extended-cache-ttl-2025-04-11,cache-diagnosis-2026-04-07` (still no `x-anthropic-billing-header` on the wire). Resolutions:
+> - **User-Agent drift RESOLVED** — bumped `USER_AGENT` 2.0.76 → 2.1.198 to lock-step with `cc_version` (also bumped 2.1.158 → 2.1.198.bb7).
+> - **`x-app: cli` — still not injected** by the proxy (open fidelity gap).
+> - **anthropic-beta — still stale:** proxy `REQUIRED_BETA_FLAGS` injects only 3 of the 10 flags genuine CC now sends (open fidelity gap). Beta flags can be behaviour-changing, so treat as a deliberate follow-up, not a blind sync.
+
 > Maintenance / re-run: use **`scripts/capture-cc-headers.sh`** (or `mise run
 > headers:capture`) after a Claude Code upgrade. It captures both the
 > `[DEBUG] attribution header` line and the real on-wire `/v1/messages` headers and

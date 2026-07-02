@@ -553,7 +553,8 @@ The proxy binary is approximately 5MB and has minimal memory overhead. Increase 
 
 The current constants are documented in `docs/audits/header-provenance.md`.
 Short version: `USER_AGENT` came from a Loom mitmproxy capture of Claude CLI
-v2.0.76 `/v1/messages` traffic; `ANTHROPIC_BILLING_HEADER` came from Claude
+v2.0.76 `/v1/messages` traffic (bumped to v2.1.198 on 2026-07-02 via a fresh
+on-wire capture, lock-stepped with `cc_version`); `ANTHROPIC_BILLING_HEADER` came from Claude
 Code v2.1.128 `--debug-file` output and was curl-tested through this proxy.
 A later Claude Code v2.1.132 local MITM capture saw the same debug attribution
 shape but did not see `x-anthropic-billing-header` on the actual

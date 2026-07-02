@@ -782,7 +782,7 @@ Same Deployment, same Ingress, same MagicDNS hostname, same container image tag 
 
 Current header provenance is documented in `docs/audits/header-provenance.md` and operationalized in `RUNBOOK.md`. Key closeout status:
 
-- `USER_AGENT` came from a Loom mitmproxy capture of Claude CLI v2.0.76 `/v1/messages` traffic.
+- `USER_AGENT` came from a Loom mitmproxy capture of Claude CLI v2.0.76 `/v1/messages` traffic; bumped to v2.1.198 on 2026-07-02 (fresh on-wire capture) to lock-step with the `cc_version` attribution.
 - `x-anthropic-billing-header` came from Claude Code v2.1.128 `--debug-file` output plus a successful direct proxy curl.
 - A later Claude Code v2.1.132 local MITM capture saw the debug attribution line but did not see `x-anthropic-billing-header` on the actual `/v1/messages` request. Treat `cch=00000` as debug-attribution data with unknown semantics, not as a proven on-wire Claude Code header.
 - The current proxy injection remains unchanged until a separate operator-approved live A/B validates removal, replacement, or a runtime toggle.

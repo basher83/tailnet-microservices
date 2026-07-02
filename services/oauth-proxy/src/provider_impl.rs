@@ -21,9 +21,12 @@ const REQUIRED_BETA_FLAGS: &[&str] = &[
     "context-management-2025-06-27",
 ];
 
-/// User-Agent captured from Claude CLI v2.0.76 `/v1/messages` traffic via
-/// the Loom mitmproxy procedure; see `docs/audits/header-provenance.md`.
-const USER_AGENT: &str = "claude-cli/2.0.76 (external, sdk-cli)";
+/// User-Agent injected on the `/v1/messages` wire. Kept in lock-step with the
+/// `cc_version` attribution below — both track the live Claude Code release.
+/// Originally a Loom mitmproxy capture of v2.0.76; bumped to 2.1.198 on
+/// 2026-07-02 after an on-wire capture confirmed genuine CC 2.1.198 sends
+/// `claude-cli/2.1.198 (external, sdk-cli)`. See `docs/audits/header-provenance.md`.
+const USER_AGENT: &str = "claude-cli/2.1.198 (external, sdk-cli)";
 
 /// Anthropic API version header value.
 const ANTHROPIC_VERSION: &str = "2023-06-01";
