@@ -37,11 +37,11 @@ k8s/                # Kubernetes deployment manifests
 
 ## Configuration
 
-Copy `anthropic-oauth-proxy.example.toml` to configure a local proxy. The committed Kubernetes config in `k8s/config.toml` runs OAuth mode with admin API enabled. See `RUNBOOK.md` for operational guidance and `specs/README.md` for current versus historical design specs.
+Copy `anthropic-oauth-proxy.example.toml` to configure a local proxy. The committed Kubernetes config in `k8s/config.toml` runs OAuth mode with admin API enabled. See `docs/runbook/README.md` for operational guidance and `specs/README.md` for current versus historical design specs.
 
 ## Deployment
 
-Kubernetes manifests live in `k8s/`. Apply with `kubectl apply -k k8s/`. No secrets required. See `RUNBOOK.md` for the complete deployment procedure.
+Kubernetes manifests live in `k8s/`. Apply with `kubectl apply -k k8s/`. No secrets required. See `docs/runbook/README.md` for the complete deployment procedure.
 
 ## License
 

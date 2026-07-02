@@ -739,7 +739,7 @@ Same Deployment, same Ingress, same MagicDNS hostname, same container image tag 
 - [x] Add PVC manifest for credential storage
 - [x] Update ConfigMap with `[oauth]` section
 - [x] Optional admin Service manifest
-- [x] Update RUNBOOK.md with OAuth operational procedures
+- [x] Update the operational runbook (docs/runbook/) with OAuth operational procedures
 - [x] E2E test: load account credentials → proxy request → verify Claude API response
 
 ---
@@ -780,7 +780,7 @@ Same Deployment, same Ingress, same MagicDNS hostname, same container image tag 
 
 ## Header Discovery Maintenance
 
-Current header provenance is documented in `docs/audits/header-provenance.md` and operationalized in `RUNBOOK.md`. Key closeout status:
+Current header provenance is documented in `docs/audits/header-provenance.md` and operationalized in `docs/runbook/header-parity.md`. Key closeout status:
 
 - `USER_AGENT` came from a Loom mitmproxy capture of Claude CLI v2.0.76 `/v1/messages` traffic; bumped to v2.1.198 on 2026-07-02 (fresh on-wire capture) to lock-step with the `cc_version` attribution.
 - `x-anthropic-billing-header` came from Claude Code v2.1.128 `--debug-file` output plus a successful direct proxy curl.

@@ -7,7 +7,7 @@
 
 ---
 
-> Current-state note: This is a historical passthrough-era spec. The running proxy has since evolved into the OAuth pool gateway described in `specs/anthropic-oauth-gateway.md`, with follow-on changes from the generic-client, streaming-timeout, OTel, and operator-migration addendum specs. This file is useful for original design context, but it is not a current configuration or deployment reference. Use `RUNBOOK.md` for operations and `specs/README.md` for current spec status.
+> Current-state note: This is a historical passthrough-era spec. The running proxy has since evolved into the OAuth pool gateway described in `specs/anthropic-oauth-gateway.md`, with follow-on changes from the generic-client, streaming-timeout, OTel, and operator-migration addendum specs. This file is useful for original design context, but it is not a current configuration or deployment reference. Use `docs/runbook/README.md` for operations and `specs/README.md` for current spec status.
 
 ---
 
@@ -435,7 +435,7 @@ Single-container Deployment with zero secrets. Tailnet exposure via Tailscale Op
 - [x] Dockerfile for containerized deployment
 - [x] GitHub Actions CI workflow
 - [x] Kubernetes manifests with Tailscale Operator annotations
-- [x] Operational runbook (RUNBOOK.md)
+- [x] Operational runbook (docs/runbook/)
 - [x] Update Aperture config to route to proxy (`anthropic-oauth` provider, `tailnet: true`)
 - [x] Monitor production traffic (live E2E traffic verified 2026-02-06)
 

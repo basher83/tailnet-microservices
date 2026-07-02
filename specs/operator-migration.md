@@ -7,7 +7,7 @@
 
 ---
 
-> Current-state note: This is a historical migration spec for removing the `tailscaled` sidecar. Its Service-annotation exposure plan was superseded by `specs/operator-migration-addendum.md` after a dual-proxy conflict was found. The current manifest shape is a plain ClusterIP Service plus Tailscale Ingress. Use `RUNBOOK.md` for operations and `specs/README.md` for current spec status.
+> Current-state note: This is a historical migration spec for removing the `tailscaled` sidecar. Its Service-annotation exposure plan was superseded by `specs/operator-migration-addendum.md` after a dual-proxy conflict was found. The current manifest shape is a plain ClusterIP Service plus Tailscale Ingress. Use `docs/runbook/README.md` for operations and `specs/README.md` for current spec status.
 
 ---
 

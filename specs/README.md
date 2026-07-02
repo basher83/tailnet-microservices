@@ -13,4 +13,4 @@
 | [tailnet.md](./tailnet.md) | Historical; superseded and retained for context | specs/ | Original tailscaled sidecar integration strategy |
 | [rand-0.10-migration.md](./rand-0.10-migration.md) | Complete | crates/anthropic-auth/ | Migrate rand 0.9 to 0.10 breaking API names |
 
-Use `RUNBOOK.md` for current operator procedures. Several older specs are retained as design history and still contain stale values or pre-addendum deployment assumptions.
+Use `docs/runbook/README.md` for current operator procedures. Several older specs are retained as design history and still contain stale values or pre-addendum deployment assumptions.
