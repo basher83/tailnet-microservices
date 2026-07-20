@@ -4,17 +4,22 @@
 
 ## How Deployments Work
 
-Commits to `main` trigger a CI pipeline (`.github/workflows/ci.yml`) that runs lint, audit, test, build, and Kubernetes manifest validation. The `docker` job depends on all five, so a failing manifest validation blocks the image build and everything downstream. On success, the `docker` job builds a container image and pushes it to GHCR tagged `sha-<7char>`. The `deploy` job then updates `k8s/kustomization.yaml` with the new tag and pushes a `[skip ci]` commit to `main`.
+Runtime-affecting commits to `main` trigger `.github/workflows/ci.yml`, which runs Rust lint, audit, test, and release build before building a container image and pushing it to GHCR as `sha-<7char>`. The deploy job then updates `k8s/kustomization.yaml` with the new tag and pushes a `[skip ci]` commit to `main`.
 
-ArgoCD watches `main` at path `k8s/` with automated sync, prune, and self-heal enabled. When the tag commit lands, ArgoCD reconciles the cluster to the new image.
+Changes under `k8s/` trigger the separate `.github/workflows/manifests.yml` workflow, which only renders and validates the manifests. A commit containing both runtime and Kubernetes changes triggers both workflows. Markdown-only changes trigger neither workflow.
+
+ArgoCD watches `main` at path `k8s/` with automated sync, prune, and self-heal enabled. It reconciles direct manifest changes as well as image-tag commits produced by the runtime pipeline.
 
 ```text
-code commit on main
-  → CI required by docker: lint + audit + test + build + manifest validation
+runtime commit on main
+  → CI required by docker: lint + audit + test + release build
   → CI docker job: build + push to ghcr.io (tagged sha-<7char>)
-  → CI: deploy job updates kustomization.yaml newTag, commits [skip ci]
+  → CI deploy job: update kustomization.yaml newTag, commit [skip ci]
   → ArgoCD: auto-sync from main, path k8s/
-  → Cluster: reconciled to new image
+
+k8s-only commit on main
+  → Kubernetes Manifests: render + validate
+  → ArgoCD: auto-sync from main, path k8s/
 ```
 
 The `newTag` field in `k8s/kustomization.yaml` is machine-managed by CI. Do not edit it manually — the next CI run will overwrite it.

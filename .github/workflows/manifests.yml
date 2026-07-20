@@ -1,0 +1,26 @@
+name: Kubernetes Manifests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "k8s/**"
+      - "mise.toml"
+      - ".github/workflows/manifests.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "k8s/**"
+      - "mise.toml"
+      - ".github/workflows/manifests.yml"
+
+jobs:
+  validate:
+    name: Validate K8s Manifests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      - run: mise run k8s:validate
