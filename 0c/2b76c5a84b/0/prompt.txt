@@ -1,9 +1,1 @@
-lets commit and push AGENTS.md
-
----
-
-One residual gap the audit didn't flag: docs/**.md changes are in paths-ignore, so a docs-only push runs no CI at all — fine — but a change to k8s/*.yaml alone does trigger the full pipeline including an unnecessary Rust build.
-
----
-
-lets do separate path-scoped workflows
+commit and push
