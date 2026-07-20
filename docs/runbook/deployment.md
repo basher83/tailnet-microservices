@@ -4,14 +4,13 @@
 
 ## How Deployments Work
 
-Commits to `main` trigger a CI pipeline (`.github/workflows/ci.yml`) that runs lint, audit, test, build, and Kubernetes manifest validation. The `docker` job currently depends on lint, audit, test, and build; manifest validation runs as a separate check. On success, the `docker` job builds a container image and pushes it to GHCR tagged `sha-<7char>`. The `deploy` job then updates `k8s/kustomization.yaml` with the new tag and pushes a `[skip ci]` commit to `main`.
+Commits to `main` trigger a CI pipeline (`.github/workflows/ci.yml`) that runs lint, audit, test, build, and Kubernetes manifest validation. The `docker` job depends on all five, so a failing manifest validation blocks the image build and everything downstream. On success, the `docker` job builds a container image and pushes it to GHCR tagged `sha-<7char>`. The `deploy` job then updates `k8s/kustomization.yaml` with the new tag and pushes a `[skip ci]` commit to `main`.
 
 ArgoCD watches `main` at path `k8s/` with automated sync, prune, and self-heal enabled. When the tag commit lands, ArgoCD reconciles the cluster to the new image.
 
 ```text
 code commit on main
-  → CI required by docker: lint + audit + test + build
-  → CI separate check: manifest validation
+  → CI required by docker: lint + audit + test + build + manifest validation
   → CI docker job: build + push to ghcr.io (tagged sha-<7char>)
   → CI: deploy job updates kustomization.yaml newTag, commits [skip ci]
   → ArgoCD: auto-sync from main, path k8s/

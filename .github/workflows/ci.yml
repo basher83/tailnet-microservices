@@ -85,7 +85,7 @@ jobs:
 
   docker:
     name: Docker
-    needs: [lint, audit, test, build]
+    needs: [lint, audit, test, build, manifests]
     runs-on: ubuntu-latest
     permissions:
       contents: read
