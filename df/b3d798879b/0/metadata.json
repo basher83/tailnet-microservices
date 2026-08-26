@@ -3,11 +3,15 @@
   "checkpoint_id": "dfb3d798879b",
   "session_id": "f3dd63a1-af27-4f2d-b4ec-ef9599b60c8c",
   "strategy": "manual-commit",
-  "created_at": "2026-08-26T07:59:10.484098Z",
+  "created_at": "2026-08-26T07:59:44.050817Z",
   "branch": "main",
   "checkpoints_count": 3,
   "files_touched": [
-    "docs/runbook/troubleshooting.md"
+    "docs/runbook/accounts.md",
+    "docs/runbook/clients.md",
+    "docs/runbook/monitoring.md",
+    "docs/runbook/troubleshooting.md",
+    "specs/anthropic-oauth-gateway.md"
   ],
   "agent": "Claude Code",
   "model": "claude-fable-5",
@@ -16,11 +20,11 @@
   "transcript_lines_at_start": 1039,
   "compact_transcript_start": 176,
   "token_usage": {
-    "input_tokens": 0,
-    "cache_creation_tokens": 0,
-    "cache_read_tokens": 0,
-    "output_tokens": 0,
-    "api_call_count": 0
+    "input_tokens": 101,
+    "cache_creation_tokens": 986,
+    "cache_read_tokens": 335892,
+    "output_tokens": 4713,
+    "api_call_count": 1
   },
   "skill_events_version": 1,
   "skill_events": [
@@ -144,14 +148,14 @@
     "turn_count": 22
   },
   "initial_attribution": {
-    "calculated_at": "2026-08-26T07:59:10.401475Z",
-    "agent_lines": 3,
-    "agent_removed": 1,
+    "calculated_at": "2026-08-26T07:59:43.971654Z",
+    "agent_lines": 15,
+    "agent_removed": 13,
     "human_added": 0,
     "human_modified": 0,
     "human_removed": 0,
-    "total_committed": 3,
-    "total_lines_changed": 4,
+    "total_committed": 15,
+    "total_lines_changed": 28,
     "agent_percentage": 100,
     "metric_version": 2
   }
