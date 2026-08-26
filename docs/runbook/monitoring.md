@@ -114,7 +114,7 @@ rate(pool_failovers_total[5m]) > 0.05
 
 If `pool_token_refreshes_total{result="failure"}` is incrementing, accounts are failing to refresh their OAuth tokens. Common causes:
 
-The refresh token itself has expired or been revoked — the token endpoint returns an OAuth `invalid_grant` (which Anthropic sends as HTTP 400), or a 401/403. This is permanent: the account is marked `disabled` by whichever path hit it (request-time inline refresh or the background task). Remove the account and load fresh credentials using keychain extraction. The admin API PKCE flow is in the code but currently fails on request-shape bugs (`code=true`, `state` format) — see Troubleshooting → Known Issues; it is not policy-blocked.
+The refresh token itself has expired or been revoked — the token endpoint returns an OAuth `invalid_grant` (which Anthropic sends as HTTP 400), or a 401/403. This is permanent: the account is marked `disabled` by whichever path hit it (request-time inline refresh or the background task). Remove the account and load fresh credentials using keychain extraction. The admin API PKCE flow is fixed in code as of 2026-08-26 (pending deploy) and is the preferred re-auth path once deployed — it gives the account its own refresh-token lineage. See Troubleshooting → Known Issues.
 
 The Anthropic token endpoint (`https://platform.claude.com/v1/oauth/token`) is unreachable, or returned a 5xx/429. Check outbound network connectivity from the pod. Transient failures do **not** disable the account — it stays `available` and is retried on the next request and on the next refresh cycle (default: every 5 minutes).
 

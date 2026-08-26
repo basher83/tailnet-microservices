@@ -12,12 +12,11 @@ kubectl -n anthropic-oauth-proxy port-forward deployment/anthropic-oauth-proxy 9
 
 All admin commands below assume port-forwarding is active.
 
-## Adding an Account (PKCE Flow — Broken in Proxy Code, Not Blocked)
+## Adding an Account (PKCE Flow)
 
-**Status 2026-08-26:** the flow fails because of two request-shape bugs in the proxy, **not** Anthropic policy (see [Known Issues](./troubleshooting.md#pkce-web-flow-fails-on-request-shape-not-policy) for the evidence). Until they are fixed, use Keychain Extraction below.
+**Status 2026-08-26:** fixed in code (`b883966`, `391a62a`) and verified end to end against a local build; **not yet deployed**. Until the deployed image includes those commits, use Keychain Extraction below. History and evidence: [Known Issues](./troubleshooting.md#pkce-web-flow-failed-on-request-shape-not-policy-fixed-2026-08-26-pending-deploy).
 
-- The authorize URL must include `code=true` (without it the page fails on load).
-- `state` must be a long random base64url value (pi and Claude Code send the PKCE verifier); the proxy sends the account id (`claude-max-<ts>`), which the Authorize POST rejects with "Invalid request format".
+Prefer this flow over keychain extraction once deployed: a PKCE-provisioned account owns its own refresh-token lineage, so it is not invalidated when the local Claude Code login refreshes (the cause of the recurring `invalid_grant` outages — see [Refresh Token Lifetime](#refresh-token-lifetime-and-re-auth)). The PKCE state is single-use and expires **10 minutes** after `init-oauth`; complete the browser step promptly.
 
 `init-oauth` is a `POST` (the route is `post(init_oauth)` in `services/oauth-proxy/src/admin.rs`).
 
@@ -31,21 +30,24 @@ Response:
 
 ```json
 {
-  "authorization_url": "https://claude.ai/oauth/authorize?client_id=...&code_challenge=...",
+  "authorization_url": "https://claude.ai/oauth/authorize?code=true&client_id=...&code_challenge=...&state=...",
   "account_id": "claude-max-1739059200",
-  "instructions": "Open the URL in a browser, authorize, then paste the code to complete-oauth"
+  "state": "rBTzVG9sJ4QMkfFn8fuU5eo3qkGDzA_uNooVEbSOKIo",
+  "instructions": "Open the URL in a browser, authorize, then paste the code#state value to complete-oauth"
 }
 ```
 
 Step 2 — Open the `authorization_url` in a browser and authorize with the Claude Max account. After authorization, the browser redirects to a page showing a `code#state` value.
 
-Step 3 — Complete the flow:
+Step 3 — Complete the flow. The `code#state` value is all that is needed; the proxy looks up the pending flow by `state`. `account_id` is optional and, if given, must match the flow that produced that `state`:
 
 ```bash
 curl -s -X POST http://localhost:9090/admin/accounts/complete-oauth \
   -H 'Content-Type: application/json' \
-  -d '{"account_id": "claude-max-1739059200", "code": "AUTH_CODE#STATE"}' | jq .
+  -d '{"code": "AUTH_CODE#STATE"}' | jq .
 ```
+
+Response: `{"account_id": "claude-max-1739059200", "status": "added"}`. Confirm with `/admin/pool`.
 
 The PKCE state expires after 10 minutes. If Step 3 is not completed in time, start over from Step 1.
 
