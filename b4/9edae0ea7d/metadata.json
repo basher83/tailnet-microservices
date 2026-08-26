@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.10.0",
+  "checkpoint_id": "b49edae0ea7d",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "docs/runbook/accounts.md",
+    "docs/runbook/troubleshooting.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b4/9edae0ea7d/0/metadata.json",
+      "transcript": "/b4/9edae0ea7d/0/full.jsonl",
+      "compact_transcript": "/b4/9edae0ea7d/0/transcript.jsonl",
+      "content_hash": "/b4/9edae0ea7d/0/content_hash.txt",
+      "prompt": "/b4/9edae0ea7d/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1435,
+    "cache_creation_tokens": 31958,
+    "cache_read_tokens": 7858116,
+    "output_tokens": 13836,
+    "api_call_count": 21
+  }
+}
