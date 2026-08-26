@@ -1,0 +1,153 @@
+/using-entire look for issues with oauth failing and having to reset the token
+
+---
+
+The PKCE admin-API login flow is "blocked by Anthropic server-side policy" (accounts.md:17) - whens that dated though?
+
+---
+
+Ok few things; 1) radar MCP is your friend for inspecting talos 2) docs/runbook/README.md and likely clients.md for sure and others need touches for relevant info here too
+
+---
+
+well local claude works, we are chatting but my other harness pi doesn't at the moment - so yes re-auth now then we chat about 2/3
+
+---
+
+not yet, read /mise install from npm opensrc at mise global, test against /opensrc steipete/CodexBar
+
+---
+
+Right, so lemme give you the bigger picture now that I seeded the hint you found. Here a journel note from earlier that relates to excatly this: What is the difference between the Anthropic OAuth and API endpoints? 
+I remember a while back when I was doing evals in a different repository. I was using an SDK called Simmer https://github.com/2389-research/simmer-sdk and I remember seeing mentions of why they used API over OAuth but I can't remember what the reasons were.
+
+There are a few different open-source projects as well, agentic projects, that deeply document the OAuth versus API path and even prompt foo does as well. I really wonder what the actual reasoning is. Not to mention I have my own OAuth proxy on my K8s cluster https://github.com/basher83/tailnet-microservices, on disk at ~/3I/forge/tailnet-microservices.
+
+I'm interested in figuring this out because I have an OAuth proxy on my cluster and I don't fully understand all the semantics behind the OAuth path vs the API path. I use a PIE coding agent and I've been using it pointed at my proxy but I think I remember something about them also using OAuth? 
+
+I found this repo that submitted a PR https://github.com/microsoft/amplifier-module-provider-anthropic/pull/73 to a different harness that I was interested in using and it documented an OAuth path when the harness only had an API path. That's what really got me thinking about all of this. 
+
+https://github.com/steipete/CodexBar
+https://github.com/openclaw/openclaw
+
+---
+
+<task-notification>
+<task-id>a4361b03b4927fa7b</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-basher8383-3I-forge-tailnet-microservices/f3dd63a1-af27-4f2d-b4ec-ef9599b60c8c/tasks/a4361b03b4927fa7b.output</output-file>
+<status>completed</status>
+<summary>Agent "Research simmer-sdk + promptfoo OAuth-vs-API" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result># Report: API-key vs Claude OAuth in simmer-sdk and promptfoo
+
+Repos cloned to `/Users/basher8383/.opensrc/repos/github.com/2389-research/simmer-sdk/main` and `/Users/basher8383/.opensrc/repos/github.com/promptfoo/promptfoo/main`.
+
+## 1. `2389-research/simmer-sdk`
+
+**(a) Verbatim quotes**
+
+`README.md:15`:
+&gt; Requires `ANTHROPIC_API_KEY` set in your environment, AWS credentials for Bedrock mode, or a running Ollama instance for local models.
+
+`src/simmer_sdk/client.py:12-18` (module docstring):
+&gt; When api_provider="anthropic" (default), uses AsyncAnthropic with ANTHROPIC_API_KEY from environment. For ClaudeSDKClient (Agent SDK) calls, provider config is passed via env vars through ClaudeAgentOptions(env={...}). Bedrock uses CLAUDE_CODE_USE_BEDROCK=1, Ollama uses ANTHROPIC_BASE_URL pointed at the Ollama server.
+
+`src/simmer_sdk/client.py:222-232`:
+&gt; # Claude CLI requires ANTHROPIC_API_KEY even when using a custom base URL. Ollama doesn't validate it.
+&gt; ...
+&gt; # The Claude Code CLI requires ANTHROPIC_API_KEY to be set even in Bedrock mode (for initial auth handshake). A dummy value works — actual API calls go through Bedrock via AWS credentials.
+
+`src/simmer_sdk/trajectory.py:143` — only `sk-ant` mention, a redaction regex: `r"(sk-ant-[A-Za-z0-9_-]{8,}"      # Anthropic`
+
+**(b) Stated reason for auth choice:** None. `rg -i 'oauth|subscription|claude max|claude pro|sk-ant-oat|setup-token|login'` returns zero hits in docs or source. The repo simply assumes `ANTHROPIC_API_KEY` for the direct SDK, and passes env through to the Claude Agent SDK / CLI. There is no documented consideration of OAuth at all. *(Inference: the "why" is unstated; API key is the default because it's what `AsyncAnthropic` and the Agent SDK pick up with no extra code. Since it shells out to the `claude` CLI for judge agents, a logged-in CLI session would presumably work implicitly, but this is never documented.)*
+
+**(c) OAuth technical facts:** None.
+
+## 2. `promptfoo/promptfoo`
+
+promptfoo supports **both** paths: API key is default; OAuth is opt-in via `apiKeyRequired: false`. Key files: `src/providers/anthropic/claudeCodeAuth.ts`, `src/providers/anthropic/generic.ts`, `src/providers/anthropic/messages.ts`, `src/providers/anthropic/types.ts`, `site/docs/providers/anthropic.md`, `examples/anthropic/claude-code-session/README.md`.
+
+**(a) Verbatim quotes**
+
+`site/docs/providers/anthropic.md:30`:
+&gt; If you already have an active Claude Code session (for example as a Claude Pro or Max subscriber), you can reuse its OAuth credential instead of creating a separate Anthropic Console API key. Set `apiKeyRequired: false` on the provider config
+
+`site/docs/providers/anthropic.md:46-48`:
+&gt; Promptfoo authenticates requests with a Bearer token, sends the `claude-code-20250219,oauth-2025-04-20` beta headers, and prepends the required Claude Code identity system block (`"You are Claude Code, Anthropic's official CLI for Claude."`) to every Messages request. Your own system prompt is still forwarded as the next system block.
+&gt; If you haven't logged in yet, run `claude /login` to create a credential. Re-run it if Promptfoo warns that the credential has expired. Requests made this way are expected to count against your Claude subscription the same way calls from the Claude Code CLI do — check Anthropic's documentation for current billing behavior.
+
+`src/providers/anthropic/types.ts:93-97`:
+&gt; When `false`, skip promptfoo's upfront API key check and authenticate through a local Claude Code session (OAuth credential from the macOS keychain or `$HOME/.claude/.credentials.json`). Lets Claude.ai Max / Pro subscribers run evals — including `llm-rubric` grading — without a separate Anthropic Console API key.
+
+`src/providers/anthropic/claudeCodeAuth.ts:24-31`:
+&gt; Claude Code prepends this identity block as the first `system` message when calling the Anthropic Messages API with an OAuth token. As of 2025-Q4 the API returns HTTP 400 `invalid_request_error` when an OAuth-authenticated request's first system block is not this exact string ... Re-verify if Anthropic ships an OAuth-native `/v1/messages` path that drops the requirement.
+
+`claudeCodeAuth.ts:36-46`:
+&gt; Anthropic beta headers required when authenticating the Messages API with a Claude Code OAuth token (e.g. a Claude Max subscription access token, or a long-lived token minted by `claude setup-token`).
+&gt; - `oauth-2025-04-20` enables OAuth bearer tokens on `/v1/messages`.
+&gt; - `claude-code-20250219` enables the Claude Code tool-use surface area the OAuth token is scoped to.
+
+`claudeCodeAuth.ts:53-59`:
+&gt; The `user-agent` value Claude Code CLI sends on OAuth-authenticated Messages requests. Anthropic's API gates OAuth tokens to the Claude Code app identity, so requests that use a different user-agent fail with 401. The `1.0.0` suffix is cosmetic — Anthropic gates on the `claude-cli` product identifier, not the semver.
+&gt; `CLAUDE_CODE_USER_AGENT = 'claude-cli/1.0.0 (external, promptfoo)'` ... `CLAUDE_CODE_X_APP = 'cli'`
+
+`generic.ts:175-180`:
+&gt; Claude Code OAuth tokens are gated to the Messages API (`/v1/messages`) — forwarding them to the legacy text-completion endpoint would fail at request time
+
+`src/providers/meta.ts:549-550` / `src/providers/bedrock/anthropicMessages.ts:31-33`:
+&gt; Never authenticate with a local Claude Code OAuth credential — that token belongs to Anthropic and must not be sent to api.meta.ai.
+&gt; Never fall back to a local Claude Code OAuth session — that would send an Anthropic OAuth token to the Bedrock mantle host.
+
+`examples/anthropic/claude-code-session/README.md`: "Make sure `ANTHROPIC_API_KEY` is **unset** if you specifically want Promptfoo to use your Claude Code session. If the env var is set, Promptfoo will prefer it over the OAuth credential."
+
+**(b) Stated reasons:** API key is default; OAuth exists purely so "Claude.ai Max / Pro subscribers" can run evals "without a separate Anthropic Console API key". No ToS/policy discussion appears; billing is hedged ("expected to count against your Claude subscription... check Anthropic's documentation"). *(Inference: the "As of 2025-Q4 ... Revisit/Re-verify" caveats show they treat the OAuth path as reverse-engineered and fragile.)*
+
+**(c) Concrete OAuth technical facts (from promptfoo):**
+- Credential sources: macOS keychain service `Claude Code-credentials` (or `Claude Code-credentials-&lt;sha256(CLAUDE_CONFIG_DIR)[:8]&gt;` when `CLAUDE_CONFIG_DIR` set, "Empirically verified against claude v2.1.204"); else `~/.claude/.credentials.json`. JSON shape: `{claudeAiOauth: {accessToken, refreshToken?, expiresAt (ms epoch)?, subscriptionType?}}`.
+- Auth: Bearer `authToken` (not `x-api-key`); headers `anthropic-beta: claude-code-20250219,oauth-2025-04-20`, `user-agent: claude-cli/...`, `x-app: cli`; first system block must be the identity string; only `/v1/messages`.
+- Failure modes: wrong UA → 401 `authentication_error`; wrong first system block → 400 `invalid_request_error`.
+- Refresh: promptfoo reads `refreshToken` but never refreshes; expired → tells user to run `claude /login`. No refresh-token lifetime, rate-limit, model-availability, or "extra usage" classification is documented. Claude Agent SDK doc (`site/docs/providers/claude-agent-sdk.md:1145`) lists an `'oauth_org_not_allowed'` error code and `'billing_error'` among SDK error codes.
+- Token format `sk-ant-oat*` is not mentioned anywhere in promptfoo.</result>
+<usage><subagent_tokens>50888</subagent_tokens><tool_uses>7</tool_uses><duration_ms>93258</duration_ms></usage>
+</task-notification>
+
+---
+
+simmer evals were in /Users/basher8383/3I/research/prompting-eval-workbench/evals, should be able to find entire history there too and docs
+
+---
+
+Well theres some claims in there that have zero proof behing them; This is why your PKCE flow broke on 2026-02-17, simmer-sdk — never considered OAuth. commit 109820ae (2026-04-12): "direct API agent loop — replaces ClaudeSDKClient subprocess. No Node.js, no CLI spawn, no zombie processes." The choice was api dispatch vs cli dispatch <- thats literally does not say "plumbing" as the reason. "classifier" what proof do you have that this i my cause? Did you run back a long term pod log study?
+
+---
+
+also if you use executor mcp you can find the netdata mcp tool for this kinda metrics stuff
+
+---
+
+ok great, lets get this documented up properly them now we have the claims scoped and pointed at the right spots. Pls add in the "What that changes about the "study" question" part too. That will need to land in the /Users/basher8383/3I/Vault/TheMothership/00_Inbox
+
+---
+
+for "PKCE-for-third-parties status is dated 2026-02-17** (CC 2.1.44) and untested since" what does untested mean here?
+
+---
+
+gotcha, ok well I've got two mins, do you?
+
+---
+
+[Image #2]
+
+---
+
+badlogic is stale, its earendil-works/pi-coding-agent
+
+---
+
+[Image #3] [Image #4] all 3 same
+
+---
+
+http://localhost:53692/callback?code= with longass code i redacted

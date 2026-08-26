@@ -1,0 +1,392 @@
+{
+  "cli_version": "0.10.0",
+  "checkpoint_id": "33b76829031f",
+  "session_id": "f3dd63a1-af27-4f2d-b4ec-ef9599b60c8c",
+  "strategy": "manual-commit",
+  "created_at": "2026-08-26T07:27:28.141493Z",
+  "branch": "main",
+  "checkpoints_count": 17,
+  "save_step_count": 15,
+  "files_touched": [],
+  "agent": "Claude Code",
+  "model": "claude-fable-5",
+  "turn_id": "5e30e2b91a00",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 8170,
+    "cache_creation_tokens": 272370,
+    "cache_read_tokens": 19771086,
+    "output_tokens": 84227,
+    "api_call_count": 101,
+    "subagent_tokens": {
+      "input_tokens": 9207,
+      "cache_creation_tokens": 160628,
+      "cache_read_tokens": 820967,
+      "output_tokens": 2986,
+      "api_call_count": 22
+    }
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "prompt-skill-claude-code-using-entire-2026-08-26T06:09:51.136481Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "using-entire"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "b43fbfb39fb2",
+      "timestamp": "2026-08-26T06:09:51.136481Z",
+      "native": {
+        "command": "/using-entire"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/using-entire",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "claude-skill-toolu_01B71iTnxQv465DA52pcuieb",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "search"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "5e30e2b91a00",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 38,
+        "end": 39,
+        "entry_ids": [
+          "8f37b7ab-957e-4c56-870e-265b62eb63e6"
+        ],
+        "tool_use_id": "toolu_01B71iTnxQv465DA52pcuieb"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01B71iTnxQv465DA52pcuieb"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: search",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "claude-skill-toolu_0168oJLEhueX5QTBbK1f76Tr",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "mise"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "5e30e2b91a00",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 263,
+        "end": 264,
+        "entry_ids": [
+          "7f4e464b-02ad-4d59-bf2d-21b211e9a9ff"
+        ],
+        "tool_use_id": "toolu_0168oJLEhueX5QTBbK1f76Tr"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_0168oJLEhueX5QTBbK1f76Tr"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: mise",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "claude-skill-toolu_012RxDZRQbKs2CaKGuHWeCrX",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "opensrc"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "5e30e2b91a00",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 280,
+        "end": 281,
+        "entry_ids": [
+          "489bdaa4-62ba-4627-9c5f-6613e1c08973"
+        ],
+        "tool_use_id": "toolu_012RxDZRQbKs2CaKGuHWeCrX"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_012RxDZRQbKs2CaKGuHWeCrX"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: opensrc",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 17
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 7,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 8,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 9,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 10,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 11,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 12,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 13,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 14,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 15,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 99,
+      "agent_lines_removed": 9,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    },
+    {
+      "checkpoint_number": 16,
+      "user_lines_added": 55,
+      "user_lines_removed": 32,
+      "agent_lines_added": 121,
+      "agent_lines_removed": 18,
+      "user_added_per_file": {
+        ".claude/settings.json": 26,
+        ".pi/extensions/entire/index.ts": 29
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 23,
+        ".pi/extensions/entire/index.ts": 9
+      }
+    }
+  ]
+}
