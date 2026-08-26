@@ -427,7 +427,7 @@ mod tests {
 
     fn global_prometheus_handle() -> PrometheusHandle {
         GLOBAL_PROMETHEUS
-            .get_or_init(|| crate::metrics::install_recorder())
+            .get_or_init(crate::metrics::install_recorder)
             .clone()
     }
 
@@ -1485,15 +1485,10 @@ mod tests {
         drop(listener);
         let listener = TcpListener::bind(addr).await.unwrap();
         let _server = tokio::spawn(async move {
-            loop {
-                match listener.accept().await {
-                    Ok((socket, _)) => {
-                        counter_clone.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                        // Close immediately — simulates connection reset, not timeout
-                        drop(socket);
-                    }
-                    Err(_) => break,
-                }
+            while let Ok((socket, _)) = listener.accept().await {
+                counter_clone.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                // Close immediately — simulates connection reset, not timeout
+                drop(socket);
             }
         });
         tokio::time::sleep(Duration::from_millis(10)).await;
