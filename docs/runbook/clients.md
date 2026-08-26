@@ -75,5 +75,17 @@ Do not use `claude -p --bare` as a validation substitute. `--bare` bypasses Clau
 
 The committed Kubernetes config in `k8s/config.toml` runs OAuth mode by default. The `[oauth]` and `[admin]` sections are active, and `[[headers]]` is ignored automatically because `[oauth]` takes precedence. To run passthrough mode instead, remove or comment the `[oauth]` and `[admin]` sections and keep the `[[headers]]` section. Commit and push to `main`; ArgoCD will roll out the ConfigMap change.
 
-OAuth mode starts with whatever accounts exist in `/data/credentials.json` on the PVC. An empty credential file is valid, but the pool is unhealthy until an account is loaded. The working provisioning path is keychain extraction; the PKCE admin flow is implemented but currently blocked by Anthropic server-side policy.
+OAuth mode starts with whatever accounts exist in `/data/credentials.json` on the PVC. An empty credential file is valid, but the pool is unhealthy until an account is loaded. The working provisioning path is keychain extraction; the PKCE admin flow is implemented but currently fails on two request-shape bugs in the proxy — not policy (retested 2026-08-26; see [Known Issues](./troubleshooting.md#pkce-web-flow-fails-on-request-shape-not-policy)).
+
+## When the Client Gets 503 `pool_exhausted`
+
+If Pi (or any client) returns:
+
+```text
+Error: 503 {"error":{"message":"provider error: pool exhausted: {\"error\":{\"message\":\"All accounts exhausted\",\"pool\":{\"accounts_available\":0,\"accounts_cooling_down\":0,\"accounts_disabled\":1,\"accounts_total\":1},\"type\":\"pool_exhausted\"}}","request_id":"req_…","type":"proxy_error"}}
+```
+
+nothing is wrong with the client or its config. Read the embedded `pool` summary: `accounts_disabled ≥ 1` means the proxy's refresh token for that account has expired or been invalidated, and the account will stay disabled until someone re-auths it — this does not clear on its own, and Pi retries will keep failing identically. Fix: re-extract fresh tokens from a *working* local Claude Code login and reload them ([Accounts → Keychain Extraction](./accounts.md#adding-an-account-keychain-extraction)), then rerun the smoke test above. `accounts_cooling_down ≥ 1` with `accounts_disabled = 0` is the other case — quota, which clears by itself after the cooldown (default 2 h).
+
+Because the extracted credential is the same OAuth grant your local Claude Code uses, keep that local login healthy: if you `claude /logout` or let it lapse, the proxy's copy dies with it at the next refresh.
 

@@ -57,6 +57,23 @@ When all accounts are unavailable because they are in `cooling_down` or `disable
 - Add more accounts by loading credentials through keychain extraction
 - Remove and re-add disabled accounts with fresh extracted credentials (disabled means refresh token is permanently invalid)
 
+The client-visible error embeds the pool summary, which tells you which case you are in:
+
+```text
+503 {"error":{"message":"provider error: pool exhausted: {\"error\":{\"message\":\"All accounts exhausted\",
+\"pool\":{\"accounts_available\":0,\"accounts_cooling_down\":0,\"accounts_disabled\":1,\"accounts_total\":1},
+\"type\":\"pool_exhausted\"}}","request_id":"req_…","type":"proxy_error"}}
+```
+
+`accounts_disabled ≥ 1` means a refresh token was rejected. Confirm and date it from the pod logs:
+
+```bash
+kubectl -n anthropic-oauth-proxy logs deploy/anthropic-oauth-proxy --since=720h \
+  | grep -E 'refresh token rejected|refresh succeeded' | sed -n '1p;$p'
+```
+
+The first `refresh token rejected, disabling account` line is the outage start; the last `background token refresh succeeded` before it is when the token was last good. Anthropic's `error_description` distinguishes `Refresh token expired` (server TTL, expect ~4–6 weeks) from `Refresh token not found or invalid` (grant rotated/revoked). Either way the fix is the same: re-auth via keychain extraction ([Accounts → Refresh Token Lifetime](./accounts.md#refresh-token-lifetime-and-re-auth)). Note that `/health` still returns HTTP 200 in this state — only its `status`/`pool.status` fields say `unhealthy`, so a liveness-only check will not catch it.
+
 ### High Latency
 
 Check `proxy_request_duration_seconds` histogram percentiles. Latency is dominated by upstream response time. The proxy adds negligible overhead (header injection, hop-by-hop stripping, JSON body modification in OAuth mode).
@@ -66,15 +83,35 @@ If latency correlates with high concurrency, check if `max_connections` (default
 
 ## Known Issues
 
-### PKCE Web Flow Blocked by Anthropic (Platform Constraint)
+### PKCE Web Flow Fails on Request Shape, Not Policy
 
-The PKCE flow's `init-oauth` endpoint generates an authorization URL for `claude.ai/oauth/authorize`. The consent page loads correctly and displays the expected scopes, but clicking "Authorize" fails with `POST /v1/oauth/{session_id}/authorize` returning 400 "Invalid request format" via a React Query mutation. The consent page stays on screen silently — no visible error to the user.
+**History.** First seen ~2026-02-12: consent page rendered, clicking Authorize failed with `POST /v1/oauth/{session_id}/authorize → 400 "Invalid request format"`. The 2026-02-17 "Q13-gate" investigation (`52a8fee`, `d01eb8a`) aligned client id, redirect URI, scopes (adding `user:mcp_servers`) and S256 to CC CLI v2.1.44, saw the same failure, and recorded it as "Anthropic server-side enforcement blocking third-party OAuth consumers". That conclusion stood, untested, until 2026-08-26.
 
-Root cause: Anthropic server-side enforcement blocking third-party OAuth consumers. Investigated in Q13-gate (2026-02-17): all gateway parameters were updated to match CC CLI v2.1.44 exactly (client ID, redirect URI, scopes including `user:mcp_servers`, PKCE S256 challenge). The failure persists in both normal and incognito browser sessions with all parameters matching. The OAuth session ID is a fixed server-side identifier for the registered application, not a client-side state issue. Anthropic has publicly stated they block third-party tools from using Claude Code OAuth tokens — this enforcement occurs at the authorization grant stage.
+**Retest 2026-08-26 (bisected by hand-built authorize URLs on one live `init-oauth` challenge):**
 
-The `init-oauth` and `complete-oauth` endpoints remain functional code and will work if Anthropic lifts this restriction. No code changes are needed — only the server-side policy is blocking.
+| Variant | Delta from proxy's URL | Result |
+|---|---|---|
+| proxy as-is | — | fails **on page load**: "Authorization failed / Invalid request format" |
+| A | `+ code=true` | consent renders → Authorize → "Invalid request format" |
+| B | A + pi's 6 scopes | same as A |
+| C | B + `redirect_uri=http://localhost:53692/callback` (pi's exact shape) | same as A |
+| **D** | C + `state` = 43-char random base64url (instead of `claude-max-<ts>`) | **Authorize succeeds**, redirects to callback with `code=…&state=…` |
 
-Account provisioning method: Use keychain extraction (see "Adding an Account — Keychain Extraction" above) to load tokens from an existing Claude Code installation. Extracted tokens work correctly for all proxy operations including token refresh.
+C and D differ only in `state`, so the Authorize POST rejection is isolated to the `state` format. The redirect URI is *not* gated: A/B (our `https://platform.claude.com/oauth/code/callback`) rendered consent identically to localhost, so the manual-paste flow can stay.
+
+**Fix (not yet implemented):** in `services/oauth-proxy/src/admin.rs` / `crates/anthropic-auth`, (1) add `code=true` to the authorize URL; (2) generate `state` as 32 random bytes base64url-encoded (reuse the PKCE verifier like pi does, or a separate random value), key the in-memory PKCE entry by that `state`, and return it alongside `account_id` so `complete-oauth` can look it up from the pasted `code#state`. Reference implementation: `earendil-works/pi` `packages/ai/src/auth/oauth/anthropic.ts:248-252`.
+
+**Why this matters beyond convenience:** a PKCE-provisioned account owns its own refresh-token lineage. The keychain-extraction path shares one lineage with the local Claude Code login, which is the structural cause of the ~6-week `invalid_grant` outages (see "Disabled Accounts Never Auto-Recover").
+
+Policy note: Anthropic's current terms (https://code.claude.com/docs/en/legal-and-compliance) still say OAuth is for "ordinary use of Claude Code and other native Anthropic applications" and that developers "may not collect, store, or intermediate Claude.ai credentials." The flow working is a technical fact, not a policy clearance.
+
+### Disabled Accounts Never Auto-Recover
+
+Once an account is `disabled` (permanent refresh failure: `invalid_grant` / 401 / 403), nothing in the proxy re-enables it — not a pod restart with the same credential file, not a later successful refresh of another account. Recovery is always manual: overwrite `credentials.json` with freshly extracted tokens and restart ([Accounts](./accounts.md#adding-an-account-keychain-extraction)). Refresh tokens have been observed to expire ~6 weeks after extraction, so with a single-account pool this is a recurring outage unless alerted on (`accounts_disabled` alert in [Monitoring](./monitoring.md#alerts)).
+
+### Background Refresh Keeps Retrying Disabled Accounts
+
+`refresh_cycle` in `crates/anthropic-pool/src/refresh.rs` iterates `pool.account_ids()` without filtering on status, so a `disabled` account whose access token is past the refresh threshold is re-sent to Anthropic's token endpoint every cycle (default 5 minutes) and logs `WARN refresh token rejected, disabling account` each time. Observed 2026-08-01 → 2026-08-26: one WARN every 5 min for 25 days on an account that was already disabled. Harmless to pool state (it is already disabled) but it is log noise, a pointless call to Anthropic with a dead token, and it makes the WARN useless as an "onset" signal — use the *first* occurrence, not the latest. Code fix: skip accounts whose status is `Disabled` in `refresh_cycle`. Not yet done.
 
 ### Credential File Missing `type` Field
 

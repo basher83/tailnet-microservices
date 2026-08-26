@@ -98,6 +98,12 @@ Alert when all pool accounts are exhausted (OAuth mode). This fires when no acco
 sum(pool_account_status{status="available"}) == 0
 ```
 
+Alert on any disabled account (OAuth mode). This is the refresh-token-expired case: it does not self-heal and, with a single-account pool, it *is* the outage. Fire immediately, not after a for-duration:
+
+```text
+sum(pool_account_status{status="disabled"}) > 0
+```
+
 Alert on high failover rate indicating quota pressure across accounts:
 
 ```text
@@ -108,11 +114,23 @@ rate(pool_failovers_total[5m]) > 0.05
 
 If `pool_token_refreshes_total{result="failure"}` is incrementing, accounts are failing to refresh their OAuth tokens. Common causes:
 
-The refresh token itself has expired or been revoked — the token endpoint returns an OAuth `invalid_grant` (which Anthropic sends as HTTP 400), or a 401/403. This is permanent: the account is marked `disabled` by whichever path hit it (request-time inline refresh or the background task). Remove the account and load fresh credentials using keychain extraction. The admin API PKCE flow remains available in code, but it is currently blocked by Anthropic policy at the browser authorization step.
+The refresh token itself has expired or been revoked — the token endpoint returns an OAuth `invalid_grant` (which Anthropic sends as HTTP 400), or a 401/403. This is permanent: the account is marked `disabled` by whichever path hit it (request-time inline refresh or the background task). Remove the account and load fresh credentials using keychain extraction. The admin API PKCE flow is in the code but currently fails on request-shape bugs (`code=true`, `state` format) — see Troubleshooting → Known Issues; it is not policy-blocked.
 
 The Anthropic token endpoint (`https://platform.claude.com/v1/oauth/token`) is unreachable, or returned a 5xx/429. Check outbound network connectivity from the pod. Transient failures do **not** disable the account — it stays `available` and is retried on the next request and on the next refresh cycle (default: every 5 minutes).
 
-An account marked `disabled` in the pool health indicates its refresh token is permanently invalid. Remove it and re-authenticate.
+An account marked `disabled` in the pool health indicates its refresh token is permanently invalid. Remove it and re-authenticate. Refresh tokens have been observed to expire ~6 weeks after keychain extraction (`error_description: "Refresh token expired"`); see [Accounts → Refresh Token Lifetime](./accounts.md#refresh-token-lifetime-and-re-auth) for observed dates and the re-auth cadence to plan for.
+
+Log lines to grep for:
+
+| `message` | Level | Meaning |
+|---|---|---|
+| `background token refresh succeeded` | INFO | Normal; expect one every ~7h45m per account |
+| `refresh token rejected, disabling account` | WARN | Permanent failure; the **first** occurrence is the outage start. It repeats every 5 min for an already-disabled account (known issue) — do not read the latest one as "it just happened" |
+| `background refresh failed (transient), will retry next cycle` | WARN | Transient (network/5xx/429); account stays `available` |
+| `inline refresh rejected (permanent), disabling account` / `inline refresh failed (transient), skipping account this round` | WARN | Request-path refresh; same permanent/transient split |
+| `provider prepare_request failed` … `pool_exhausted` | ERROR | A client got a 503; one line per request |
+
+Note `/health` returns HTTP 200 whenever the listener is up, including with every account disabled — alert on `pool_account_status`, or on `.status != "healthy"` in the JSON body, never on the HTTP code alone.
 
 ### Structured Logs
 

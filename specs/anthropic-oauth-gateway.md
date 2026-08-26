@@ -5,7 +5,7 @@ created: 2026-02-08
 
 # Spec: Anthropic OAuth Gateway
 
-**Status:** Implemented; runtime PKCE provisioning blocked by Anthropic policy
+**Status:** Implemented; runtime PKCE provisioning fails on two proxy request-shape bugs (`code=true`, `state` format) — retested 2026-08-26, not policy-blocked; see docs/runbook/troubleshooting.md
 **Created:** 2026-02-09
 **Author:** Brent + Cowork
 **Supersedes:** `oauth-proxy.md` (header injector → full OAuth gateway)
