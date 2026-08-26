@@ -15,11 +15,13 @@ use crate::constants::{ANTHROPIC_CLIENT_ID, AUTHORIZE_ENDPOINT, REDIRECT_URI, SC
 
 /// Generate a cryptographically random PKCE code verifier.
 ///
-/// Produces a 128-byte random value encoded as URL-safe base64 (no padding).
-/// RFC 7636 requires 43-128 characters; our output is 172 characters
-/// (128 bytes * 4/3, rounded), well within the spec range.
+/// Produces 32 random bytes encoded as URL-safe base64 (no padding) — 43
+/// characters, the RFC 7636 §4.1 minimum and what Claude Code and pi send.
+/// The previous 128-byte (171-char) value exceeded the RFC maximum of 128
+/// and Anthropic's token endpoint rejected it with
+/// `invalid_request: Invalid 'code_verifier'` (observed live 2026-08-26).
 pub fn generate_verifier() -> String {
-    let mut bytes = [0u8; 128];
+    let mut bytes = [0u8; 32];
     rand::rng().fill(&mut bytes);
     URL_SAFE_NO_PAD.encode(bytes)
 }
@@ -86,8 +88,16 @@ mod tests {
     #[test]
     fn verifier_is_url_safe_base64() {
         let verifier = generate_verifier();
-        // 128 bytes → 171 base64url chars (no padding, ceil(128*4/3) - 1 padding)
-        assert_eq!(verifier.len(), 171);
+        // RFC 7636 §4.1: 43..=128 chars. Anthropic's token endpoint enforces
+        // this and answers `invalid_request: Invalid 'code_verifier'` for a
+        // longer value (observed live 2026-08-26 with the old 171-char
+        // verifier). 32 random bytes → 43 chars, matching Claude Code and pi.
+        assert!(
+            (43..=128).contains(&verifier.len()),
+            "verifier length {} outside RFC 7636 range 43..=128",
+            verifier.len()
+        );
+        assert_eq!(verifier.len(), 43);
         assert!(
             verifier
                 .chars()
