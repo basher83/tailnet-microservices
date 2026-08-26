@@ -24,6 +24,20 @@ pub fn generate_verifier() -> String {
     URL_SAFE_NO_PAD.encode(bytes)
 }
 
+/// Generate the OAuth `state` value for an authorization request.
+///
+/// Anthropic's authorize endpoint rejects the Authorize POST with
+/// `"Invalid request format"` unless `state` is a long random URL-safe value —
+/// the same shape Claude Code and pi send (they reuse the PKCE verifier).
+/// A short, structured `state` such as an account id fails. Verified live
+/// 2026-08-26; see docs/runbook/troubleshooting.md. 32 random bytes →
+/// 43 base64url characters.
+pub fn generate_state() -> String {
+    let mut bytes = [0u8; 32];
+    rand::rng().fill(&mut bytes);
+    URL_SAFE_NO_PAD.encode(bytes)
+}
+
 /// Compute the S256 code challenge from a verifier.
 ///
 /// `challenge = BASE64URL(SHA256(verifier))`
@@ -39,9 +53,15 @@ pub fn compute_challenge(verifier: &str) -> String {
 ///
 /// The `state` parameter is an opaque value the client generates for CSRF
 /// protection. The authorization server returns it unchanged in the callback.
+/// Use [`generate_state`] to produce it — see that function for the format
+/// Anthropic requires.
+///
+/// `code=true` is required: without it the authorize page fails on load with
+/// "Invalid request format" (verified live 2026-08-26). Claude Code and pi
+/// both send it.
 pub fn build_authorization_url(state: &str, challenge: &str) -> String {
     format!(
-        "{}?client_id={}&redirect_uri={}&response_type=code&scope={}&code_challenge={}&code_challenge_method=S256&state={}",
+        "{}?code=true&client_id={}&redirect_uri={}&response_type=code&scope={}&code_challenge={}&code_challenge_method=S256&state={}",
         AUTHORIZE_ENDPOINT,
         ANTHROPIC_CLIENT_ID,
         urlencoded(REDIRECT_URI),
@@ -118,12 +138,31 @@ mod tests {
         let url = build_authorization_url("test-state-123", &challenge);
 
         assert!(url.starts_with(AUTHORIZE_ENDPOINT));
+        assert!(
+            url.contains("?code=true&"),
+            "authorize URL must carry code=true or the page fails on load: {url}"
+        );
         assert!(url.contains(&format!("client_id={ANTHROPIC_CLIENT_ID}")));
         assert!(url.contains("response_type=code"));
         assert!(url.contains("code_challenge_method=S256"));
         assert!(url.contains(&format!("code_challenge={challenge}")));
         assert!(url.contains("state=test-state-123"));
         assert!(url.contains("scope="));
+    }
+
+    #[test]
+    fn state_is_43_char_base64url() {
+        // 32 random bytes → 43 chars, the shape Claude Code/pi send and that
+        // Anthropic's Authorize POST accepts. A short id-shaped state is rejected.
+        let state = generate_state();
+        assert_eq!(state.len(), 43, "state must be 32 bytes base64url: {state}");
+        assert!(
+            state
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'),
+            "state must be URL-safe base64 (no padding): {state}"
+        );
+        assert_ne!(generate_state(), state, "state must be random");
     }
 
     #[test]

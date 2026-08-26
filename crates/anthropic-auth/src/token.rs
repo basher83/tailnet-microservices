@@ -34,13 +34,17 @@ pub struct TokenResponse {
 pub async fn exchange_code(
     client: &reqwest::Client,
     code: &str,
+    state: &str,
     verifier: &str,
 ) -> Result<TokenResponse> {
+    // `state` is echoed to the token endpoint alongside the code, matching
+    // what Claude Code and pi send (pi: packages/ai/src/auth/oauth/anthropic.ts).
     let response = client
         .post(TOKEN_ENDPOINT)
         .form(&[
             ("grant_type", "authorization_code"),
             ("code", code),
+            ("state", state),
             ("code_verifier", verifier),
             ("client_id", ANTHROPIC_CLIENT_ID),
             ("redirect_uri", REDIRECT_URI),
@@ -254,7 +258,8 @@ mod tests {
         // Sending a bogus authorization code to the real token endpoint
         // returns a non-success error (400 or similar)
         let client = reqwest::Client::new();
-        let result = exchange_code(&client, "invalid-code", "invalid-verifier").await;
+        let result =
+            exchange_code(&client, "invalid-code", "invalid-state", "invalid-verifier").await;
         assert!(result.is_err(), "invalid code must return error");
     }
 

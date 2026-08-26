@@ -28,9 +28,13 @@ use anthropic_pool::Pool;
 
 /// In-memory PKCE state for an in-progress OAuth flow.
 ///
-/// Created by init-oauth and consumed by complete-oauth. Expires after
-/// PKCE_EXPIRY_SECS to prevent stale verifiers from accumulating.
+/// Created by init-oauth and consumed by complete-oauth. Keyed by the OAuth
+/// `state` value (a random 43-char base64url string — Anthropic rejects an
+/// id-shaped `state`, so the account id is carried here instead of being used
+/// as the key). Expires after PKCE_EXPIRY_SECS to prevent stale verifiers
+/// from accumulating.
 struct PkceState {
+    account_id: String,
     verifier: String,
     created_at: Instant,
 }
@@ -88,8 +92,11 @@ async fn list_accounts(State(state): State<AdminState>) -> impl IntoResponse {
 /// POST /admin/accounts/init-oauth — generate PKCE pair and return authorization URL.
 ///
 /// Creates a new account ID from the current unix timestamp, generates a PKCE
-/// verifier + challenge, builds the authorization URL, and stores the verifier
-/// in memory for complete-oauth to consume.
+/// verifier + challenge and a random OAuth `state`, builds the authorization
+/// URL, and stores the verifier in memory (keyed by `state`) for
+/// complete-oauth to consume. The response carries both `account_id` and
+/// `state`; the browser callback shows `code#state`, which is all
+/// complete-oauth needs.
 async fn init_oauth(State(state): State<AdminState>) -> impl IntoResponse {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -99,10 +106,12 @@ async fn init_oauth(State(state): State<AdminState>) -> impl IntoResponse {
 
     let verifier = anthropic_auth::generate_verifier();
     let challenge = anthropic_auth::compute_challenge(&verifier);
-    let authorization_url = anthropic_auth::build_authorization_url(&account_id, &challenge);
+    let oauth_state = anthropic_auth::generate_state();
+    let authorization_url = anthropic_auth::build_authorization_url(&oauth_state, &challenge);
 
-    // Store PKCE state for complete-oauth to consume
+    // Store PKCE state for complete-oauth to consume, keyed by `state`
     let pkce_state = PkceState {
+        account_id: account_id.clone(),
         verifier,
         created_at: Instant::now(),
     };
@@ -110,7 +119,7 @@ async fn init_oauth(State(state): State<AdminState>) -> impl IntoResponse {
     let mut states = state.pkce_states.lock().await;
     // Lazy cleanup: remove expired entries while holding the lock
     states.retain(|_, s| s.created_at.elapsed().as_secs() < PKCE_EXPIRY_SECS);
-    states.insert(account_id.clone(), pkce_state);
+    states.insert(oauth_state.clone(), pkce_state);
 
     info!(account_id, "PKCE flow initiated");
 
@@ -120,47 +129,92 @@ async fn init_oauth(State(state): State<AdminState>) -> impl IntoResponse {
         serde_json::json!({
             "authorization_url": authorization_url,
             "account_id": account_id,
-            "instructions": "Open the URL in a browser, authorize, then paste the code to complete-oauth"
+            "state": oauth_state,
+            "instructions": "Open the URL in a browser, authorize, then paste the code#state value to complete-oauth"
         })
         .to_string(),
     )
 }
 
 /// Request body for complete-oauth endpoint.
+///
+/// `code` is the `code#state` value shown by the browser callback. `state`
+/// may be given separately if the pasted code has no `#state` suffix.
+/// `account_id` is optional; when present it must match the flow that
+/// produced `state`.
 #[derive(Deserialize)]
 struct CompleteOAuthRequest {
-    account_id: String,
     code: String,
+    #[serde(default)]
+    state: Option<String>,
+    #[serde(default)]
+    account_id: Option<String>,
+}
+
+fn json_error(
+    status: StatusCode,
+    msg: impl Into<String>,
+) -> (
+    StatusCode,
+    [(axum::http::HeaderName, &'static str); 1],
+    String,
+) {
+    (
+        status,
+        [(axum::http::header::CONTENT_TYPE, "application/json")],
+        serde_json::json!({ "error": msg.into() }).to_string(),
+    )
 }
 
 /// POST /admin/accounts/complete-oauth — exchange authorization code for tokens.
 ///
-/// Retrieves the PKCE verifier from the in-memory store, parses the code#state
-/// format from the callback, exchanges the code via the token endpoint, stores
-/// the credential, and adds the account to the pool.
+/// Parses `code#state` from the callback, retrieves the PKCE verifier from the
+/// in-memory store by `state`, exchanges the code via the token endpoint,
+/// stores the credential, and adds the account to the pool.
 async fn complete_oauth(
     State(state): State<AdminState>,
     axum::Json(body): axum::Json<CompleteOAuthRequest>,
 ) -> impl IntoResponse {
+    // Parse code#state — the callback shows both joined by '#'
+    let (authorization_code, state_from_code) = match body.code.split_once('#') {
+        Some((c, s)) => (c.to_string(), Some(s.to_string())),
+        None => (body.code.clone(), None),
+    };
+    let oauth_state = match state_from_code.or_else(|| body.state.clone()) {
+        Some(s) if !s.is_empty() => s,
+        _ => {
+            return json_error(
+                StatusCode::BAD_REQUEST,
+                "missing state: pass the full code#state value from the callback, or a separate \"state\" field",
+            );
+        }
+    };
+
     // Retrieve and remove PKCE state
     let pkce_state = {
         let mut states = state.pkce_states.lock().await;
-        states.remove(&body.account_id)
+        states.remove(&oauth_state)
     };
 
     let pkce_state = match pkce_state {
         Some(s) => s,
         None => {
-            return (
+            return json_error(
                 StatusCode::BAD_REQUEST,
-                [(axum::http::header::CONTENT_TYPE, "application/json")],
-                serde_json::json!({
-                    "error": "no pending OAuth flow for this account_id (expired or not initiated)"
-                })
-                .to_string(),
+                "no pending OAuth flow for this state (expired or not initiated)",
             );
         }
     };
+
+    let account_id = pkce_state.account_id.clone();
+    if let Some(given) = &body.account_id
+        && given != &account_id
+    {
+        return json_error(
+            StatusCode::BAD_REQUEST,
+            format!("account_id {given} does not match the flow for this state ({account_id})"),
+        );
+    }
 
     // Check expiration
     if pkce_state.created_at.elapsed() > Duration::from_secs(PKCE_EXPIRY_SECS) {
@@ -174,20 +228,18 @@ async fn complete_oauth(
         );
     }
 
-    // Parse code#state format — the authorization code may contain '#state' suffix
-    let authorization_code = body.code.split('#').next().unwrap_or(&body.code);
-
     // Exchange code for tokens
     let token_response = match anthropic_auth::exchange_code(
         &state.http_client,
-        authorization_code,
+        &authorization_code,
+        &oauth_state,
         &pkce_state.verifier,
     )
     .await
     {
         Ok(r) => r,
         Err(e) => {
-            warn!(account_id = body.account_id, error = %e, "token exchange failed");
+            warn!(account_id = account_id, error = %e, "token exchange failed");
             return (
                 StatusCode::BAD_GATEWAY,
                 [(axum::http::header::CONTENT_TYPE, "application/json")],
@@ -215,11 +267,8 @@ async fn complete_oauth(
 
     // Store credential and add to pool
     let credential_store = state.pool.credential_store();
-    if let Err(e) = credential_store
-        .add(body.account_id.clone(), credential)
-        .await
-    {
-        warn!(account_id = body.account_id, error = %e, "failed to store credential");
+    if let Err(e) = credential_store.add(account_id.clone(), credential).await {
+        warn!(account_id = account_id, error = %e, "failed to store credential");
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             [(axum::http::header::CONTENT_TYPE, "application/json")],
@@ -230,10 +279,10 @@ async fn complete_oauth(
         );
     }
 
-    state.pool.add_account(body.account_id.clone()).await;
+    state.pool.add_account(account_id.clone()).await;
 
     info!(
-        account_id = body.account_id,
+        account_id = account_id,
         "OAuth flow completed, account added to pool"
     );
 
@@ -241,7 +290,7 @@ async fn complete_oauth(
         StatusCode::OK,
         [(axum::http::header::CONTENT_TYPE, "application/json")],
         serde_json::json!({
-            "account_id": body.account_id,
+            "account_id": account_id,
             "status": "added"
         })
         .to_string(),
@@ -334,6 +383,131 @@ mod tests {
             .unwrap();
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(json["accounts"], serde_json::json!([]));
+    }
+
+    async fn post_json(
+        app: Router,
+        uri: &str,
+        body: serde_json::Value,
+    ) -> (StatusCode, serde_json::Value) {
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(uri)
+                    .header("content-type", "application/json")
+                    .body(Body::from(body.to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let status = response.status();
+        let bytes = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json = serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null);
+        (status, json)
+    }
+
+    #[tokio::test]
+    async fn init_oauth_uses_random_state_and_code_true() {
+        // Regression for the 2026-08-26 finding: Anthropic's authorize page
+        // fails on load without `code=true`, and rejects the Authorize POST
+        // with "Invalid request format" when `state` is the id-shaped
+        // `claude-max-<ts>`. The flow must key on a 43-char random state.
+        let dir = tempfile::tempdir().unwrap();
+        let pool = test_pool(dir.path()).await;
+        let state = test_admin_state(pool);
+        let app = build_admin_router(state.clone());
+
+        let (status, json) =
+            post_json(app, "/admin/accounts/init-oauth", serde_json::json!({})).await;
+        assert_eq!(status, StatusCode::OK);
+
+        let url = json["authorization_url"].as_str().unwrap();
+        let oauth_state = json["state"].as_str().unwrap();
+        let account_id = json["account_id"].as_str().unwrap();
+
+        assert!(url.contains("?code=true&"), "missing code=true: {url}");
+        assert!(
+            url.ends_with(&format!("&state={oauth_state}")),
+            "state not in url: {url}"
+        );
+        assert_eq!(
+            oauth_state.len(),
+            43,
+            "state must be 32 random bytes base64url"
+        );
+        assert!(
+            !url.contains(&format!("state={account_id}")),
+            "state must not be the account id"
+        );
+        assert!(account_id.starts_with("claude-max-"));
+
+        // Map is keyed by state and carries the account id
+        let states = state.pkce_states.lock().await;
+        let entry = states.get(oauth_state).expect("pkce entry keyed by state");
+        assert_eq!(entry.account_id, account_id);
+        assert!(!states.contains_key(account_id));
+    }
+
+    #[tokio::test]
+    async fn complete_oauth_rejects_missing_or_unknown_state() {
+        let dir = tempfile::tempdir().unwrap();
+        let pool = test_pool(dir.path()).await;
+        let state = test_admin_state(pool);
+
+        // No '#state' suffix and no separate state field → 400, never a network call
+        let (status, json) = post_json(
+            build_admin_router(state.clone()),
+            "/admin/accounts/complete-oauth",
+            serde_json::json!({ "code": "abc" }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert!(json["error"].as_str().unwrap().contains("missing state"));
+
+        // Unknown state → 400
+        let (status, json) = post_json(
+            build_admin_router(state.clone()),
+            "/admin/accounts/complete-oauth",
+            serde_json::json!({ "code": "abc#nope" }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert!(
+            json["error"]
+                .as_str()
+                .unwrap()
+                .contains("no pending OAuth flow")
+        );
+    }
+
+    #[tokio::test]
+    async fn complete_oauth_rejects_account_id_mismatch_and_consumes_state() {
+        let dir = tempfile::tempdir().unwrap();
+        let pool = test_pool(dir.path()).await;
+        let state = test_admin_state(pool);
+
+        let (_, init) = post_json(
+            build_admin_router(state.clone()),
+            "/admin/accounts/init-oauth",
+            serde_json::json!({}),
+        )
+        .await;
+        let oauth_state = init["state"].as_str().unwrap().to_string();
+
+        // Wrong account_id for this state → 400, and the entry is consumed
+        // (single-use), so a retry reports no pending flow.
+        let (status, json) = post_json(
+            build_admin_router(state.clone()),
+            "/admin/accounts/complete-oauth",
+            serde_json::json!({ "code": format!("abc#{oauth_state}"), "account_id": "claude-max-other" }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert!(json["error"].as_str().unwrap().contains("does not match"));
+        assert!(!state.pkce_states.lock().await.contains_key(&oauth_state));
     }
 
     #[tokio::test]
@@ -469,8 +643,9 @@ mod tests {
         {
             let mut states = state.pkce_states.lock().await;
             states.insert(
-                "claude-max-expired".to_string(),
+                "test-state".to_string(),
                 PkceState {
+                    account_id: "claude-max-expired".to_string(),
                     verifier: "test-verifier".to_string(),
                     // Set created_at far in the past
                     created_at: Instant::now() - Duration::from_secs(PKCE_EXPIRY_SECS + 60),
@@ -649,10 +824,14 @@ mod tests {
             .unwrap();
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         let account_id = json["account_id"].as_str().unwrap();
+        let oauth_state = json["state"].as_str().unwrap();
 
-        // Verify PKCE state was stored
+        // Verify PKCE state was stored, keyed by the OAuth state (not the
+        // account id — Anthropic rejects an id-shaped `state`).
         let states = pkce_states.lock().await;
-        assert!(states.contains_key(account_id));
+        assert!(states.contains_key(oauth_state));
+        assert!(!states.contains_key(account_id));
+        assert_eq!(states[oauth_state].account_id, account_id);
     }
 
     #[tokio::test]

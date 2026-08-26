@@ -22,5 +22,5 @@ pub mod token;
 pub use constants::*;
 pub use credentials::{Credential, CredentialStore};
 pub use error::{Error, Result};
-pub use pkce::{build_authorization_url, compute_challenge, generate_verifier};
+pub use pkce::{build_authorization_url, compute_challenge, generate_state, generate_verifier};
 pub use token::{TokenResponse, exchange_code, refresh_token};
