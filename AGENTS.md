@@ -107,6 +107,7 @@ Rust builds can wait on Cargo locks. Treat slow progress as normal; do not kill 
 ## Testing rules
 
 - Behavior changes require tests at the layer that owns the behavior.
+- Test first. For a bug fix, write the test that reproduces the bug and watch it fail *before* changing implementation. If the fix changes a type or signature so the test cannot compile against the old code, say so explicitly in the report and name what the red actually was (a failing unit test, a stashed-tree run, or only a live/browser observation). Do not present after-the-fact tests as if they were the red.
 - Proxy retry, failover, streaming, header, and request-mutation changes require service-level integration coverage.
 - Pool selection, cooldown, disabling, and refresh classification belong in `anthropic-pool` tests.
 - PKCE, token classification, and credential persistence belong in `anthropic-auth` tests.
@@ -116,6 +117,14 @@ Rust builds can wait on Cargo locks. Treat slow progress as normal; do not kill 
 - Avoid mutating process-wide environment in tests; inject configuration or dependencies where practical.
 - When introducing a substantial new test module, prefer a sibling `*_tests.rs` file instead of further growing an inline implementation test module. Do not move existing tests solely for style conformity.
 - Unit and integration tests can establish construction and behavior, but they cannot establish current vendor-wire parity.
+
+## Live investigation tooling
+
+Use these before speculating about cluster or vendor behavior, and record which one produced each claim.
+
+- **radar MCP** (`mcp__radar__*`) reads the Talos cluster: `list_resources` (kind `pods`, namespace `anthropic-oauth-proxy`), `get_workload_logs` / `get_pod_logs` with `grep` and `since`, `get_events`, `search`. Container logs live only as long as the pod: run `kubectl -n anthropic-oauth-proxy logs deploy/anthropic-oauth-proxy --since=720h > <file>` *before* any `rollout restart` or credential reload, or the evidence is gone. No log aggregator (Loki/Vector/Alloy) exists in the cluster as of 2026-08-26.
+- **netdata via executor MCP.** Netdata Cloud is reachable only through `mcp__executor__execute` (TypeScript sandbox; read `mcp__executor__skills({name:"execute"})` first). Tools live under `tools.netdata_cloud_mcp.user.personalnetdatacloudmcp.*`: `get_profile` (space `Crashoverride6 space` → room `mothership-k8s`), `search_metrics` (`similar_to`, `after`/`before` ISO), `get_metric_metadata`/`get_metric_data`, `get_log_functions`, `search_logs` (`function: "otel-logs" | "systemd-journal"`, `node_id`). Known gaps: the proxy's `:9090/metrics` is not scraped (no `pool_*`/`proxy_*` contexts), and the Talos nodes' log functions are registered but return no entries. Do not cite netdata for this service until those are wired.
+- **Entire** (`entire search --json --compact`, `entire checkpoint explain <id> --no-pager`) for recorded intent behind a change; **opensrc** (`opensrc path <owner/repo>`) to read a dependency or peer project's actual source instead of recalling it.
 
 ## Compatibility surfaces
 
