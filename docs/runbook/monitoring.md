@@ -98,7 +98,7 @@ Alert when all pool accounts are exhausted (OAuth mode). This fires when no acco
 sum(pool_account_status{status="available"}) == 0
 ```
 
-Alert on any disabled account (OAuth mode). This is the refresh-token-expired case: it does not self-heal and, with a single-account pool, it *is* the outage. Fire immediately, not after a for-duration:
+Alert on any disabled account (OAuth mode). This is the refresh-token-expired case: it does not self-heal. With the current two-account pool a single `disabled` is the expected canary event, not an outage — but it still warrants a same-day look and cleanup. Fire immediately, not after a for-duration:
 
 ```text
 sum(pool_account_status{status="disabled"}) > 0
@@ -114,7 +114,7 @@ rate(pool_failovers_total[5m]) > 0.05
 
 If `pool_token_refreshes_total{result="failure"}` is incrementing, accounts are failing to refresh their OAuth tokens. Common causes:
 
-The refresh token itself has expired or been revoked — the token endpoint returns an OAuth `invalid_grant` (which Anthropic sends as HTTP 400), or a 401/403. This is permanent: the account is marked `disabled` by whichever path hit it (request-time inline refresh or the background task). Remove the account and load fresh credentials using keychain extraction. The admin API PKCE flow is fixed in code as of 2026-08-26 (pending deploy) and is the preferred re-auth path once deployed — it gives the account its own refresh-token lineage. See Troubleshooting → Known Issues.
+The refresh token itself has expired or been revoked — the token endpoint returns an OAuth `invalid_grant` (which Anthropic sends as HTTP 400), or a 401/403. This is permanent: the account is marked `disabled` by whichever path hit it (request-time inline refresh or the background task). Remove the account and provision a replacement via the admin API PKCE flow (working as of 2026-08-26; it gives the account its own refresh-token lineage), falling back to keychain extraction only if PKCE is unavailable. `claude-max-local` is a deliberate canary (see Accounts → Current Pool Composition); its going `disabled` is expected and is not an outage while the PKCE account is available.
 
 The Anthropic token endpoint (`https://platform.claude.com/v1/oauth/token`) is unreachable, or returned a 5xx/429. Check outbound network connectivity from the pod. Transient failures do **not** disable the account — it stays `available` and is retried on the next request and on the next refresh cycle (default: every 5 minutes).
 

@@ -83,7 +83,7 @@ If latency correlates with high concurrency, check if `max_connections` (default
 
 ## Known Issues
 
-### PKCE Web Flow Failed on Request Shape, Not Policy (fixed 2026-08-26, pending deploy)
+### PKCE Web Flow Failed on Request Shape, Not Policy (fixed 2026-08-26)
 
 **History.** First seen ~2026-02-12: consent page rendered, clicking Authorize failed with `POST /v1/oauth/{session_id}/authorize → 400 "Invalid request format"`. The 2026-02-17 "Q13-gate" investigation (`52a8fee`, `d01eb8a`) aligned client id, redirect URI, scopes (adding `user:mcp_servers`) and S256 to CC CLI v2.1.44, saw the same failure, and recorded it as "Anthropic server-side enforcement blocking third-party OAuth consumers". That conclusion stood, untested, until 2026-08-26.
 
@@ -101,7 +101,7 @@ C and D differ only in `state`, so the Authorize POST rejection is isolated to t
 
 A **third** bug surfaced once the authorize step passed: the token endpoint answered `400 invalid_request: Invalid 'code_verifier'`. The proxy generated a 128-byte (171-char) verifier; RFC 7636 §4.1 caps it at 128 chars. 32 bytes (43 chars, what Claude Code and pi send) is accepted.
 
-**Fixed 2026-08-26** in `b883966` (`code=true`, random 43-char `state`, PKCE map keyed by state, `state` echoed to the token endpoint) and the follow-up verifier-length commit. **Verified end to end** against a locally run build with an empty pool: `init-oauth` → browser Authorize → `complete-oauth` → `{"status":"added"}` → pool `healthy` → live `/v1/messages` → `ok`. Not yet deployed. The change: in `crates/anthropic-auth` / `services/oauth-proxy/src/admin.rs`, (1) `code=true` on the authorize URL; (2) `state` = 32 random bytes base64url, the in-memory PKCE entry keyed by it and returned alongside `account_id` so `complete-oauth` can look it up from the pasted `code#state`; (3) verifier shortened to 32 bytes. Reference: `earendil-works/pi` `packages/ai/src/auth/oauth/anthropic.ts:248-252` and `pkce.ts`.
+**Fixed 2026-08-26** in `b883966` (`code=true`, random 43-char `state`, PKCE map keyed by state, `state` echoed to the token endpoint) and the follow-up verifier-length commit. **Verified end to end** against a locally run build with an empty pool: `init-oauth` → browser Authorize → `complete-oauth` → `{"status":"added"}` → pool `healthy` → live `/v1/messages` → `ok`. Deployed as `sha-3b30262` (ArgoCD manual sync of `73b5615`) and used the same day to provision `claude-max-1787733199` on the live proxy; see [Accounts → Current Pool Composition](./accounts.md#current-pool-composition-2026-08-26). The change: in `crates/anthropic-auth` / `services/oauth-proxy/src/admin.rs`, (1) `code=true` on the authorize URL; (2) `state` = 32 random bytes base64url, the in-memory PKCE entry keyed by it and returned alongside `account_id` so `complete-oauth` can look it up from the pasted `code#state`; (3) verifier shortened to 32 bytes. Reference: `earendil-works/pi` `packages/ai/src/auth/oauth/anthropic.ts:248-252` and `pkce.ts`.
 
 **Why this matters beyond convenience:** a PKCE-provisioned account owns its own refresh-token lineage. The keychain-extraction path shares one lineage with the local Claude Code login, which is the structural cause of the ~6-week `invalid_grant` outages (see "Disabled Accounts Never Auto-Recover").
 

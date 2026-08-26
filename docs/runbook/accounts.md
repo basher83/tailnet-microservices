@@ -14,9 +14,9 @@ All admin commands below assume port-forwarding is active.
 
 ## Adding an Account (PKCE Flow)
 
-**Status 2026-08-26:** fixed in code (`b883966`, `391a62a`) and verified end to end against a local build; **not yet deployed**. Until the deployed image includes those commits, use Keychain Extraction below. History and evidence: [Known Issues](./troubleshooting.md#pkce-web-flow-failed-on-request-shape-not-policy-fixed-2026-08-26-pending-deploy).
+**Status 2026-08-26:** fixed (`b883966`, `391a62a`), deployed as `sha-3b30262`, and used to provision `claude-max-1787733199` on the live proxy the same day. This is now the **preferred** provisioning path; Keychain Extraction below is the fallback. History and evidence: [Known Issues](./troubleshooting.md#pkce-web-flow-failed-on-request-shape-not-policy-fixed-2026-08-26).
 
-Prefer this flow over keychain extraction once deployed: a PKCE-provisioned account owns its own refresh-token lineage, so it is not invalidated when the local Claude Code login refreshes (the cause of the recurring `invalid_grant` outages — see [Refresh Token Lifetime](#refresh-token-lifetime-and-re-auth)). The PKCE state is single-use and expires **10 minutes** after `init-oauth`; complete the browser step promptly.
+Prefer this flow over keychain extraction: a PKCE-provisioned account owns its own refresh-token lineage, so it is not invalidated when the local Claude Code login refreshes (the cause of the recurring `invalid_grant` outages — see [Refresh Token Lifetime](#refresh-token-lifetime-and-re-auth)). The PKCE state is single-use and expires **10 minutes** after `init-oauth`; complete the browser step promptly.
 
 `init-oauth` is a `POST` (the route is `post(init_oauth)` in `services/oauth-proxy/src/admin.rs`).
 
@@ -126,6 +126,17 @@ curl -s http://localhost:9090/admin/pool | jq .
 ```
 
 Returns per-account status, cooldown timers, and overall pool health.
+
+## Current Pool Composition (2026-08-26)
+
+| Account | Provisioned via | Refresh-token lineage | Role |
+|---|---|---|---|
+| `claude-max-1787733199` | PKCE admin flow, 2026-08-26 | proxy-owned (its own grant) | primary |
+| `claude-max-local` | keychain extraction, 2026-08-26 | **shared with the local Claude Code login** | **canary** — deliberately kept |
+
+Both are the same Max subscription, so there is no quota gain from having two; round-robin simply alternates. `claude-max-local` is kept on purpose: it is the account with the shared-lineage failure mode, so when it next goes `disabled` (expected ~early October 2026 on the observed ~6-week cadence) the pool fails over to the PKCE account with no outage, and the `disabled` state is the **signal** — it dates the keychain-lineage death without costing availability. When that happens: note the date and `error_description` here, then `DELETE /admin/accounts/claude-max-local`. Do **not** re-extract it from the keychain; provision any replacement via PKCE.
+
+If the PKCE account itself goes `disabled`, that is new information (a proxy-owned lineage dying) — record it before re-provisioning.
 
 ## Refresh Token Lifetime and Re-auth
 

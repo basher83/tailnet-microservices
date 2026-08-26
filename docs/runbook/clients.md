@@ -75,7 +75,7 @@ Do not use `claude -p --bare` as a validation substitute. `--bare` bypasses Clau
 
 The committed Kubernetes config in `k8s/config.toml` runs OAuth mode by default. The `[oauth]` and `[admin]` sections are active, and `[[headers]]` is ignored automatically because `[oauth]` takes precedence. To run passthrough mode instead, remove or comment the `[oauth]` and `[admin]` sections and keep the `[[headers]]` section. Commit and push to `main`; ArgoCD will roll out the ConfigMap change.
 
-OAuth mode starts with whatever accounts exist in `/data/credentials.json` on the PVC. An empty credential file is valid, but the pool is unhealthy until an account is loaded. The working provisioning path is keychain extraction; the PKCE admin flow is fixed in code as of 2026-08-26 (three request-shape bugs, not policy — see [Known Issues](./troubleshooting.md#pkce-web-flow-failed-on-request-shape-not-policy-fixed-2026-08-26-pending-deploy)) and becomes the preferred provisioning path once deployed.
+OAuth mode starts with whatever accounts exist in `/data/credentials.json` on the PVC. An empty credential file is valid, but the pool is unhealthy until an account is loaded. The preferred provisioning path is the PKCE admin flow, with keychain extraction as fallback; PKCE works as of 2026-08-26 (three request-shape bugs fixed, not policy — see [Known Issues](./troubleshooting.md#pkce-web-flow-failed-on-request-shape-not-policy-fixed-2026-08-26)) and is the preferred provisioning path.
 
 ## When the Client Gets 503 `pool_exhausted`
 
