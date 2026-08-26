@@ -3,25 +3,28 @@
   "checkpoint_id": "b49edae0ea7d",
   "session_id": "f3dd63a1-af27-4f2d-b4ec-ef9599b60c8c",
   "strategy": "manual-commit",
-  "created_at": "2026-08-26T08:36:16.229632Z",
+  "created_at": "2026-08-26T08:36:38.601631Z",
   "branch": "main",
   "checkpoints_count": 5,
   "files_touched": [
     "docs/runbook/accounts.md",
-    "docs/runbook/troubleshooting.md"
+    "docs/runbook/clients.md",
+    "docs/runbook/monitoring.md",
+    "docs/runbook/troubleshooting.md",
+    "specs/anthropic-oauth-gateway.md"
   ],
   "agent": "Claude Code",
   "model": "claude-fable-5",
   "turn_id": "7b37428b063d",
-  "checkpoint_transcript_start": 1138,
-  "transcript_lines_at_start": 1138,
-  "compact_transcript_start": 192,
+  "checkpoint_transcript_start": 1320,
+  "transcript_lines_at_start": 1320,
+  "compact_transcript_start": 223,
   "token_usage": {
-    "input_tokens": 1435,
-    "cache_creation_tokens": 31958,
-    "cache_read_tokens": 7858116,
-    "output_tokens": 13836,
-    "api_call_count": 21
+    "input_tokens": 2,
+    "cache_creation_tokens": 39,
+    "cache_read_tokens": 388885,
+    "output_tokens": 2955,
+    "api_call_count": 1
   },
   "skill_events_version": 1,
   "skill_events": [
@@ -145,32 +148,15 @@
     "turn_count": 29
   },
   "initial_attribution": {
-    "calculated_at": "2026-08-26T08:36:16.125818Z",
-    "agent_lines": 15,
+    "calculated_at": "2026-08-26T08:36:38.509872Z",
+    "agent_lines": 4,
     "agent_removed": 4,
     "human_added": 0,
     "human_modified": 0,
     "human_removed": 0,
-    "total_committed": 15,
-    "total_lines_changed": 19,
+    "total_committed": 4,
+    "total_lines_changed": 8,
     "agent_percentage": 100,
     "metric_version": 2
-  },
-  "prompt_attributions": [
-    {
-      "checkpoint_number": 1,
-      "user_lines_added": 55,
-      "user_lines_removed": 32,
-      "agent_lines_added": 0,
-      "agent_lines_removed": 0,
-      "user_added_per_file": {
-        ".claude/settings.json": 26,
-        ".pi/extensions/entire/index.ts": 29
-      },
-      "user_removed_per_file": {
-        ".claude/settings.json": 23,
-        ".pi/extensions/entire/index.ts": 9
-      }
-    }
-  ]
+  }
 }
