@@ -3,7 +3,7 @@
   "checkpoint_id": "fb7304f8f26e",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 9,
+  "checkpoints_count": 10,
   "files_touched": [
     "services/oauth-proxy/src/provider_impl.rs"
   ],
@@ -70,13 +70,20 @@
       "compact_transcript": "/fb/7304f8f26e/8/transcript.jsonl",
       "content_hash": "/fb/7304f8f26e/8/content_hash.txt",
       "prompt": "/fb/7304f8f26e/8/prompt.txt"
+    },
+    {
+      "metadata": "/fb/7304f8f26e/9/metadata.json",
+      "transcript": "/fb/7304f8f26e/9/full.jsonl",
+      "compact_transcript": "/fb/7304f8f26e/9/transcript.jsonl",
+      "content_hash": "/fb/7304f8f26e/9/content_hash.txt",
+      "prompt": "/fb/7304f8f26e/9/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 1290,
-    "cache_creation_tokens": 0,
+    "input_tokens": 1292,
+    "cache_creation_tokens": 56436,
     "cache_read_tokens": 0,
-    "output_tokens": 24,
-    "api_call_count": 9
+    "output_tokens": 28,
+    "api_call_count": 10
   }
 }
