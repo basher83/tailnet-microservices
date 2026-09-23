@@ -1,0 +1,57 @@
+{
+  "cli_version": "0.11.0",
+  "checkpoint_id": "fb7304f8f26e",
+  "session_id": "01a0cd20-a833-763e-967a-a8de206025d5",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-23T07:18:24.042535Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    "services/oauth-proxy/src/provider_impl.rs"
+  ],
+  "agent": "Pi",
+  "model": "claude-haiku-4-5",
+  "turn_id": "b7dffd64bd13",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 175,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 4,
+    "api_call_count": 1
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-23T07:18:24.037073Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 61,
+    "human_modified": 70,
+    "human_removed": 0,
+    "total_committed": 61,
+    "total_lines_changed": 176,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 100,
+      "user_lines_removed": 5,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.json": 11,
+        ".codex/hooks.json": 36,
+        "services/oauth-proxy/src/provider_impl.rs": 53
+      },
+      "user_removed_per_file": {
+        ".claude/settings.json": 1,
+        "services/oauth-proxy/src/provider_impl.rs": 4
+      }
+    }
+  ]
+}
