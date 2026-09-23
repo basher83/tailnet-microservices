@@ -1,0 +1,25 @@
+review /Users/basher8383/3I/lab/lab-operations/incidents/2026/INC-2026-001/index.md and check against the repo as ground truth, propose next steps
+
+---
+
+Sounds good, work through 1-3 only stop if you need human approval. pre approved for quota-consuming requests
+
+---
+
+do step 1, update the docs and commit the UA bump. don't push yet though. push rolls out the new image
+
+---
+
+what about attribution target?
+
+---
+
+I concurr, first thing though we must document our decision
+
+---
+
+approved quota requests and all
+
+---
+
+run the push, promote, probe, capture
