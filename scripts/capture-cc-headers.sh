@@ -178,7 +178,6 @@ hdr "3. Proxy constants (provider_impl.rs)"
 if [[ -f "$PROVIDER_RS" ]]; then
   PXY_UA="$(grep -E 'const USER_AGENT' "$PROVIDER_RS" | sed -E 's/.*"(.*)".*/\1/')"
   PXY_BILL="$(grep -E 'const ANTHROPIC_BILLING_HEADER' "$PROVIDER_RS" | sed -E 's/.*"(.*)".*/\1/')"
-  [[ -z "$PXY_BILL" ]] && PXY_BILL="(not injected — retired 2026-09-23, see docs/runbook/header-parity.md)"
   PXY_VER="$(grep -E 'const ANTHROPIC_VERSION' "$PROVIDER_RS" | sed -E 's/.*"(.*)".*/\1/')"
   say "  USER_AGENT              = $PXY_UA"
   say "  ANTHROPIC_VERSION       = $PXY_VER"
@@ -188,17 +187,9 @@ if [[ -f "$PROVIDER_RS" ]]; then
   # Compare debug cc_version against proxy billing header version.
   DBG_CCVER="$(printf '%s' "$DEBUG_LINE" | grep -oE 'cc_version=[0-9.]+[a-f0-9.]*' | head -1)"
   PXY_CCVER="$(printf '%s' "$PXY_BILL" | grep -oE 'cc_version=[0-9.]+[a-f0-9.]*' | head -1)"
-  UA_VER="$(printf '%s' "$PXY_UA" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
-  if [[ -n "$CC_VERSION" && -n "$UA_VER" && "$CC_VERSION" != "$UA_VER" ]]; then
-    warn "  USER_AGENT drift: proxy advertises '$UA_VER', installed Claude Code is '$CC_VERSION'"
-    warn "  → Anthropic enforces per-model minimum versions on user-agent; update USER_AGENT from the on-wire value"
-  else
-    ok "  USER_AGENT version matches installed Claude Code ($UA_VER)"
-  fi
-  if [[ -z "$PXY_CCVER" ]]; then
-    ok "  billing header: not injected (live CC debug line: '${DBG_CCVER:-none}')"
-  elif [[ -n "$DBG_CCVER" && "$DBG_CCVER" != "$PXY_CCVER" ]]; then
-    warn "  cc_version drift: proxy has '$PXY_CCVER', live CC reports '$DBG_CCVER' (informational; see header-parity.md)"
+  if [[ -n "$DBG_CCVER" && "$DBG_CCVER" != "$PXY_CCVER" ]]; then
+    warn "  cc_version drift: proxy has '$PXY_CCVER', live CC reports '$DBG_CCVER'"
+    warn "  → update ANTHROPIC_BILLING_HEADER in provider_impl.rs and ~/.pi/agent/models.json if you want fidelity"
   else
     ok "  cc_version matches (or not determinable): proxy='$PXY_CCVER' live='$DBG_CCVER'"
   fi

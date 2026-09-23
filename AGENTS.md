@@ -137,7 +137,7 @@ Before changing public behavior, search callers, tests, current specs, and runbo
 - Kubernetes resource names, ports, labels, PVC paths, ingress routing, and immutable image tags.
 - Claude Code identity headers, beta flags, billing attribution, and system-prompt mutation.
 
-Claude Code compatibility is empirical and perishable. Before changing `REQUIRED_BETA_FLAGS`, `USER_AGENT`, `X_APP`, the stripping of `x-anthropic-billing-header`, or system-prompt rewriting, read the provenance audits, inspect `provider_impl.rs` and its tests, and use `mise run headers:capture` when claiming parity with a current release. Anthropic enforces per-model Claude Code minimum versions on `USER_AGENT`; a stale value is an outage for newer models.
+Claude Code compatibility is empirical and perishable. Before changing `REQUIRED_BETA_FLAGS`, `USER_AGENT`, `X_APP`, `ANTHROPIC_BILLING_HEADER`, or system-prompt rewriting, read the provenance audits, inspect `provider_impl.rs` and its tests, and use `mise run headers:capture` when claiming parity with a current release.
 
 Preserve streaming semantics: the initial upstream response has a timeout, while an established response stream uses an idle timeout. Do not replace this with a wall-clock timeout over the complete SSE response.
 
