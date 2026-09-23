@@ -1,0 +1,54 @@
+review /Users/basher8383/3I/lab/lab-operations/incidents/2026/INC-2026-001/index.md and check against the repo as ground truth, propose next steps
+
+---
+
+Sounds good, work through 1-3 only stop if you need human approval. pre approved for quota-consuming requests
+
+---
+
+do step 1, update the docs and commit the UA bump. don't push yet though. push rolls out the new image
+
+---
+
+what about attribution target?
+
+---
+
+I concurr, first thing though we must document our decision
+
+---
+
+approved quota requests and all
+
+---
+
+run the push, promote, probe, capture
+
+---
+
+hourly 400s? how many of those were there?
+
+---
+
+hermes wasn't installed on aug 26 .... and I don't think I have any crons set up. Hmmm I'm starting to suspect some rogue pi prcesses maybe ...and from my system activity monitor I see PID: 47847, 71527, 65275, 37199 that look suspicious
+
+---
+
+use user basher83
+
+---
+
+leave pi, i forgot about zed. but openclaw .. lmao. I haven't used openclaw in like 6 months!! I had no idea it was still running even
+
+---
+
+yeah do that pls
+
+---
+
+ok well to answer the earlier extra useage question: i just tried pi and got,   Error: 400 {"type":"error","error":{"type":"invalid_request_error","message":"You're out of extra usage. Add more at claude.ai/settings/usage and keep
+ going."},"request_id":"req_011CfKwJs21TUNfjFcvSdFqK"}
+
+---
+
+wait, what models are in the pi config??
