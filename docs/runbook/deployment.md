@@ -8,18 +8,34 @@ Runtime-affecting commits to `main` trigger `.github/workflows/ci.yml`, which ru
 
 Changes under `k8s/` trigger the separate `.github/workflows/manifests.yml` workflow, which only renders and validates the manifests. A commit containing both runtime and Kubernetes changes triggers both workflows. Markdown-only changes trigger neither workflow.
 
-ArgoCD watches `main` at path `k8s/` with automated sync, prune, and self-heal enabled. It reconciles direct manifest changes as well as image-tag commits produced by the runtime pipeline.
+ArgoCD watches `main` at path `k8s/` but **has no automated sync policy** (checked 2026-09-23: `spec.syncPolicy` carries only `CreateNamespace=true` and `ServerSideApply=true`). This is an intentional manual promotion gate owned by the GitOps repository: a CI image-tag commit leaves the Application `OutOfSync` until someone syncs it. Do not enable auto-sync as a workaround.
+
+To promote, either use the `argocd` CLI (`argocd app sync anthropic-oauth-proxy`, needs a live login) or request the sync through the Kubernetes API, which is what the CLI does underneath:
+
+```bash
+kubectl -n argocd patch application anthropic-oauth-proxy --type merge -p '{
+  "operation": {
+    "initiatedBy": {"username": "<who>"},
+    "info": [{"name": "reason", "value": "<why>"}],
+    "sync": {"revision": "main", "prune": false,
+             "syncOptions": ["CreateNamespace=true", "ServerSideApply=true"]}}}'
+kubectl -n argocd get application anthropic-oauth-proxy \
+  -o jsonpath='{.status.operationState.phase} {.status.operationState.syncResult.revision}{"\n"}'
+kubectl -n anthropic-oauth-proxy rollout status deploy/anthropic-oauth-proxy
+```
+
+Capture the current pod's logs **before** syncing (see [Monitoring](./monitoring.md)); they are gone once the pod is replaced. The Deployment runs one replica with no surge, so expect a short window (~10 s observed) of 502s from the tailnet ingress while the pod is swapped.
 
 ```text
 runtime commit on main
   → CI required by docker: lint + audit + test + release build
   → CI docker job: build + push to ghcr.io (tagged sha-<7char>)
   → CI deploy job: update kustomization.yaml newTag, commit [skip ci]
-  → ArgoCD: auto-sync from main, path k8s/
+  → ArgoCD: Application goes OutOfSync; manual sync promotes (see above)
 
 k8s-only commit on main
   → Kubernetes Manifests: render + validate
-  → ArgoCD: auto-sync from main, path k8s/
+  → ArgoCD: Application goes OutOfSync; manual sync promotes
 ```
 
 The `newTag` field in `k8s/kustomization.yaml` is machine-managed by CI. Do not edit it manually — the next CI run will overwrite it.
@@ -104,21 +120,20 @@ ArgoCD will not revert a manual restart — the Deployment spec hasn't changed, 
 
 ## Rollback
 
-ArgoCD's self-heal will revert manual `rollout undo` commands within seconds. To roll back, revert the code commit on `main` and push. CI builds the previous code, updates the image tag, and ArgoCD syncs the rollback.
+To roll back, revert the code commit on `main` and push. CI builds the previous code and updates the image tag; then sync the Application as above. Without auto-sync, a manual `rollout undo` is not reverted by ArgoCD, but it is also invisible to Git, so prefer the revert path.
 
 ```bash
 git revert HEAD
 git push origin main
 ```
 
-For emergencies where you need to act faster than the CI pipeline, disable ArgoCD auto-sync first:
+For emergencies where you need to act faster than the CI pipeline:
 
 ```bash
-kubectl -n argocd patch application anthropic-oauth-proxy --type merge -p '{"spec":{"syncPolicy":null}}'
 kubectl -n anthropic-oauth-proxy rollout undo deployment/anthropic-oauth-proxy
 ```
 
-Re-enable auto-sync after the situation is resolved. Any manual state will be overwritten when sync resumes.
+The next manual sync will overwrite that state with whatever `main` says, so follow up with a Git revert.
 
 
 ## Graceful Shutdown
