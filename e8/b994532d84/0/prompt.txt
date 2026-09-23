@@ -1,0 +1,5 @@
+review /Users/basher8383/3I/lab/lab-operations/incidents/2026/INC-2026-001/index.md and check against the repo as ground truth, propose next steps
+
+---
+
+Sounds good, work through 1-3 only stop if you need human approval. pre approved for quota-consuming requests
