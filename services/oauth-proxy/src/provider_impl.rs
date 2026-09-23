@@ -245,6 +245,30 @@ fn extract_model(body: &serde_json::Value) -> Option<&str> {
 /// edge cases. Loom (reference implementation) applies the prefix to all
 /// models under OAuth.
 fn sanitize_pi_documentation_block(text: &str) -> Option<String> {
+    const HINT: &str = "Pi documentation (read only when";
+
+    // pi >= 0.87.1 (2026-09-23): the hint lives inside a `<docs>...</docs>`
+    // element, followed by other elements (`<cwd>`, extension notes) that must
+    // survive. Remove exactly that element. Anthropic's Max-plan classifier
+    // treats the hint as extra-usage traffic (see docs/runbook/clients.md).
+    if let Some(open) = text.find("<docs>") {
+        let after_open = &text[open + "<docs>".len()..];
+        if after_open.trim_start().starts_with(HINT)
+            && let Some(close_rel) = after_open.find("</docs>")
+        {
+            let close = open + "<docs>".len() + close_rel + "</docs>".len();
+            let before = text[..open].trim_end();
+            let after = text[close..].trim_start();
+            let kept: Vec<&str> = [before, after]
+                .into_iter()
+                .filter(|part| !part.is_empty())
+                .collect();
+            return Some(kept.join("\n\n"));
+        }
+    }
+
+    // pi < 0.87.1: a bare paragraph that runs to the end of the prompt, with
+    // only runtime-context lines worth keeping after it.
     let marker = "\n\nPi documentation (read only when";
     let (prefix, rest) = text.split_once(marker)?;
     let retained_context: Vec<&str> = rest
@@ -467,6 +491,48 @@ mod tests {
         assert!(text.contains("Current working directory: /repo"));
         assert!(!text.contains("Pi documentation"));
         assert!(!text.contains("custom providers"));
+    }
+
+    #[test]
+    fn sanitize_pi_documentation_block_removes_docs_element_from_pi_0_87() {
+        // pi 0.87.1 (2026-09-23) wraps the routing hint in <docs>...</docs> and
+        // moves the cwd into its own <cwd> element after it. The whole <docs>
+        // element must go; everything around it must survive verbatim.
+        let prompt = "You are an expert coding assistant operating inside pi, a coding agent harness.\n\n<tools>\n(none)\n</tools>\n\n<rules>\n- Be concise in your responses\n</rules>\n\n<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: /Users/x/.npm-global/lib/node_modules/@earendil-works/pi-coding-agent/README.md\n- When asked about: extensions (docs/extensions.md), custom providers (docs/custom-provider.md)\n</docs>\n\n<cwd>\n/repo\n</cwd>\n\nThe boomerang tool is available for token-efficient task execution.";
+        let mut body = serde_json::json!({
+            "model": "claude-haiku-4-5",
+            "system": [
+                { "type": "text", "text": "You are Claude Code, Anthropic's official CLI for Claude." },
+                { "type": "text", "text": prompt, "cache_control": { "type": "ephemeral" } }
+            ]
+        });
+
+        sanitize_system_prompt_for_plan_usage(&mut body);
+
+        let text = body["system"][1]["text"].as_str().unwrap();
+        assert!(
+            !text.contains("Pi documentation"),
+            "hint must be removed: {text}"
+        );
+        assert!(!text.contains("<docs>") && !text.contains("</docs>"));
+        assert!(!text.contains("custom providers"));
+        assert!(text.starts_with("You are an expert coding assistant operating inside pi"));
+        assert!(text.contains("<rules>\n- Be concise in your responses\n</rules>"));
+        assert!(
+            text.contains("<cwd>\n/repo\n</cwd>"),
+            "cwd element must survive: {text}"
+        );
+        assert!(
+            text.ends_with("The boomerang tool is available for token-efficient task execution.")
+        );
+        assert_eq!(
+            body["system"][1]["cache_control"],
+            serde_json::json!({ "type": "ephemeral" })
+        );
+        assert_eq!(
+            body["system"][0]["text"],
+            "You are Claude Code, Anthropic's official CLI for Claude."
+        );
     }
 
     #[test]

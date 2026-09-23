@@ -41,6 +41,8 @@ For sustained 504s, check Anthropic API status. If the API is healthy, consider 
 
 ### Proxy Returning 400 Bad Request
 
+**"You're out of extra usage" from a Pi/OpenClaw-style client while `curl` works.** The request was classified as extra usage, almost always because the client's system prompt reached Anthropic with content the classifier flags. See [Clients](./clients.md) for the Pi documentation-hint sanitizer and how to capture what the client actually sends. Do not reach for identity-header changes first; test the exact deployed proxy code locally with the failing client before blaming a proxy change.
+
 Either the request body exceeds the 10 MiB hardcoded limit, or the request is malformed. Check the `request_id` in the error response JSON and correlate with proxy logs.
 
 **`claude_code_version_too_old` (per-model minimum version).** If the body is

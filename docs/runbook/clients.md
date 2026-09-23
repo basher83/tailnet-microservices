@@ -59,7 +59,7 @@ For Pi/OpenClaw traffic, the proxy does more than token injection:
 - injects Claude Code attribution via `x-anthropic-billing-header`
 - injects required OAuth Anthropic beta/version/user-agent headers
 - prepends the required Claude Code system prompt prefix when absent
-- removes Pi's local documentation-routing hint from system prompts, because Anthropic's Max-plan classifier treats that hint as extra-usage traffic even with Claude Code attribution
+- removes Pi's local documentation-routing hint from system prompts, because Anthropic's Max-plan classifier treats that hint as extra-usage traffic even with Claude Code attribution. The sanitizer matches the hint text `Pi documentation (read only when`, in both shapes Pi has used: a bare paragraph (Pi < 0.87.1) and a `<docs>…</docs>` element (Pi ≥ 0.87.1, 2026-09-23). **When Pi changes its prompt layout again, this sanitizer silently stops matching and every Pi request through the proxy gets the extra-usage 400 below, while curl keeps working.** The regression tests in `provider_impl.rs` (`sanitize_pi_documentation_block_*`) pin both shapes; add the new shape there first.
 
 If Pi returns:
 
@@ -67,7 +67,7 @@ If Pi returns:
 400 You're out of extra usage. Add more at claude.ai/settings/usage and keep going.
 ```
 
-then the request was classified as billable API/extra usage rather than Claude Max plan usage. Check that ArgoCD has deployed an image containing the billing-header and Pi prompt-sanitizer fixes, then rerun the smoke test above. A raw `curl` request may still succeed while Pi fails if only the Pi-specific system prompt sanitizer is missing.
+then the request was classified as billable API/extra usage rather than Claude Max plan usage. First suspect a Pi update: check `pi --version` against the shapes the sanitizer knows, and capture what Pi actually sends (put `mitmdump --mode reverse:http://127.0.0.1:<local-proxy-port>` in front of a locally built proxy, point a temporary Pi provider at it with `NODE_EXTRA_CA_CERTS=~/.mitmproxy/mitmproxy-ca-cert.pem`, and dump the `system` array). If the hint survives the proxy, extend the sanitizer test-first and verify with the smoke test through the local build before pushing. A raw `curl` request succeeds while Pi fails precisely because curl sends no Pi system prompt. Observed 2026-09-23 with Pi 0.87.1 (INC-2026-001 R018): a proxy-side identity change had been deployed the same day and was initially blamed; the exact pre-change proxy code failed identically, which is the check that isolated the client update.
 
 Do not use `claude -p --bare` as a validation substitute. `--bare` bypasses Claude Code's normal OAuth/keychain path and can fail with `Not logged in` even when regular Claude Code and the proxy are healthy.
 
