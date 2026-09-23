@@ -28,8 +28,10 @@ The billing header is also mirrored in `~/.pi/agent/models.json` (the client-sid
 
 ## Fast drift check (no mitmproxy)
 
-The primary signal — `cc_version` drift — needs only Claude Code's `--debug-file` output, no
-traffic capture:
+The outage-relevant signal is **`USER_AGENT` drift**: Anthropic enforces per-model Claude Code
+minimum versions on the `user-agent` header, and a stale value produces HTTP 400
+`claude_code_version_too_old` for newer models (see [Troubleshooting](./troubleshooting.md)). The
+`cc_version` attribution line needs only Claude Code's `--debug-file` output, no traffic capture:
 
 ```bash
 mise run headers:capture          # wraps scripts/capture-cc-headers.sh
@@ -43,7 +45,8 @@ rebuild.
 
 > **macOS gotcha:** the full (non-`--debug-only`) script path calls `timeout`, which macOS lacks by
 > default — this silently produces "no capture." Use `--debug-only`, install coreutils
-> (`brew install coreutils` → `gtimeout`), or use the manual capture below.
+> (`brew install coreutils` → `gtimeout`), put a small `timeout` shell shim on `PATH`, or use the
+> manual capture below.
 
 ## On-wire capture (mitmproxy)
 
@@ -61,19 +64,24 @@ Lessons from the 2026-07-02 capture:
 - `--strict-mcp-config` disables MCP servers so the CLI reaches `/v1/messages` quickly instead of
   spending the whole window on MCP/bootstrap/telemetry (the failure mode that stalls naïve captures).
 - Do **not** rely on a fixed `timeout`; poll for the captured flow, then kill the processes.
-- Genuine CC does **not** send `x-anthropic-billing-header` on the wire — it is a `--debug-file`-only
-  attribution string. `cch=00000` is a fixed placeholder with no account data (see
-  `header-provenance.md`).
+- Genuine CC does **not** send `x-anthropic-billing-header` as an HTTP header. As of 2.1.280 it sends
+  the same attribution string as the **first `system` block** of the request body, with an
+  input-dependent `cch` (the `--debug-file` line shows `cch=00000`; the wire showed `cch=d9c31`).
+  The proxy still injects the header form; see `header-provenance.md` (2026-09-23 update).
 
 Compare the captured headers against `provider_impl.rs`. Update constants only when evidence shows
 they changed, then run `mise run ci`.
 
 ## Parity checklist
 
-Current parity target: genuine Claude Code **2.1.198** (verified 2026-07-02, all mirrored).
+Current parity target: `USER_AGENT` mirrors genuine Claude Code **2.1.280** (verified on-wire
+2026-09-23). `X_APP` and `REQUIRED_BETA_FLAGS` mirror **2.1.198** (2026-07-02); 2.1.280 sends two
+additional beta flags that are not forced. `ANTHROPIC_BILLING_HEADER` is deliberately held at
+2.1.198.bb7 (its version is not what the server checks).
 
-- [ ] `cc_version` in `ANTHROPIC_BILLING_HEADER` matches the live `--debug-file` line.
-- [ ] `USER_AGENT` matches on-wire `user-agent` (kept lock-stepped to `cc_version`).
+- [ ] `USER_AGENT` matches on-wire `user-agent`. **This is the one that causes outages when stale.**
+- [ ] `cc_version` in `ANTHROPIC_BILLING_HEADER` compared against the live `--debug-file` line
+      (informational; bump only with a deliberate attribution decision).
 - [ ] `X_APP` present (`cli`).
 - [ ] `REQUIRED_BETA_FLAGS` mirrors the on-wire `anthropic-beta` set — consult
       [`anthropic-beta-flags.md`](../audits/anthropic-beta-flags.md) for which flags are safe to force

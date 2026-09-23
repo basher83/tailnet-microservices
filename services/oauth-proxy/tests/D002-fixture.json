@@ -1,0 +1,25 @@
+{
+  "standing": "synthetic generic-client request used by tests/inc_2026_001_seam.rs; modeled on the INC-2026-001 intake, not a captured request",
+  "method": "POST",
+  "path": "/v1/messages",
+  "headers": {
+    "user-agent": "Anthropic/Python 0.87.0",
+    "anthropic-beta": "interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14"
+  },
+  "credential_policy": "Inject dummy credentials only via owner test seam; no real credentials retained.",
+  "json": {
+    "model": "claude-fable-5-1",
+    "max_tokens": 16,
+    "messages": [
+      {
+        "role": "user",
+        "content": "Reply with OK."
+      }
+    ],
+    "stream": false
+  },
+  "limitations": [
+    "Modeled on E001 lines 39-50, not a captured request.",
+    "Exact owner input type and streaming parity require owner procedure review."
+  ]
+}

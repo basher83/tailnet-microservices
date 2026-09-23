@@ -42,12 +42,18 @@ const REQUIRED_BETA_FLAGS: &[&str] = &[
     "cache-diagnosis-2026-04-07",
 ];
 
-/// User-Agent injected on the `/v1/messages` wire. Kept in lock-step with the
-/// `cc_version` attribution below — both track the live Claude Code release.
-/// Originally a Loom mitmproxy capture of v2.0.76; bumped to 2.1.198 on
-/// 2026-07-02 after an on-wire capture confirmed genuine CC 2.1.198 sends
-/// `claude-cli/2.1.198 (external, sdk-cli)`. See `docs/audits/header-provenance.md`.
-const USER_AGENT: &str = "claude-cli/2.1.198 (external, sdk-cli)";
+/// User-Agent injected on the `/v1/messages` wire. This is the header Anthropic
+/// reads to enforce per-model Claude Code minimum versions: on 2026-09-18 the
+/// API began rejecting `claude-fable-5-1` with HTTP 400
+/// `claude_code_version_too_old` ("Claude Code 2.1.198 ... version 2.1.251 or
+/// newer is required"). A local A/B on 2026-09-23 showed that bumping only this
+/// constant clears the rejection and bumping only `ANTHROPIC_BILLING_HEADER`
+/// does not (INC-2026-001, R015).
+///
+/// History: Loom mitmproxy capture of v2.0.76; 2.1.198 on 2026-07-02; 2.1.280
+/// on 2026-09-23, each from an on-wire capture of genuine Claude Code via
+/// `mise run headers:capture`. See `docs/audits/header-provenance.md`.
+const USER_AGENT: &str = "claude-cli/2.1.280 (external, sdk-cli)";
 
 /// Anthropic API version header value.
 const ANTHROPIC_VERSION: &str = "2023-06-01";
@@ -58,12 +64,15 @@ const ANTHROPIC_VERSION: &str = "2023-06-01";
 const X_APP: &str = "cli";
 
 /// Claude Code attribution header used by this proxy for Max-plan routing.
-/// Origin: Claude Code `--debug-file` attribution line. `cc_version` tracks the
-/// CC release (bumped to 2.1.198 on 2026-07-02 via `scripts/capture-cc-headers.sh`);
-/// `cc_entrypoint=sdk-cli` is the headless path; `cch=00000` is a hardcoded CC
-/// constant with no account data. Note: genuine CC does NOT send this header on
-/// the `/v1/messages` wire (debug-only) — the proxy injects it deliberately and
-/// it is accepted. See `docs/audits/header-provenance.md` before changing this.
+/// Origin: Claude Code `--debug-file` attribution line. `cc_version` was last
+/// bumped to 2.1.198 on 2026-07-02 via `scripts/capture-cc-headers.sh`;
+/// `cc_entrypoint=sdk-cli` is the headless path; `cch=00000` is the debug-line
+/// placeholder with no account data. Deliberately NOT bumped alongside
+/// `USER_AGENT` on 2026-09-23: the server ignores this header's version for the
+/// per-model floor, and genuine CC 2.1.280 does not send it as a header at all —
+/// it sends the attribution string as the first `system` block of the body with
+/// an input-dependent `cch`. Whether to mirror that is a separate decision.
+/// See `docs/audits/header-provenance.md` before changing this.
 const ANTHROPIC_BILLING_HEADER: &str = "cc_version=2.1.198.bb7; cc_entrypoint=sdk-cli; cch=00000;";
 
 /// OAuth provider backed by a subscription pool.

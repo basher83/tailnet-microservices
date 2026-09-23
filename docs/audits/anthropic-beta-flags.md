@@ -33,6 +33,10 @@ Proxy `REQUIRED_BETA_FLAGS` today injects **3 of 10**:
 > **Implementation status (2026-07-02).** All three tiers now forced — proxy injects **10 of 10**,
 > mirroring genuine Claude Code 2.1.198 exactly.
 >
+> **Drift noted (2026-09-23, CC v2.1.280).** Genuine Claude Code 2.1.280 sends **12** flags: the ten
+> above plus `thinking-binding-controls-2026-08-01` and `message-threads-2026-08-12`. Neither is forced
+> by the proxy and neither has been analyzed here. Requests without them succeed (INC-2026-001 R015).
+>
 > **Tier 3 smoke check (`advisor-tool-2026-03-01`, `cache-diagnosis-2026-04-07`).** Both forced on
 > plain requests (no tools / no `diagnostics` opt-in field) through the live proxy, non-streaming and
 > streaming: **HTTP 200, `stop_reason: end_turn`, zero error events, well-formed stream.** Confirms

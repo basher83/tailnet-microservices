@@ -271,6 +271,12 @@ These are not security issues (requests succeed) but are fidelity gaps if exact 
 > - **`x-app: cli` — still not injected** by the proxy (open fidelity gap).
 > - **anthropic-beta — all 10 now forced (was 3).** Tiers 1–3 promoted 2026-07-02; the proxy mirrors genuine CC 2.1.198's full beta set. Per-flag cause/effect + streaming/smoke evidence: `docs/audits/anthropic-beta-flags.md`.
 
+> **Update 2026-09-23 (CC v2.1.280, INC-2026-001).** On 2026-09-18 Anthropic began rejecting `claude-fable-5-1` through the proxy with HTTP 400, `error.details.error_code: claude_code_version_too_old`, message "Claude Code 2.1.198 does not support this model; version 2.1.251 or newer is required" (the model guide documents 2.1.257+). Re-ran `mise run headers:capture` against genuine Claude Code **2.1.280** (macOS needs a `timeout` shim). On-wire `POST /v1/messages` carried `User-Agent: claude-cli/2.1.280 (external, sdk-cli)`, `x-app: cli`, and a 12-flag `anthropic-beta` (adds `thinking-binding-controls-2026-08-01`, `message-threads-2026-08-12`); still no `x-anthropic-billing-header`. A body-aware capture showed the attribution string is now the **first `system` block**: `x-anthropic-billing-header: cc_version=2.1.280.351; cc_entrypoint=sdk-cli; cch=d9c31; cc_prompt_id=<uuid>; cc_turn_origin=sdk;` — note `cch` is `d9c31` on the wire but `00000` in the `--debug-file` line, so it is input-dependent, not a constant. Field discrimination through a locally built proxy against the live API: unmodified source → 400 (identical to production); `USER_AGENT` 2.1.280 alone → **200**; billing `cc_version` 2.1.280.351 alone → identical 400. Resolutions:
+> - **User-Agent bumped 2.1.198 → 2.1.280.** The server reads the per-model version floor from this header.
+> - **Billing header deliberately unchanged** (2.1.198.bb7). Its version is ignored for the floor, and genuine CC no longer sends it as a header. Mirroring the body-block attribution is a separate decision; no evidence yet that the mismatch is enforced.
+> - **anthropic-beta: 10 of 12.** The two new flags are not forced and not analyzed.
+> - Full receipts: `~/3I/lab/lab-operations/incidents/2026/INC-2026-001/runs/R015/`.
+
 > Maintenance / re-run: use **`scripts/capture-cc-headers.sh`** (or `mise run
 > headers:capture`) after a Claude Code upgrade. It captures both the
 > `[DEBUG] attribution header` line and the real on-wire `/v1/messages` headers and

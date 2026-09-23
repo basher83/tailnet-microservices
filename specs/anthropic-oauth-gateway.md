@@ -332,7 +332,7 @@ The gateway modifies both headers and body before forwarding.
 | `Authorization` | `Bearer {access_token}` | From selected pool account. Client-provided Authorization is **ignored** (stripped before injection). |
 | `anthropic-beta` | `oauth-2025-04-20,interleaved-thinking-2025-05-14,context-management-2025-06-27` | Must include `oauth-2025-04-20` |
 | `anthropic-dangerous-direct-browser-access` | `true` | Required for OAuth |
-| `user-agent` | `claude-cli/2.0.76 (external, sdk-cli)` | Captured from Claude CLI traffic; see `docs/audits/header-provenance.md` |
+| `user-agent` | `claude-cli/2.1.280 (external, sdk-cli)` | Captured from Claude CLI traffic; the server enforces per-model Claude Code minimum versions on this header. See `docs/audits/header-provenance.md` |
 | `anthropic-version` | `2023-06-01` | API version |
 | `x-anthropic-billing-header` | `cc_version=2.1.198.bb7; cc_entrypoint=sdk-cli; cch=00000;` | Current proxy attribution marker for Max-plan routing; `cch=00000` is a hardcoded CC constant (no account data) and genuine CC does not send this header on the `/v1/messages` wire — the proxy injects it deliberately. See `docs/audits/header-provenance.md`. |
 
@@ -782,7 +782,7 @@ Same Deployment, same Ingress, same MagicDNS hostname, same container image tag 
 
 Current header provenance is documented in `docs/audits/header-provenance.md` and operationalized in `docs/runbook/header-parity.md`. Key closeout status:
 
-- `USER_AGENT` came from a Loom mitmproxy capture of Claude CLI v2.0.76 `/v1/messages` traffic; bumped to v2.1.198 on 2026-07-02 (fresh on-wire capture) to lock-step with the `cc_version` attribution.
+- `USER_AGENT` came from a Loom mitmproxy capture of Claude CLI v2.0.76 `/v1/messages` traffic; bumped to v2.1.198 on 2026-07-02 (fresh on-wire capture) to lock-step with the `cc_version` attribution; bumped to v2.1.280 on 2026-09-23 after Anthropic rejected `claude-fable-5-1` with `claude_code_version_too_old` (server-stated floor 2.1.251). A local A/B showed the server reads the version from `user-agent`, not from `cc_version` in the billing header, which stays at 2.1.198.bb7.
 - `x-anthropic-billing-header` came from Claude Code v2.1.128 `--debug-file` output plus a successful direct proxy curl.
 - A later Claude Code v2.1.132 local MITM capture saw the debug attribution line but did not see `x-anthropic-billing-header` on the actual `/v1/messages` request. Treat `cch=00000` as debug-attribution data with unknown semantics, not as a proven on-wire Claude Code header.
 - The current proxy injection remains unchanged until a separate operator-approved live A/B validates removal, replacement, or a runtime toggle.

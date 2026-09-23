@@ -43,6 +43,15 @@ For sustained 504s, check Anthropic API status. If the API is healthy, consider 
 
 Either the request body exceeds the 10 MiB hardcoded limit, or the request is malformed. Check the `request_id` in the error response JSON and correlate with proxy logs.
 
+**`claude_code_version_too_old` (per-model minimum version).** If the body is
+`{"type":"error","error":{"type":"invalid_request_error","details":{"error_code":"claude_code_version_too_old"},"message":"Claude Code X does not support this model; version Y or newer is required. ..."}}`,
+Anthropic is enforcing a Claude Code minimum for that model against the proxy's hardcoded
+`USER_AGENT` (`services/oauth-proxy/src/provider_impl.rs`). Only that header matters: bumping the
+billing header's `cc_version` does nothing. Fix: run `mise run headers:capture` against a current
+Claude Code, set `USER_AGENT` to the captured value, run `mise run check`, commit, and promote. First
+seen 2026-09-18 for `claude-fable-5-1` (floor 2.1.251, proxy advertised 2.1.198); resolved
+2026-09-23 by advertising 2.1.280. Full trail: INC-2026-001 in Lab Operations.
+
 ### Proxy Returning 429 (OAuth Mode)
 
 In OAuth mode, the proxy attempts failover to the next available account when the current account's quota is exhausted (429 with quota message). If the last selected account returns a quota 429, that upstream response can pass through to the client. If no account can be selected because the pool is empty, cooling down, disabled, or missing credentials, the proxy returns 503 Service Unavailable.
