@@ -2964,9 +2964,13 @@ mod tests {
         );
         assert_eq!(headers["anthropic-version"].as_str().unwrap(), "2023-06-01");
         assert_eq!(headers["x-app"].as_str().unwrap(), "cli");
-        assert_eq!(
-            headers["x-anthropic-billing-header"].as_str().unwrap(),
-            "cc_version=2.1.198.bb7; cc_entrypoint=sdk-cli; cch=00000;"
+        // Genuine Claude Code does not send x-anthropic-billing-header as an
+        // HTTP header (it is a system-block attribution since 2.1.280), and a
+        // present/absent A/B showed it is not required for acceptance
+        // (INC-2026-001 D003/R016). The proxy must not emit it.
+        assert!(
+            headers.get("x-anthropic-billing-header").is_none(),
+            "x-anthropic-billing-header must not be injected"
         );
         assert!(
             headers["user-agent"]
@@ -2974,6 +2978,53 @@ mod tests {
                 .unwrap()
                 .contains("claude-cli")
         );
+    }
+
+    #[tokio::test]
+    async fn oauth_provider_strips_client_billing_header() {
+        // A client (e.g. a Pi models.json mirror of the old constant) may still
+        // send x-anthropic-billing-header. It must not reach upstream.
+        let dir = tempfile::tempdir().unwrap();
+        let store = test_oauth_credential_store(&dir, &["acct-1"]).await;
+        let pool = Arc::new(anthropic_pool::Pool::new(
+            vec!["acct-1".into()],
+            Duration::from_secs(7200),
+            store,
+            reqwest::Client::new(),
+        ));
+        let (upstream_url, _handle) = start_echo_server().await;
+        let state = test_oauth_app_state(&upstream_url, pool, 1);
+        let app = build_router(state, 1000);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/v1/messages")
+                    .header("content-type", "application/json")
+                    .header(
+                        "x-anthropic-billing-header",
+                        "cc_version=0.0.0.000; cc_entrypoint=test; cch=00000;",
+                    )
+                    .body(Body::from(
+                        serde_json::json!({"model": "claude-sonnet-4-20250514", "messages": []})
+                            .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let body = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let headers = &json["echoed_headers"];
+        assert!(
+            headers.get("x-anthropic-billing-header").is_none(),
+            "client-supplied x-anthropic-billing-header must be stripped"
+        );
+        assert_eq!(headers["x-app"].as_str().unwrap(), "cli");
     }
 
     #[tokio::test]

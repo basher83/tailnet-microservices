@@ -277,6 +277,13 @@ These are not security issues (requests succeed) but are fidelity gaps if exact 
 > - **anthropic-beta: 10 of 12.** The two new flags are not forced and not analyzed.
 > - Full receipts: `~/3I/lab/lab-operations/incidents/2026/INC-2026-001/runs/R015/`.
 
+> **Update 2026-09-23, later (header retired, INC-2026-001 D003/R016).** Present/absent A/B through
+> the real mutation seam against the live API, same `claude-fable-5-1` request: header injected →
+> HTTP 200; header not injected → HTTP 200, identical `usage` and `service_tier: standard`. Per the
+> pre-registered D003 rule this makes the header vestigial for acceptance, so `ANTHROPIC_BILLING_HEADER`
+> and its injection were removed and a client-supplied `x-anthropic-billing-header` is now stripped.
+> The May 2026 "extra-usage rejection" evidence in §2 above is therefore historical. A 200 does not
+> show how the request is billed; that was not observable in the response and was not checked.
 > Maintenance / re-run: use **`scripts/capture-cc-headers.sh`** (or `mise run
 > headers:capture`) after a Claude Code upgrade. It captures both the
 > `[DEBUG] attribution header` line and the real on-wire `/v1/messages` headers and
