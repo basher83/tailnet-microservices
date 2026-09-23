@@ -27,7 +27,7 @@ The proxy now injects the required Claude Code credential markers:
 6. `x-anthropic-billing-header: cc_version=2.1.198.bb7; cc_entrypoint=sdk-cli; cch=00000;` — injected as the current proxy attribution marker for Max-plan routing; not used by the server for the per-model version floor
 7. System prompt prefix: "You are Claude Code..." — injected for all requests with a string `model` field
 
-Header provenance caveat: a Claude Code v2.1.132 local MITM capture saw the billing-header debug attribution line but did not see `x-anthropic-billing-header` on the actual `/v1/messages` request. Treat `cch=00000` as debug-attribution data with unknown semantics; the proxy keeps the current injection unchanged until a separate live A/B validates a replacement or removal.
+Header provenance caveat: a Claude Code v2.1.132 local MITM capture saw the billing-header debug attribution line but did not see `x-anthropic-billing-header` on the actual `/v1/messages` request. Treat `cch=00000` as debug-attribution data with unknown semantics. As of 2.1.280 genuine Claude Code sends the attribution string as the first `system` block with conversation-derived `cch` and version suffix, not as a header. The proxy keeps the current header injection unchanged by decision (Lab Operations `incidents/2026/INC-2026-001/references/D003-attribution-decision.md`, 2026-09-23); removal is decided by a present/absent A/B, and mirroring the body-block fingerprint is rejected until something observably requires it.
 
 What was evaluated:
 

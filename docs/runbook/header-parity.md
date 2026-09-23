@@ -81,7 +81,9 @@ additional beta flags that are not forced. `ANTHROPIC_BILLING_HEADER` is deliber
 
 - [ ] `USER_AGENT` matches on-wire `user-agent`. **This is the one that causes outages when stale.**
 - [ ] `cc_version` in `ANTHROPIC_BILLING_HEADER` compared against the live `--debug-file` line
-      (informational; bump only with a deliberate attribution decision).
+      (informational only). Do **not** bump it or copy a captured suffix: the suffix and `cch` are
+      conversation-derived digests. The standing decision (keep the header form, no body-block
+      mirroring, removal only after a present/absent A/B) is Lab Operations `incidents/2026/INC-2026-001/references/D003-attribution-decision.md`.
 - [ ] `X_APP` present (`cli`).
 - [ ] `REQUIRED_BETA_FLAGS` mirrors the on-wire `anthropic-beta` set — consult
       [`anthropic-beta-flags.md`](../audits/anthropic-beta-flags.md) for which flags are safe to force
