@@ -20,8 +20,6 @@ use std::time::Duration;
 
 /// Captured 2026-09-23 via `mise run headers:capture` against genuine Claude Code 2.1.280.
 const EXPECTED_USER_AGENT: &str = "claude-cli/2.1.280 (external, sdk-cli)";
-/// Unchanged in the version-only experiment.
-const EXPECTED_BILLING_HEADER: &str = "cc_version=2.1.198.bb7; cc_entrypoint=sdk-cli; cch=00000;";
 
 #[tokio::test]
 async fn inc_2026_001_d002() {
@@ -71,6 +69,11 @@ async fn inc_2026_001_d002() {
             "x-api-key",
             HeaderValue::from_static("D002-INERT-CLIENT-KEY"),
         );
+        // A client mirroring the retired proxy constant must not leak it upstream.
+        headers.insert(
+            "x-anthropic-billing-header",
+            HeaderValue::from_static("cc_version=0.0.0.000; cc_entrypoint=test; cch=00000;"),
+        );
         let mut body = fixture["json"].clone();
         let result = provider.prepare_request(&mut headers, &mut body).await;
         let prepared = result.is_ok();
@@ -105,29 +108,28 @@ async fn inc_2026_001_d002() {
             "app_identity_preserved_contract": identity["x-app"] == Some("cli"),
             "browser_header_preserved_contract": identity["anthropic-dangerous-direct-browser-access"] == Some("true"),
             "client_key_removed": !headers.contains_key("x-api-key"),
+            "client_billing_header_removed": !headers.contains_key("x-anthropic-billing-header"),
             "authorization_replaced_with_dummy": headers.get("authorization").is_some_and(|h| h == "Bearer D002-INERT-NOT-A-TOKEN"),
         });
-        let ua_old = identity["user-agent"] == Some("claude-cli/2.1.198 (external, sdk-cli)");
-        let billing_old = identity["x-anthropic-billing-header"]
-            == Some("cc_version=2.1.198.bb7; cc_entrypoint=sdk-cli; cch=00000;");
-        // INC-2026-001 step 3a contract (version-only experiment): User-Agent
-        // must equal the value captured on the wire from genuine Claude Code
-        // 2.1.280 on 2026-09-23; the billing attribution header is deliberately
-        // left at its old value so the two fields are discriminated separately.
+        // INC-2026-001 contract: User-Agent must equal the value captured on
+        // the wire from genuine Claude Code 2.1.280 on 2026-09-23 (this is the
+        // header Anthropic reads for per-model minimum versions), and the
+        // retired x-anthropic-billing-header must not be sent at all (D003/R016:
+        // genuine CC sends attribution as a system block, and a present/absent
+        // A/B showed the header is not required for acceptance).
         assert_eq!(
             identity["user-agent"],
             Some(EXPECTED_USER_AGENT),
             "user-agent does not match the captured 2.1.280 wire value"
         );
         assert_eq!(
-            identity["x-anthropic-billing-header"],
-            Some(EXPECTED_BILLING_HEADER),
-            "billing header changed outside the version-only experiment"
+            identity["x-anthropic-billing-header"], None,
+            "x-anthropic-billing-header must not be injected"
         );
-        let classification = match (ua_old, billing_old) {
-            (true, true) => "both-old",
-            (false, false) => "neither-exact-old",
-            _ => "mixed",
+        let classification = if identity["user-agent"] == Some(EXPECTED_USER_AGENT) {
+            "ua-current"
+        } else {
+            "ua-stale"
         };
         let observation = json!({
             "repetition": repetition,

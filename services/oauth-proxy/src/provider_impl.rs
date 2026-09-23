@@ -47,8 +47,8 @@ const REQUIRED_BETA_FLAGS: &[&str] = &[
 /// API began rejecting `claude-fable-5-1` with HTTP 400
 /// `claude_code_version_too_old` ("Claude Code 2.1.198 ... version 2.1.251 or
 /// newer is required"). A local A/B on 2026-09-23 showed that bumping only this
-/// constant clears the rejection and bumping only `ANTHROPIC_BILLING_HEADER`
-/// does not (INC-2026-001, R015).
+/// constant clears the rejection and bumping only the (since retired) billing
+/// attribution header does not (INC-2026-001, R015).
 ///
 /// History: Loom mitmproxy capture of v2.0.76; 2.1.198 on 2026-07-02; 2.1.280
 /// on 2026-09-23, each from an on-wire capture of genuine Claude Code via
@@ -63,17 +63,18 @@ const ANTHROPIC_VERSION: &str = "2023-06-01";
 /// via on-wire capture 2026-07-02. See `docs/audits/header-provenance.md`.
 const X_APP: &str = "cli";
 
-/// Claude Code attribution header used by this proxy for Max-plan routing.
-/// Origin: Claude Code `--debug-file` attribution line. `cc_version` was last
-/// bumped to 2.1.198 on 2026-07-02 via `scripts/capture-cc-headers.sh`;
-/// `cc_entrypoint=sdk-cli` is the headless path; `cch=00000` is the debug-line
-/// placeholder with no account data. Deliberately NOT bumped alongside
-/// `USER_AGENT` on 2026-09-23: the server ignores this header's version for the
-/// per-model floor, and genuine CC 2.1.280 does not send it as a header at all —
-/// it sends the attribution string as the first `system` block of the body with
-/// an input-dependent `cch`. Whether to mirror that is a separate decision.
-/// See `docs/audits/header-provenance.md` before changing this.
-const ANTHROPIC_BILLING_HEADER: &str = "cc_version=2.1.198.bb7; cc_entrypoint=sdk-cli; cch=00000;";
+/// Attribution header that this proxy must NOT send and must strip from clients.
+///
+/// From May to September 2026 the proxy injected
+/// `x-anthropic-billing-header: cc_version=<ver>; cc_entrypoint=sdk-cli; cch=00000;`,
+/// copied from Claude Code's `--debug-file` attribution line. Genuine Claude
+/// Code never sends it as an HTTP header; since 2.1.280 it sends the same
+/// string as the first `system` block with conversation-derived digests. A
+/// present/absent A/B against the live API (INC-2026-001 D003/R016) returned
+/// 200 both ways, so the injection was retired on 2026-09-23 rather than bumped
+/// or mirrored. Clients that still mirror the old constant (e.g. a Pi
+/// `models.json`) must not leak it upstream. See `docs/runbook/header-parity.md`.
+const RETIRED_BILLING_HEADER: &str = "x-anthropic-billing-header";
 
 /// OAuth provider backed by a subscription pool.
 ///
@@ -144,10 +145,7 @@ impl Provider for AnthropicOAuthProvider {
                 HeaderName::from_static("x-app"),
                 HeaderValue::from_static(X_APP),
             );
-            headers.insert(
-                HeaderName::from_static("x-anthropic-billing-header"),
-                HeaderValue::from_static(ANTHROPIC_BILLING_HEADER),
-            );
+            headers.remove(HeaderName::from_static(RETIRED_BILLING_HEADER));
 
             // System prompt injection for all models. Then remove Pi's local
             // documentation-routing hint, which trips Anthropic's Max-plan
