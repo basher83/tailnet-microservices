@@ -1,0 +1,96 @@
+{
+  "cli_version": "0.11.3",
+  "checkpoint_id": "c31ae032ef25",
+  "session_id": "6652f237-4f6e-422c-9cd4-9539496aefe2",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-04T07:09:27.6319Z",
+  "branch": "bb/review-recent-repo-activity-thr_js9qtvvnuh",
+  "checkpoints_count": 18,
+  "save_step_count": 3,
+  "files_touched": [],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "98a200b18e59",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 160,
+    "cache_creation_tokens": 159916,
+    "cache_read_tokens": 8333901,
+    "output_tokens": 35208,
+    "api_call_count": 81
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "prompt-skill-claude-code-harness-arc-2026-10-04T05:31:56.637005Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "harness-arc"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "ac1b3cd21a55",
+      "timestamp": "2026-10-04T05:31:56.637005Z",
+      "native": {
+        "command": "/harness-arc"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/harness-arc",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 18
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 54,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "artifacts/harness/cef22846/manifest.json": 54
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 6310,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 40,
+      "user_lines_removed": 11,
+      "agent_lines_added": 6397,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "artifacts/harness-cef22846/critic.md": 22,
+        "artifacts/harness/cef22846/manifest.json": 18
+      },
+      "user_removed_per_file": {
+        "artifacts/harness/cef22846/manifest.json": 11
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 15,
+      "user_lines_removed": 8,
+      "agent_lines_added": 7062,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "artifacts/harness/9ef9a35b/manifest.json": 15
+      },
+      "user_removed_per_file": {
+        "artifacts/harness/9ef9a35b/manifest.json": 8
+      }
+    }
+  ]
+}
