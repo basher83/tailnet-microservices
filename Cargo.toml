@@ -44,10 +44,11 @@ metrics-exporter-prometheus = "0.18"
 tower = { version = "0.5", features = ["limit"] }
 
 # OpenTelemetry
-opentelemetry = "0.31"
-opentelemetry_sdk = "0.31"
-opentelemetry-otlp = { version = "0.31", default-features = false, features = ["grpc-tonic", "trace"] }
-tracing-opentelemetry = "0.32"
+opentelemetry = "0.32"
+# >= 0.32.1: GHSA-w9wp-h8wv-79jx (not in RustSec)
+opentelemetry_sdk = "0.32.1"
+opentelemetry-otlp = { version = "0.32", default-features = false, features = ["grpc-tonic", "trace"] }
+tracing-opentelemetry = "0.33"
 
 # Error handling
 thiserror = "2"
