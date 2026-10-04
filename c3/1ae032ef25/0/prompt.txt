@@ -163,3 +163,77 @@ I stopped it, it was the only option i had. hopefully the artifact dir is still 
 ---
 
 you can drive it, this bit is straightforward enough
+
+---
+
+you don't have to check the ammendment the critic will
+
+---
+
+[bb system]
+
+@thread:thr_ws5idwbrmh completed:
+
+Implemented the approved node and amended `40a2c74` to **`941b3b7`**, preserving the commit subject.
+
+- Added the content-free OAuth expiry audit.
+- Simplified the runbooks, removed the stale Pi caveat, and set the next planning date to `~2026-11-03`.
+- Removed all `artifacts/` paths from Git tracking while preserving the files locally.
+- Verified relative links, anchors, whitespace, and the documentation-only commit scope. The rework changes 66 documentation lines.
+
+The amend succeeded but emitted a `packed-refs.lock` permission warning. HEAD and the committed tree were verified; any effect on Entire bookkeeping remains unverified.
+
+Full receipts: [worker-result.md](/Users/basher8383/.bb/plugins/environment-git-worktree/host-data/worktrees/thr_js9qtvvnuh-1/tailnet-microservices/artifacts/harness-9ef9a35b/worker-result.md).
+
+No push or live changes were performed. The node remains awaiting parent review; I have not marked it Done or started another node.
+
+---
+
+[bb system]
+
+@thread:thr_a36iia6inv completed:
+
+**Verdict: APPROVE.** The amended commit `941b3b7` makes every fix the previous critic asked for in `artifacts/harness-cef22846/critic.md`. My full review is in `artifacts/harness-9ef9a35b/critic.md`.
+
+- **Scratch files out of the commit:** no `artifacts/` paths are tracked anymore. The four scratch files are removed from git but still on disk.
+- **New audit file:** `docs/audits/OAUTH_GRANT_EXPIRY_2026-10-04.md` is 31 lines. It contains no tokens, codes or state values.
+- **Runbook cleanup:**
+  - The runbooks link to the audit file instead of `artifacts/`, and the harness wording is gone.
+  - The outdated note about the user's Pi config is removed.
+  - The paragraph duplicated in `troubleshooting.md` is deleted.
+  - The pool section is cut down to the one-row table, a sentence on the removed accounts, and the warning that there is no failover.
+  - Paragraphs are one line each, matching the rest of the files.
+  - "Early November" is now "~2026-11-03".
+- **Scope:** only `docs/` files changed, and the commit has not been pushed.
+- **Dates:** I checked them myself using the timestamps in the account IDs. The old PKCE account was created 2026-08-26 08:33Z and first rejected 2026-09-24 19:44Z, about 29.5 days later. The new account was created 2026-10-04 05:36Z, so +30 days gives ~2026-11-03.
+
+Notes for whoever handles the next step (none of these need rework):
+1. **Missing alert:** the runbooks point to a "proposed `accounts_disabled` alert" in `monitoring.md#key-alerts`, but that section has no such alert. Add it there when metrics scraping is set up.
+2. **Git warning:** amending the commit printed a `packed-refs.lock` "Operation not permitted" warning. The commit itself is fine; the side record kept by Entire (the session-history tool) may be out of date.
+3. **Carried over from the previous review:**
+   - The one-time PKCE login code is in an Entire side-branch commit (`3adc3bd`). It's already used, so the risk is negligible.
+   - The pool now has a single account with no failover, so the next expiry (~2026-11-03) means a full outage unless someone re-authorizes before then.
+
+I haven't recorded the verdict or started the Promote step; both are yours.
+
+---
+
+[bb system]
+
+@thread:thr_3mu7j5vbzr completed:
+
+The promote node's announcement is written, but it only exists as a file. I didn't push, comment or message anyone, so nobody has been told yet.
+
+The Critic approved commit `941b3b7`, "docs(runbook): record OAuth grant expiry and October recovery". It's local and unpushed, one commit ahead of origin/main. It touches only docs, and it states the next grant expiry as about 2026-11-03.
+
+The announcement is `artifacts/harness-9ef9a35b/promote.md`. It tells the operator to review and push when ready, and tells on-call to use the updated runbooks for the October recovery. I held back on pushing because AGENTS.md forbids it unless the task asks, and external messages would be outward-facing.
+
+It also lists two open items from the Critic that I did not fix:
+1. The `accounts_disabled` alert is referenced but not yet defined in `monitoring.md`.
+2. The pool has a single account, so the next expiry means a full outage unless a second account is added or re-auth is done first.
+
+I've stopped here. The parent operator marks this node Done after review.
+
+---
+
+add artifacts/ to gitignore and commit
