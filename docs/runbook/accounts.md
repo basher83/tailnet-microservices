@@ -16,7 +16,7 @@ All admin commands below assume port-forwarding is active.
 
 **Status 2026-08-26:** fixed (`b883966`, `391a62a`), deployed as `sha-3b30262`, and used to provision `claude-max-1787733199` on the live proxy the same day. This is now the **preferred** provisioning path; Keychain Extraction below is the fallback. History and evidence: [Known Issues](./troubleshooting.md#pkce-web-flow-failed-on-request-shape-not-policy-fixed-2026-08-26).
 
-Prefer this flow over keychain extraction: a PKCE-provisioned account owns its own refresh-token lineage, so it is not invalidated when the local Claude Code login refreshes (the cause of the recurring `invalid_grant` outages — see [Refresh Token Lifetime](#refresh-token-lifetime-and-re-auth)). The PKCE state is single-use and expires **10 minutes** after `init-oauth`; complete the browser step promptly.
+Prefer this flow over keychain extraction: a PKCE-provisioned account owns a separate refresh-token lineage rather than sharing the local Claude Code login. This avoids sharing refreshes with that client, but does not establish a longer lifetime: the PKCE account also reported `Refresh token expired` after ~29.5 days (see [Refresh Token Lifetime](#refresh-token-lifetime-and-re-auth)). The PKCE state is single-use and expires **10 minutes** after `init-oauth`; complete the browser step promptly.
 
 `init-oauth` is a `POST` (the route is `post(init_oauth)` in `services/oauth-proxy/src/admin.rs`).
 
@@ -53,7 +53,7 @@ The PKCE state expires after 10 minutes. If Step 3 is not completed in time, sta
 
 ## Adding an Account (Keychain Extraction)
 
-If the PKCE consent flow fails (see Known Issues), credentials can be extracted from a local Claude Code installation and loaded directly. This is also the **re-auth procedure** whenever an account goes `disabled` (see [Refresh Token Lifetime](#refresh-token-lifetime-and-re-auth) below).
+If the PKCE consent flow fails (see Known Issues), credentials can be extracted from a local Claude Code installation and loaded directly. Use [PKCE](#adding-an-account-pkce-flow) for routine re-auth when an account goes `disabled`; keychain extraction remains a fallback, with a shared lineage and a credential-file overwrite.
 
 **Precondition:** the local Claude Code install must itself be freshly logged in. Run `claude` interactively and confirm it answers a prompt *before* extracting — otherwise you copy a refresh token that is already expired and the pool disables again on the first refresh cycle. If in doubt, `claude /logout` then log in again first.
 
@@ -127,35 +127,36 @@ curl -s http://localhost:9090/admin/pool | jq .
 
 Returns per-account status, cooldown timers, and overall pool health.
 
-## Current Pool Composition (2026-08-26)
+## Current Pool Composition (2026-10-04)
 
-| Account | Provisioned via | Refresh-token lineage | Role |
+| Account | Provisioned via | Refresh-token lineage | Role / observed state |
 |---|---|---|---|
-| `claude-max-1787733199` | PKCE admin flow, 2026-08-26 | proxy-owned (its own grant) | primary |
-| `claude-max-local` | keychain extraction, 2026-08-26 | **shared with the local Claude Code login** | **canary** — deliberately kept |
+| `claude-max-1791092167` | PKCE admin flow, 2026-10-04 | proxy-owned (its own grant) | sole account; available |
 
-Both are the same Max subscription, so there is no quota gain from having two; round-robin simply alternates. `claude-max-local` is kept on purpose: it is the account with the shared-lineage failure mode, so when it next goes `disabled` (expected ~early October 2026 on the observed ~6-week cadence) the pool fails over to the PKCE account with no outage, and the `disabled` state is the **signal** — it dates the keychain-lineage death without costing availability. When that happens: note the date and `error_description` here, then `DELETE /admin/accounts/claude-max-local`. Do **not** re-extract it from the keychain; provision any replacement via PKCE.
-
-If the PKCE account itself goes `disabled`, that is new information (a proxy-owned lineage dying) — record it before re-provisioning.
+Both disabled accounts, `claude-max-1787733199` (PKCE) and `claude-max-local` (keychain), were removed after adding the replacement via PKCE; see the [2026-10-04 recovery audit](../audits/OAUTH_GRANT_EXPIRY_2026-10-04.md). A single-account pool has no account failover when that grant expires.
 
 ## Refresh Token Lifetime and Re-auth
 
 Access tokens last ~8 hours and are refreshed proactively by the background task (observed cadence: one successful `background token refresh succeeded` every ~7h45m). The **refresh token** itself also expires, and when it does the account is permanently `disabled` until a human re-auths — there is no auto-recovery path in the proxy.
 
-Observed lifetimes (from pod logs, single account `claude-max-local`):
+Observed lifetimes (dated pod-log evidence; older rows retained as history):
 
-| Loaded via keychain | First `invalid_grant` | Lifetime | Anthropic `error_description` |
+| Provisioned / lineage | First `invalid_grant` (UTC) | Lifetime | Anthropic `error_description` |
 |---|---|---|---|
 | ~2026-06-20 | 2026-08-01 18:36Z | ~6 weeks | `Refresh token expired` |
-| (earlier) | 2026-06-20 02:12Z | — | `Refresh token not found or invalid` |
+| (earlier keychain grant) | 2026-06-20 02:12Z | — | `Refresh token not found or invalid` |
+| 2026-08-26 / keychain, `claude-max-local` | 2026-09-23 07:26:55Z (inline refresh) | ~28 days | `Refresh token expired` |
+| 2026-08-26 / PKCE, `claude-max-1787733199` | 2026-09-24 19:44:37Z (background refresh) | ~29.5 days | `Refresh token expired` |
 
-Two distinct descriptions have been seen. `Refresh token expired` reads as a server-side TTL. `Refresh token not found or invalid` is more consistent with the token having been rotated away by another client (Anthropic rotates the refresh token on every successful refresh; the local Claude Code that the credential was extracted from refreshes the *same* grant independently). Neither cause is confirmed — inferred from the error text only.
+Two distinct descriptions have been seen. `Refresh token expired` reads as a server-side TTL. `Refresh token not found or invalid` is more consistent with the token having been rotated away by another client (Anthropic rotates the refresh token on every successful refresh; the local Claude Code that the credential was extracted from refreshes the *same* grant independently). Neither cause is confirmed. The September failures at similar ages support a ~30-day server-side grant lifetime as an inference from timing and error text; they do not prove a fixed vendor TTL or that PKCE grants last longer than keychain grants.
+
+Complete pool unavailability lasted from 2026-09-24 19:44:37Z to 2026-10-04 05:38:31Z (~9.4 days); this dates credential/pool unavailability, not a count of failed requests. See the [recovery audit](../audits/OAUTH_GRANT_EXPIRY_2026-10-04.md) for per-account evidence and client verification.
 
 Practical guidance:
 
-- Expect to re-auth roughly every 4–6 weeks per account; plan for it rather than discovering it from 503s. See the `accounts_disabled` alert in [Monitoring](./monitoring.md#alerts).
+- Plan for re-auth on roughly a 30-day cycle per account, regardless of PKCE or keychain lineage, and arrange browser consent before the observed expiry window. This is an operational estimate, not a guaranteed lifetime. For the October 4 grant, ~2026-11-03 is the next planning window. See the proposed `accounts_disabled` alert in [Monitoring](./monitoring.md#key-alerts); the proxy metrics endpoint was not scraped in the October 4 investigation, so this is not an active alerting guarantee.
 - Symptom on the client side is `503 … "type":"pool_exhausted"` with `accounts_disabled ≥ 1` in the embedded pool summary ([Troubleshooting](./troubleshooting.md#pool-exhausted-oauth-mode)).
-- Re-auth = the Keychain Extraction procedure above (with its precondition). The disabled account is replaced in place when you overwrite `credentials.json` and restart.
+- Re-auth via [PKCE](#adding-an-account-pkce-flow): add the new account, confirm it is available in `/admin/pool`, then remove the disabled account by its exact ID. Verify `/health` body status and an end-to-end client request; a restart with the same credentials cannot restore an expired grant. Record the first rejection and its description before removing the old account.
 - Until the account is replaced, the background task logs `refresh token rejected, disabling account` every 5 minutes for the already-disabled account (known noise — see [Known Issues](./troubleshooting.md#background-refresh-keeps-retrying-disabled-accounts)).
 
 ## Credential Persistence

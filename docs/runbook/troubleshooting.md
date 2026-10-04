@@ -65,8 +65,8 @@ Check pool status via the health endpoint or admin API to see which accounts are
 When all accounts are unavailable because they are in `cooling_down` or `disabled` state, or because the pool is empty, the proxy returns 503 Service Unavailable before forwarding the request. To resolve:
 
 - Wait for cooldown timers to expire (check `cooldown_remaining_secs` in pool health)
-- Add more accounts by loading credentials through keychain extraction
-- Remove and re-add disabled accounts with fresh extracted credentials (disabled means refresh token is permanently invalid)
+- Add accounts through the [PKCE admin flow](./accounts.md#adding-an-account-pkce-flow)
+- For disabled accounts, add a fresh PKCE grant, confirm it is available, then remove the disabled account by its exact ID
 
 The client-visible error embeds the pool summary, which tells you which case you are in:
 
@@ -80,10 +80,12 @@ The client-visible error embeds the pool summary, which tells you which case you
 
 ```bash
 kubectl -n anthropic-oauth-proxy logs deploy/anthropic-oauth-proxy --since=720h \
-  | grep -E 'refresh token rejected|refresh succeeded' | sed -n '1p;$p'
+  | grep -E 'refresh.*rejected|refresh succeeded' | sed -n '1p;$p'
 ```
 
-The first `refresh token rejected, disabling account` line is the outage start; the last `background token refresh succeeded` before it is when the token was last good. Anthropic's `error_description` distinguishes `Refresh token expired` (server TTL, expect ~4–6 weeks) from `Refresh token not found or invalid` (grant rotated/revoked). Either way the fix is the same: re-auth via keychain extraction ([Accounts → Refresh Token Lifetime](./accounts.md#refresh-token-lifetime-and-re-auth)). Note that `/health` still returns HTTP 200 in this state — only its `status`/`pool.status` fields say `unhealthy`, so a liveness-only check will not catch it.
+Date the first rejection **per account**, including `inline refresh rejected (permanent), disabling account` and `refresh token rejected, disabling account`. The last successful refresh before rejection dates when that grant was last known good. One disabled account is not necessarily a total outage: complete pool unavailability begins when the final usable account is lost. The filtered first/last lines above are only a starting point; inspect account IDs and timestamps in the preserved logs.
+
+Anthropic's `Refresh token expired` suggests server-side expiry; `Refresh token not found or invalid` suggests rotation or revocation. Those are inferences from error text, not confirmed vendor causes. The September 2026 keychain and PKCE grants both reported expiry at ~28–29.5 days, so plan re-auth around 30 days regardless of lineage. Use [PKCE re-auth](./accounts.md#refresh-token-lifetime-and-re-auth), then remove the disabled grant. `/health` still returns HTTP 200 when its body `status`/`pool.status` is `unhealthy`; a liveness-only check will not catch this.
 
 ### High Latency
 
@@ -112,15 +114,15 @@ C and D differ only in `state`, so the Authorize POST rejection is isolated to t
 
 A **third** bug surfaced once the authorize step passed: the token endpoint answered `400 invalid_request: Invalid 'code_verifier'`. The proxy generated a 128-byte (171-char) verifier; RFC 7636 §4.1 caps it at 128 chars. 32 bytes (43 chars, what Claude Code and pi send) is accepted.
 
-**Fixed 2026-08-26** in `b883966` (`code=true`, random 43-char `state`, PKCE map keyed by state, `state` echoed to the token endpoint) and the follow-up verifier-length commit. **Verified end to end** against a locally run build with an empty pool: `init-oauth` → browser Authorize → `complete-oauth` → `{"status":"added"}` → pool `healthy` → live `/v1/messages` → `ok`. Deployed as `sha-3b30262` (ArgoCD manual sync of `73b5615`) and used the same day to provision `claude-max-1787733199` on the live proxy; see [Accounts → Current Pool Composition](./accounts.md#current-pool-composition-2026-08-26). The change: in `crates/anthropic-auth` / `services/oauth-proxy/src/admin.rs`, (1) `code=true` on the authorize URL; (2) `state` = 32 random bytes base64url, the in-memory PKCE entry keyed by it and returned alongside `account_id` so `complete-oauth` can look it up from the pasted `code#state`; (3) verifier shortened to 32 bytes. Reference: `earendil-works/pi` `packages/ai/src/auth/oauth/anthropic.ts:248-252` and `pkce.ts`.
+**Fixed 2026-08-26** in `b883966` (`code=true`, random 43-char `state`, PKCE map keyed by state, `state` echoed to the token endpoint) and the follow-up verifier-length commit. **Verified end to end** against a locally run build with an empty pool: `init-oauth` → browser Authorize → `complete-oauth` → `{"status":"added"}` → pool `healthy` → live `/v1/messages` → `ok`. Deployed as `sha-3b30262` (ArgoCD manual sync of `73b5615`) and used the same day to provision `claude-max-1787733199` on the live proxy; see [Accounts → Current Pool Composition](./accounts.md#current-pool-composition-2026-10-04). The change: in `crates/anthropic-auth` / `services/oauth-proxy/src/admin.rs`, (1) `code=true` on the authorize URL; (2) `state` = 32 random bytes base64url, the in-memory PKCE entry keyed by it and returned alongside `account_id` so `complete-oauth` can look it up from the pasted `code#state`; (3) verifier shortened to 32 bytes. Reference: `earendil-works/pi` `packages/ai/src/auth/oauth/anthropic.ts:248-252` and `pkce.ts`.
 
-**Why this matters beyond convenience:** a PKCE-provisioned account owns its own refresh-token lineage. The keychain-extraction path shares one lineage with the local Claude Code login, which is the structural cause of the ~6-week `invalid_grant` outages (see "Disabled Accounts Never Auto-Recover").
+**Why this matters beyond convenience:** a PKCE-provisioned account owns its own refresh-token lineage. The keychain-extraction path shares one lineage with the local Claude Code login, creating a risk of competing refreshes. It does not explain every expiry: the independently provisioned PKCE account also reported `Refresh token expired` after ~29.5 days in September 2026 (see [Accounts](./accounts.md#refresh-token-lifetime-and-re-auth)).
 
 Policy note: Anthropic's current terms (https://code.claude.com/docs/en/legal-and-compliance) still say OAuth is for "ordinary use of Claude Code and other native Anthropic applications" and that developers "may not collect, store, or intermediate Claude.ai credentials." The flow working is a technical fact, not a policy clearance.
 
 ### Disabled Accounts Never Auto-Recover
 
-Once an account is `disabled` (permanent refresh failure: `invalid_grant` / 401 / 403), nothing in the proxy re-enables it — not a pod restart with the same credential file, not a later successful refresh of another account. Recovery is always manual: overwrite `credentials.json` with freshly extracted tokens and restart ([Accounts](./accounts.md#adding-an-account-keychain-extraction)). Refresh tokens have been observed to expire ~6 weeks after extraction, so with a single-account pool this is a recurring outage unless alerted on (`accounts_disabled` alert in [Monitoring](./monitoring.md#alerts)).
+Once an account is `disabled` (permanent refresh failure: `invalid_grant` / 401 / 403), nothing in the proxy re-enables it — not a pod restart with the same credential file, not a later successful refresh of another account. Recovery requires human re-auth: add a fresh grant through [PKCE](./accounts.md#adding-an-account-pkce-flow), confirm availability, then remove the disabled grant. September observations put both PKCE and keychain expiry near 30 days; a single-account pool loses availability at expiry. Plan browser re-auth ahead of that window and wire the proposed `accounts_disabled` alert in [Monitoring](./monitoring.md#key-alerts); service metrics were not scraped during the October 4 investigation.
 
 ### Background Refresh Keeps Retrying Disabled Accounts
 

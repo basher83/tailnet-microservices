@@ -46,13 +46,13 @@ Health / pool status (HTTP 200 even when unhealthy — read `.status`):
 curl -fsS https://anthropic-oauth-proxy.tailfb3ea.ts.net/health | jq '{status, pool}'
 ```
 
-Clients getting `503 pool_exhausted` with `accounts_disabled ≥ 1` → the refresh token expired (expect this every ~4–6 weeks); re-auth via keychain extraction ([details](./accounts.md#refresh-token-lifetime-and-re-auth)):
+Clients getting `503 pool_exhausted` with `accounts_disabled ≥ 1` → confirm the refresh-token rejection in logs (expiry observed at ~30 days for both PKCE and keychain lineages); re-auth via the PKCE admin flow ([details](./accounts.md#refresh-token-lifetime-and-re-auth)):
 
 ```bash
-# on the workstation whose `claude` login is currently working
-# → follow accounts.md "Adding an Account (Keychain Extraction)" Steps 1–4
+# Preserve logs before any restart or credential reload; then follow
+# accounts.md "Adding an Account (PKCE Flow)" and remove the disabled account.
 kubectl -n anthropic-oauth-proxy logs deploy/anthropic-oauth-proxy --since=720h \
-  | grep -E 'refresh token rejected|refresh succeeded' | sed -n '1p;$p'   # when did it die?
+  | grep -E 'refresh.*rejected|refresh succeeded' | sed -n '1p;$p'   # when did it die?
 ```
 
 End-to-end smoke ([details](./deployment.md#end-to-end-test)):
