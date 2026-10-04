@@ -1,0 +1,69 @@
+{
+  "cli_version": "0.11.3",
+  "checkpoint_id": "5eb79f7cd7de",
+  "session_id": "01a105b2-d313-7333-968c-7c7dabe4392a",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-04T07:07:47.554148Z",
+  "branch": "bb/review-recent-repo-activity-thr_js9qtvvnuh",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    "artifacts/harness-9ef9a35b/worker-result.md",
+    "artifacts/harness-9ef9a35b/worker-validation.txt",
+    "artifacts/harness-cef22846/w3-evidence.json",
+    "artifacts/harness-cef22846/w3-result.md",
+    "artifacts/harness-cef22846/w3-validate.py",
+    "artifacts/harness-cef22846/w3-validation.txt"
+  ],
+  "agent": "Codex",
+  "model": "gpt-6-astra",
+  "turn_id": "8e485129df3d",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 52210,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 331520,
+    "output_tokens": 3650,
+    "api_call_count": 9,
+    "subagent_tokens_complete": true
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-04T07:07:47.545553Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 34,
+    "human_removed": 409,
+    "total_committed": 88,
+    "total_lines_changed": 475,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 6535,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "artifacts/harness-9ef9a35b/plan.md": 41,
+        "artifacts/harness-cef22846/critic.md": 92,
+        "artifacts/harness-cef22846/explore.md": 56,
+        "artifacts/harness-cef22846/pi-baseline-red.txt": 1,
+        "artifacts/harness-cef22846/pi-green-real-config.txt": 3,
+        "artifacts/harness-cef22846/plan.md": 51,
+        "artifacts/harness-cef22846/proxy-logs-20261004.jsonl": 5878,
+        "artifacts/harness-cef22846/w1-progress.md": 38,
+        "artifacts/harness-cef22846/w2-proxy-status.jsonl": 2,
+        "artifacts/harness-cef22846/w2-receipts.json": 134,
+        "artifacts/harness-cef22846/w2-result.md": 61,
+        "artifacts/harness/9ef9a35b/manifest.json": 68,
+        "artifacts/harness/cef22846/manifest.json": 110
+      }
+    }
+  ]
+}
