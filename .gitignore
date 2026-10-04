@@ -41,3 +41,6 @@ TASK.md
 # Specstory
 .specstory/
 .pi-subagents/
+
+# Harness run artifacts (local evidence, never committed)
+/artifacts/
