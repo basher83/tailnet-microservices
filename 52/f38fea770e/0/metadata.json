@@ -1,0 +1,70 @@
+{
+  "cli_version": "0.11.3",
+  "checkpoint_id": "52f38fea770e",
+  "session_id": "7f0d56ce-62e4-45ce-b3ea-cea88748f06a",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-04T07:07:54.061702Z",
+  "branch": "bb/review-recent-repo-activity-thr_js9qtvvnuh",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    "artifacts/harness-9ef9a35b/promote.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5-5",
+  "turn_id": "4c530e638c75",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 45461,
+    "cache_read_tokens": 114251,
+    "output_tokens": 1620,
+    "api_call_count": 4
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-04T07:07:54.055102Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 24,
+    "total_committed": 24,
+    "total_lines_changed": 24,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 7038,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "artifacts/harness-9ef9a35b/critic.md": 46,
+        "artifacts/harness-9ef9a35b/plan.md": 41,
+        "artifacts/harness-9ef9a35b/worker-result.md": 39,
+        "artifacts/harness-9ef9a35b/worker-validation.txt": 49,
+        "artifacts/harness-cef22846/critic.md": 92,
+        "artifacts/harness-cef22846/explore.md": 56,
+        "artifacts/harness-cef22846/pi-baseline-red.txt": 1,
+        "artifacts/harness-cef22846/pi-green-real-config.txt": 3,
+        "artifacts/harness-cef22846/plan.md": 51,
+        "artifacts/harness-cef22846/proxy-logs-20261004.jsonl": 5878,
+        "artifacts/harness-cef22846/w1-progress.md": 38,
+        "artifacts/harness-cef22846/w2-proxy-status.jsonl": 2,
+        "artifacts/harness-cef22846/w2-receipts.json": 134,
+        "artifacts/harness-cef22846/w2-result.md": 61,
+        "artifacts/harness-cef22846/w3-evidence.json": 230,
+        "artifacts/harness-cef22846/w3-result.md": 50,
+        "artifacts/harness-cef22846/w3-validate.py": 62,
+        "artifacts/harness-cef22846/w3-validation.txt": 13,
+        "artifacts/harness/9ef9a35b/manifest.json": 82,
+        "artifacts/harness/cef22846/manifest.json": 110
+      }
+    }
+  ]
+}

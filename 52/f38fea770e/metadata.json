@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.11.3",
+  "checkpoint_id": "52f38fea770e",
+  "strategy": "manual-commit",
+  "branch": "bb/review-recent-repo-activity-thr_js9qtvvnuh",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "artifacts/harness-9ef9a35b/promote.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/52/f38fea770e/0/metadata.json",
+      "transcript": "/52/f38fea770e/0/full.jsonl",
+      "compact_transcript": "/52/f38fea770e/0/transcript.jsonl",
+      "content_hash": "/52/f38fea770e/0/content_hash.txt",
+      "prompt": "/52/f38fea770e/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 45461,
+    "cache_read_tokens": 114251,
+    "output_tokens": 1620,
+    "api_call_count": 4
+  }
+}
