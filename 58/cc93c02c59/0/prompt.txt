@@ -1,0 +1,17 @@
+check github for any issues or prs open
+
+---
+
+#51 (Renovate, May): pins the proxy's own image tag. This probably conflicts with the CI step that rewrites that tag, so closing it is likely right. I need better than guesses with "probably conflicts" and "is likely right"
+
+---
+
+check basher83/renovate-config see if this is open as an issue there first pls
+
+---
+
+I disagree with the view that this needs a shared exclusion. The real problem is that CI owns this image tag, and that's specific to the repo here. I updated this repos renovate and opened an issue in renovate-config, review it and let me know of any concerns
+
+---
+
+commit the renovate rule and close #51 with a link to the evidence and #135. Close #55 as a duplicate of #57. new issue here for: Option 3 is the most useful idea in the issue, and it's mostly a change in this repo, not in renovate-config.
