@@ -1,0 +1,13 @@
+I need to check the proxy is still working, mise should have a way to test
+
+---
+
+check mise live:validate now, should be up
+
+---
+
+do all three
+
+---
+
+good to commit and push everything
