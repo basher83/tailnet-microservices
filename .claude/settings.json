@@ -117,10 +117,5 @@
         ]
       }
     ]
-  },
-  "permissions": {
-    "deny": [
-      "Read(./.claude/**)"
-    ]
   }
 }

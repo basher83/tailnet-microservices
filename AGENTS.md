@@ -126,6 +126,18 @@ Use these before speculating about cluster or vendor behavior, and record which 
 - **netdata via executor MCP.** Netdata Cloud is reachable only through `mcp__executor__execute` (TypeScript sandbox; read `mcp__executor__skills({name:"execute"})` first). Tools live under `tools.netdata_cloud_mcp.user.personalnetdatacloudmcp.*`: `get_profile` (space `Crashoverride6 space` → room `mothership-k8s`), `search_metrics` (`similar_to`, `after`/`before` ISO), `get_metric_metadata`/`get_metric_data`, `get_log_functions`, `search_logs` (`function: "otel-logs" | "systemd-journal"`, `node_id`). Known gaps: the proxy's `:9090/metrics` is not scraped (no `pool_*`/`proxy_*` contexts), and the Talos nodes' log functions are registered but return no entries. Do not cite netdata for this service until those are wired.
 - **Entire** (`entire search --json --compact`, `entire checkpoint explain <id> --no-pager`) for recorded intent behind a change; **opensrc** (`opensrc path <owner/repo>`) to read a dependency or peer project's actual source instead of recalling it.
 
+## Agent hooks
+
+The tracked `.claude/settings.json` registers only the Entire hooks. Repository hooks are registered in the untracked, per-machine `.claude/settings.local.json`, which now registers only `spec-frontmatter-guard.sh` (PostToolUse on Write/Edit).
+
+The Ralph-loop hooks were unregistered on 2026-11-07, because the Ralph loop had not been run in months and `ralph-guard.sh`'s force-push pattern also blocked plain `git push -q`:
+
+- `ralph-guard.sh` was a PreToolUse hook on Bash.
+- `ralph-activity.sh` was a PostToolUse hook on Bash/Write/Edit and logged to `.claude/ralph-activity.log`.
+- `convergence-check.sh` was not registered.
+
+The same change removed `"deny": ["Read(./.claude/**)"]` from `.claude/settings.json`. That rule blocked agents from reading or editing their own hook configuration, even in bypass-permissions mode. The scripts remain in `.claude/hooks/`. Before running `loop.sh` again, re-register them in `settings.local.json`, fix the guard's push pattern, and decide whether the `.claude/` read deny should return for unattended runs.
+
 ## Compatibility surfaces
 
 Before changing public behavior, search callers, tests, current specs, and runbooks for these contracts:
