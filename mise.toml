@@ -111,13 +111,13 @@ if [ "$PI_OUT" != "live-proxy-ok" ]; then
   exit 1
 fi
 echo "Pi proxy smoke: $PI_OUT"
-PHOENIX_HOST=https://phoenix.tailfb3ea.ts.net PHOENIX_PROJECT=default \
+PHOENIX_HOST=https://phoenix.tailfb3ea.ts.net PHOENIX_PROJECT=anthropic-oauth-proxy \
   npx -y @arizeai/phoenix-cli span list --last-n-minutes 30 \
   --limit 50 --format raw --no-progress > /tmp/anthropic-oauth-proxy-phoenix-spans.json
 jq '[.[] | select(.name == "proxy_request" and .attributes["url.path"] == "/v1/messages" and .attributes["metadata.proxy.pool_mode"] == "oauth")]' \
   /tmp/anthropic-oauth-proxy-phoenix-spans.json > /tmp/anthropic-oauth-proxy-phoenix-proxy-spans.json
 SPAN_COUNT=$(jq 'length' /tmp/anthropic-oauth-proxy-phoenix-proxy-spans.json)
-if [ "$SPAN_COUNT" -lt 1 ]; then
+if [ "${SPAN_COUNT:-0}" -lt 1 ]; then
   echo "FAIL: Phoenix span query returned no proxy spans"
   exit 1
 fi
