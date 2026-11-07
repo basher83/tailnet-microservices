@@ -1,0 +1,51 @@
+<task-notification>
+<task-id>bgrv51tbr</task-id>
+<summary>Monitor event: "main CI jobs at 91c0ec5 and Renovate rebases of #52/#54"</summary>
+<event>main CI Audit: success</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bgrv51tbr</task-id>
+<summary>Monitor event: "main CI jobs at 91c0ec5 and Renovate rebases of #52/#54"</summary>
+<event>main CI Lint: success
+main CI Test: success</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bgrv51tbr</task-id>
+<summary>Monitor event: "main CI jobs at 91c0ec5 and Renovate rebases of #52/#54"</summary>
+<event>main CI Build: success</event>
+</task-notification>
+
+---
+
+ralph-activity.sh (logs every tool call to .claude/ralph-activity.log) and convergence-check.sh are also Ralph-loop hooks. If they're registered too - take them out as well
+
+---
+
+<task-notification>
+<task-id>bgrv51tbr</task-id>
+<summary>Monitor event: "main CI jobs at 91c0ec5 and Renovate rebases of #52/#54"</summary>
+<event>main CI Docker: success
+main CI Update K8s Tag: success</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bgrv51tbr</task-id>
+<summary>Monitor event: "main CI jobs at 91c0ec5 and Renovate rebases of #52/#54"</summary>
+<event>main CI run finished: completed success</event>
+</task-notification>
+
+---
+
+You allow me .claude/ access for this, and I make the edit. - yes go ahead
+
+---
+
+huh thats very odd, I have bypass permissions on
