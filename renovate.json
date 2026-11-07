@@ -3,5 +3,13 @@
   "extends": [
     "local>basher83/renovate-config",
     "local>basher83/renovate-config//presets/rust.json"
+  ],
+  "packageRules": [
+    {
+      "description": "CI's Update K8s Tag job owns the proxy image tag; Renovate must not pin or update it",
+      "matchManagers": ["kustomize"],
+      "matchPackageNames": ["ghcr.io/basher83/tailnet-microservices/**"],
+      "enabled": false
+    }
   ]
 }
