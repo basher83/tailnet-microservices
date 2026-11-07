@@ -84,6 +84,20 @@ HOST=https://anthropic-oauth-proxy.tailfb3ea.ts.net
 kubectl config current-context
 kubectl -n argocd get app "$APP" \
   -o 'jsonpath=ArgoCD app {.metadata.name}: sync={.status.sync.status} health={.status.health.status}{"\\n"}'
+# Deploy drift: ArgoCD sync is manual (mothership-gitops apps/anthropic-oauth-proxy.yaml),
+# so Healthy+OutOfSync can mean main's image tag has not been promoted. Warn, don't fail.
+git fetch -q origin main
+WANT_TAG=$(git show origin/main:k8s/kustomization.yaml | awk '/newTag:/ {print $2; exit}')
+LIVE_IMAGE=$(kubectl -n "$NS" get deploy "$APP" -o 'jsonpath={.spec.template.spec.containers[0].image}')
+LAST_SYNC=$(kubectl -n argocd get app "$APP" -o 'jsonpath={.status.operationState.finishedAt} rev={.status.operationState.syncResult.revision}')
+echo "Image on origin/main: $WANT_TAG"
+echo "Image deployed:       $LIVE_IMAGE"
+echo "Last ArgoCD sync:     $LAST_SYNC"
+if [ -z "$WANT_TAG" ]; then
+  echo "WARN: could not read newTag from origin/main k8s/kustomization.yaml"
+elif [ "${LIVE_IMAGE##*:}" != "$WANT_TAG" ]; then
+  echo "WARN: deployed image is not main's tag; promote with a manual ArgoCD sync"
+fi
 kubectl -n "$NS" get ingress,svc,pods,pvc -o wide
 POD_COUNT=$(kubectl -n "$NS" get pods -l app=anthropic-oauth-proxy --no-headers | wc -l | tr -d '[:space:]')
 if [ "$POD_COUNT" -lt 1 ]; then
@@ -105,7 +119,7 @@ if [ "$STATUS" != "200" ]; then
 fi
 echo "Tailnet health HTTP $STATUS"
 jq -c . /tmp/anthropic-oauth-proxy-health.json
-PI_OUT=$(pi -p --provider anthropic-proxy --model claude-haiku-4-5 --thinking off --no-tools --no-context-files --no-session 'Reply exactly: live-proxy-ok' | tail -1)
+PI_OUT=$(pi -p --provider anthropic-proxy --model claude-haiku-5-5 --thinking off --no-tools --no-context-files --no-session 'Reply exactly: live-proxy-ok' | tail -1)
 if [ "$PI_OUT" != "live-proxy-ok" ]; then
   echo "FAIL: Pi proxy smoke returned: $PI_OUT"
   exit 1

@@ -10,6 +10,8 @@ Changes under `k8s/` trigger the separate `.github/workflows/manifests.yml` work
 
 ArgoCD watches `main` at path `k8s/` but **has no automated sync policy** (checked 2026-09-23: `spec.syncPolicy` carries only `CreateNamespace=true` and `ServerSideApply=true`). This is an intentional manual promotion gate owned by the GitOps repository: a CI image-tag commit leaves the Application `OutOfSync` until someone syncs it. Do not enable auto-sync as a workaround.
 
+`mise run live:validate` prints the image tag on `origin/main`, the image the Deployment is running, and the last ArgoCD sync time, and warns (without failing) when they differ. `Healthy` alone does not mean the running code is current: on 2026-11-07 the Application was Healthy while still running `sha-76c2c4a` from its 2026-09-23 sync.
+
 To promote, either use the `argocd` CLI (`argocd app sync anthropic-oauth-proxy`, needs a live login) or request the sync through the Kubernetes API, which is what the CLI does underneath:
 
 ```bash

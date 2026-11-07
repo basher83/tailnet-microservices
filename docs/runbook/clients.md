@@ -32,7 +32,7 @@ Use proxy-Claude explicitly from Pi:
 ```bash
 pi -p \
   --provider anthropic-proxy \
-  --model claude-haiku-4-5 \
+  --model claude-haiku-5-5 \
   --thinking off \
   --no-tools \
   --no-context-files \
@@ -49,7 +49,7 @@ A useful routing check is the health request counter:
 
 ```bash
 before=$(curl -fsS https://anthropic-oauth-proxy.tailfb3ea.ts.net/health | jq -r .requests_served)
-pi -p --provider anthropic-proxy --model claude-haiku-4-5 --thinking off --no-tools --no-context-files 'Reply exactly: ok'
+pi -p --provider anthropic-proxy --model claude-haiku-5-5 --thinking off --no-tools --no-context-files 'Reply exactly: ok'
 after=$(curl -fsS https://anthropic-oauth-proxy.tailfb3ea.ts.net/health | jq -r .requests_served)
 echo "before=$before after=$after"
 ```
