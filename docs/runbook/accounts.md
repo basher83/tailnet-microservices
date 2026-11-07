@@ -127,13 +127,13 @@ curl -s http://localhost:9090/admin/pool | jq .
 
 Returns per-account status, cooldown timers, and overall pool health.
 
-## Current Pool Composition (2026-10-04)
+## Current Pool Composition (2026-11-07)
 
 | Account | Provisioned via | Refresh-token lineage | Role / observed state |
 |---|---|---|---|
-| `claude-max-1791092167` | PKCE admin flow, 2026-10-04 | proxy-owned (its own grant) | sole account; available |
+| `claude-max-1794024529` | PKCE admin flow, 2026-11-07 04:10Z | proxy-owned (its own grant) | sole account; available |
 
-Both disabled accounts, `claude-max-1787733199` (PKCE) and `claude-max-local` (keychain), were removed after adding the replacement via PKCE; see the [2026-10-04 recovery audit](../audits/OAUTH_GRANT_EXPIRY_2026-10-04.md). A single-account pool has no account failover when that grant expires.
+The expired `claude-max-1791092167` (PKCE, 2026-10-04) was removed on 2026-11-07 after the replacement was confirmed available. Earlier, `claude-max-1787733199` (PKCE) and `claude-max-local` (keychain) were removed on 2026-10-04; see the [2026-10-04 recovery audit](../audits/OAUTH_GRANT_EXPIRY_2026-10-04.md). A single-account pool has no account failover when that grant expires; provisioning a second account staggered ~2 weeks apart would avoid a full outage at each expiry.
 
 ## Refresh Token Lifetime and Re-auth
 
@@ -147,14 +147,15 @@ Observed lifetimes (dated pod-log evidence; older rows retained as history):
 | (earlier keychain grant) | 2026-06-20 02:12Z | — | `Refresh token not found or invalid` |
 | 2026-08-26 / keychain, `claude-max-local` | 2026-09-23 07:26:55Z (inline refresh) | ~28 days | `Refresh token expired` |
 | 2026-08-26 / PKCE, `claude-max-1787733199` | 2026-09-24 19:44:37Z (background refresh) | ~29.5 days | `Refresh token expired` |
+| 2026-10-04 05:36Z / PKCE, `claude-max-1791092167` | 2026-11-03 03:31:42Z (background refresh) | ~29.9 days | `Refresh token expired` |
 
 Two distinct descriptions have been seen. `Refresh token expired` reads as a server-side TTL. `Refresh token not found or invalid` is more consistent with the token having been rotated away by another client (Anthropic rotates the refresh token on every successful refresh; the local Claude Code that the credential was extracted from refreshes the *same* grant independently). Neither cause is confirmed. The September failures at similar ages support a ~30-day server-side grant lifetime as an inference from timing and error text; they do not prove a fixed vendor TTL or that PKCE grants last longer than keychain grants.
 
-Complete pool unavailability lasted from 2026-09-24 19:44:37Z to 2026-10-04 05:38:31Z (~9.4 days); this dates credential/pool unavailability, not a count of failed requests. See the [recovery audit](../audits/OAUTH_GRANT_EXPIRY_2026-10-04.md) for per-account evidence and client verification.
+Complete pool unavailability lasted from 2026-11-03 03:31:42Z to 2026-11-07 04:10:28Z (~4.0 days; replacement `claude-max-1794024529` added via PKCE, then `live:validate` passed end to end), and earlier from 2026-09-24 19:44:37Z to 2026-10-04 05:38:31Z (~9.4 days); these date credential/pool unavailability, not a count of failed requests. See the [recovery audit](../audits/OAUTH_GRANT_EXPIRY_2026-10-04.md) for per-account evidence and client verification.
 
 Practical guidance:
 
-- Plan for re-auth on roughly a 30-day cycle per account, regardless of PKCE or keychain lineage, and arrange browser consent before the observed expiry window. This is an operational estimate, not a guaranteed lifetime. For the October 4 grant, ~2026-11-03 is the next planning window. See the proposed `accounts_disabled` alert in [Monitoring](./monitoring.md#key-alerts); the proxy metrics endpoint was not scraped in the October 4 investigation, so this is not an active alerting guarantee.
+- Plan for re-auth on roughly a 30-day cycle per account, regardless of PKCE or keychain lineage, and arrange browser consent before the observed expiry window. This is an operational estimate, not a guaranteed lifetime. For the November 7 grant, ~2026-12-06 is the next planning window (the October 4 grant expired on schedule, 2026-11-03). See the proposed `accounts_disabled` alert in [Monitoring](./monitoring.md#key-alerts); the proxy metrics endpoint was not scraped in the October 4 investigation, so this is not an active alerting guarantee.
 - Symptom on the client side is `503 … "type":"pool_exhausted"` with `accounts_disabled ≥ 1` in the embedded pool summary ([Troubleshooting](./troubleshooting.md#pool-exhausted-oauth-mode)).
 - Re-auth via [PKCE](#adding-an-account-pkce-flow): add the new account, confirm it is available in `/admin/pool`, then remove the disabled account by its exact ID. Verify `/health` body status and an end-to-end client request; a restart with the same credentials cannot restore an expired grant. Record the first rejection and its description before removing the old account.
 - Until the account is replaced, the background task logs `refresh token rejected, disabling account` every 5 minutes for the already-disabled account (known noise — see [Known Issues](./troubleshooting.md#background-refresh-keeps-retrying-disabled-accounts)).
