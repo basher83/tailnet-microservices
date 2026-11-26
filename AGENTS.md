@@ -173,3 +173,8 @@ Before finalizing, verify:
 - Tests are deterministic, local, and cover the owning layer.
 - Current documentation was updated without treating historical material as authoritative.
 - The narrowest sufficient validation was run, and any unverified live behavior is reported explicitly.
+
+<!-- entire-agent:begin -->
+Read .entire/agent-guide.md for this repository's workflow, source inspection, and verification guidance.
+@.entire/agent-guide.md
+<!-- entire-agent:end -->
