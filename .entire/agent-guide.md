@@ -1,9 +1,17 @@
-# Entire repository agent guide — Graph
+# Entire repository agent guide — Graph and Brain
 
-Use Graph for code discovery, structural understanding, and semantic change analysis.
 Use Graph EVERY time you need to find code or a code relationship, not only at the
-start. Your first action on a task that requires finding code MUST be a Graph query,
-and each later locate or relationship question MUST also go through Graph:
+start. Both tools run, in this order, and neither replaces the other:
+
+    1. entire brain brief "<task>" --json
+    2. entire graph query --repo . --profile full --head --format agent --max-context-bytes 4096 --query "<task>"
+
+The brief answers why, and what was decided; the query answers where, and what
+depends on it. Step 2 holds for small edits, follow-up work, and tasks that already
+name the file: a named file answers where code is, not what else depends on it. Do
+not skip either step on the grounds that the available context feels sufficient, and
+do not treat having done one as having done the other.
+Each later locate or relationship question MUST also go through Graph:
 
     entire graph query --repo . --profile full --head --format agent --max-context-bytes 4096 --query "<task>"
     entire graph def --repo . --head --max-context-bytes 4096 <Name>
@@ -25,10 +33,38 @@ generated ones. It does not mean the results are partial; only a failure in the
 language you asked about can hide a fact, and then you check that one relation in
 source. Static relations can be incomplete: an empty result is not proof of no callers.
 
-This holds for small edits, follow-up work, and tasks that already name the file.
-A named file answers where code is; it does not answer what else depends on it.
-Do not skip the query on the grounds that the available context feels sufficient.
+Questions about why something is the way it is, what was decided, or what was
+tried before are answered by durable memories. Retrieve them directly; the brief's
+memories section is a sample, not the search:
+
+    entire brain recall "<question>" --json
+
+recall ranks decisions, rejected approaches, invariants and gotchas first. query
+mixes memories with history and documentation and can rank documentation above the
+recorded decision.
+
+Reuse useful code locations from the brief. Use Brain retrieval for previous
+decisions, attempts, documentation, and durable memories - Brain's episodic record
+of what was decided, what went wrong before, and what must stay true. Record one
+when you learn something durable that the code does not already state:
+
+    entire brain remember "<memory>" --path <category.subcategory.type> --json
+
+Categories are architecture, constraints, preferences, project and workflow.
+Omitting --path classifies the memory for you, which requires a supported coding
+agent on PATH. Retrieve with recall, and re-check anchors with verify.
+
+Use Brain entities history to connect code changes to earlier checkpoints and
+sessions. Use Brain memory-informed review and workspace
+capabilities when relevant. Brain semantic answers refer to a stored index, which
+may differ from current working-tree source.
+
+The Graph obligation holds when the brief has already reported locations: a brief
+reports where code is, not what depends on it. A Graph query after a brief is not
+redundant. Do not ask both tools the SAME question without an identified gap.
 Use Graph diff, commit, and checkpoint for semantic comparisons of code revisions.
+Brain semantic answers refer to a stored index; Graph without --head reads the
+working tree.
 
 Inspect the source Graph displays at useful locations before editing. A result marked [complete]
 certifies a structurally whole displayed body, unchanged by rendering, for the source
@@ -60,4 +96,4 @@ If a Graph or Brain query fails, report the failure and fall back to direct sour
 inspection FOR THAT QUERY ONLY. One failure does not retire the tool: ask the next
 question through it. Do not automatically install, configure, or repair tools.
 
-<!-- entire-agent-activation: {"schema_version":1,"enabled":["graph"]} -->
+<!-- entire-agent-activation: {"schema_version":1,"enabled":["graph","brain"]} -->
