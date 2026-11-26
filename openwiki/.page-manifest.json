@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "pages": {
+    "/openwiki/architecture/service-runtime.md": {
+      "pageVersion": "sha256:659f6e578b6f9e620ecf7b72807e9b86525335548ab34d1fffc46e77eb766bf0",
+      "completedBy": "openwiki/0.9.0",
+      "completedRunId": "80b33e72-c427-41f4-967e-641547e88976",
+      "gitHead": "ed43431efd8071a9635377c3e2032aea08109871",
+      "sourceFingerprint": "sha256:2e36f6930a2f12ac8044a8657b252ba33fb1c30570cea6d1680b8e0315f4e686"
+    },
+    "/openwiki/concepts/account-pool.md": {
+      "pageVersion": "sha256:776ff4a8655157908865c84c4f91b20e1d1084a96d0180b5892360f515cefa50",
+      "completedBy": "openwiki/0.9.0",
+      "completedRunId": "80b33e72-c427-41f4-967e-641547e88976",
+      "gitHead": "ed43431efd8071a9635377c3e2032aea08109871",
+      "sourceFingerprint": "sha256:2e36f6930a2f12ac8044a8657b252ba33fb1c30570cea6d1680b8e0315f4e686"
+    },
+    "/openwiki/integrations/anthropic-client-contract.md": {
+      "pageVersion": "sha256:9fd8fa42563ef7f81b1c52e5fc624a4e4d86c215d8d2c5b06fde0f8a051f9da2",
+      "completedBy": "openwiki/0.9.0",
+      "completedRunId": "80b33e72-c427-41f4-967e-641547e88976",
+      "gitHead": "ed43431efd8071a9635377c3e2032aea08109871",
+      "sourceFingerprint": "sha256:2e36f6930a2f12ac8044a8657b252ba33fb1c30570cea6d1680b8e0315f4e686"
+    },
+    "/openwiki/operations/deploy-and-roll-back.md": {
+      "pageVersion": "sha256:089617b2660cb0cfe767bb81e8740899edac3b9b66a6275d7f06eb97ff7f9c1c",
+      "completedBy": "openwiki/0.9.0",
+      "completedRunId": "80b33e72-c427-41f4-967e-641547e88976",
+      "gitHead": "ed43431efd8071a9635377c3e2032aea08109871",
+      "sourceFingerprint": "sha256:2e36f6930a2f12ac8044a8657b252ba33fb1c30570cea6d1680b8e0315f4e686"
+    },
+    "/openwiki/quickstart.md": {
+      "pageVersion": "sha256:959c740c9df8e90087dbf865cdb8e98e8e5ad10d715182c385feba648bdf579c",
+      "completedBy": "openwiki/0.9.0",
+      "completedRunId": "80b33e72-c427-41f4-967e-641547e88976",
+      "gitHead": "ed43431efd8071a9635377c3e2032aea08109871",
+      "sourceFingerprint": "sha256:2e36f6930a2f12ac8044a8657b252ba33fb1c30570cea6d1680b8e0315f4e686"
+    },
+    "/openwiki/testing/validation.md": {
+      "pageVersion": "sha256:c96eed80e2f63c4b450c6cc5f1d4b0130dde3dfb22d52ed4d297d0d790b889bc",
+      "completedBy": "openwiki/0.9.0",
+      "completedRunId": "80b33e72-c427-41f4-967e-641547e88976",
+      "gitHead": "ed43431efd8071a9635377c3e2032aea08109871",
+      "sourceFingerprint": "sha256:2e36f6930a2f12ac8044a8657b252ba33fb1c30570cea6d1680b8e0315f4e686"
+    },
+    "/openwiki/workflows/oauth-enrollment.md": {
+      "pageVersion": "sha256:1e4b98f365f2fc2bd4c58c6291e1894dc7b801e2c57d21158000f282e4bcb4be",
+      "completedBy": "openwiki/0.9.0",
+      "completedRunId": "80b33e72-c427-41f4-967e-641547e88976",
+      "gitHead": "ed43431efd8071a9635377c3e2032aea08109871",
+      "sourceFingerprint": "sha256:2e36f6930a2f12ac8044a8657b252ba33fb1c30570cea6d1680b8e0315f4e686"
+    },
+    "/openwiki/workflows/proxy-request.md": {
+      "pageVersion": "sha256:3c9a43e40ea557925f1c4b0a7672b950b7e435cacdab5a0e727a83e9df643cb2",
+      "completedBy": "openwiki/0.9.0",
+      "completedRunId": "80b33e72-c427-41f4-967e-641547e88976",
+      "gitHead": "ed43431efd8071a9635377c3e2032aea08109871",
+      "sourceFingerprint": "sha256:2e36f6930a2f12ac8044a8657b252ba33fb1c30570cea6d1680b8e0315f4e686"
+    }
+  }
+}

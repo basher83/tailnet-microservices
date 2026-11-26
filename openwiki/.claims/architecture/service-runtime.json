@@ -1,0 +1,602 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:659f6e578b6f9e620ecf7b72807e9b86525335548ab34d1fffc46e77eb766bf0",
+  "claims": [
+    {
+      "id": "claim_212f234df983456db9d20522da5c957b",
+      "statement": "The single anthropic-oauth-proxy binary assembles the Tokio/Axum proxy and optional in-process admin server, while the Tailscale Operator owns tailnet exposure outside the pod.",
+      "evidence": [
+        {
+          "resource": "repo://k8s/deployment.yaml#L17-L37",
+          "version": "repo-lines-v1:sha256:0364a69296a33b6f0caf14b125b37d9f8f246ef55c42e807735e656792882352:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhNzliZDVmMDExOWFkMmU2ODAzMDc5MzY0ZWM2NTNkM2NjNWM4ZTExZDNmYmIxNWFlMDM3NDMzMmMwZGFkYTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzY2Q0OGE4ZDY4MGVkOTc2YWYwYjUxNDdkZGU0NDc5MjBjNGQ0MGVlY2NjYTY1N2RmYzQ0ODgwZGZiMmMzYzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5ODYwMGZkMmIzNDRkMjRjOTA2YTA5ZmVkN2YxZjkzMGU3ODk1MWJhNjA5M2Y3ODA3NTA1OWFjZGI3ZTMxYzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgwNDVhODg0MDQ5YWYyMzQ3M2MxYjUzMTdmYzAxMmUxZDFlNzNlODhhN2M1OGIzZmRmOWIxYWYzNzc0ZDk4NTYifQ"
+        },
+        {
+          "resource": "repo://k8s/ingress.yaml",
+          "version": "repo-file-v1:sha256:56a43b309f9cd088e952de45f9ea1e34bb7da3407fb38b45fda9baa7dcdb7d14"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/Cargo.toml#L7-L11",
+          "version": "repo-lines-v1:sha256:1db2405c3cb5d332a4437c76439021b05f4b94ab1468eeafca86eda154741f5a:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzY2YmYzMThkYzBmZmM4M2JiNGM3MDQ3NzVjYmYyNzUyMjZlN2UyZDBjODEzOTgxZDMxYTRkM2E2MWFjOGQ2NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODg4ZjZiNDgwOWY3OTM5YTVjYjQ5NWNkM2JjYTVlY2YyYzlmYzg4ODBhZGM2MjkwNjM4MWM5NGI2ZWExZjA5YyJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L204-L232",
+          "version": "repo-lines-v1:sha256:fe68fb6b7e0943b88cbec75e6f039ce4765ff9f6b7dd73b96f807d0ef717fbb5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmNDIzYTQ4MDU3MGQ4ZWE1MWMyZDc2MWFkYTQ3ZTRiOGRiMWRhYTBkZjBlMDc1Njg4ZmQ5ODUwYzhiMTYzYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3YTM1MzAyMWExYjNmOGJmYmNmOTg4ODQ5OGU0YTE4YWM2ZjRmZDNlMGIyZjlmYWIxYmQ0ZThhZGIyY2QyNTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwZjkzM2FmMzU1ZWYzNmM3NzQ0ODNiMjJmODZlN2ViMThhM2MyZjVmZmIxNmI5YzdmNGM3ZjgxMzY3ZmU0MWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjNGJlODZmMzIxMWZjYzQyMWM2MTJhOGU4YTRiODEwMzZkMDhkNDU5OGQ0ZjJmYWQxODkxMjA2NjVlNTE0ZjMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L60-L73",
+          "version": "repo-lines-v1:sha256:d8e9b25efe7a777447693117bff1640a465116fc1b9b7c1af2dbcb8f2a362ef0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlNjUyYTFkMThiOGM4ZWY2MDUzZTA5YTg4ODAyZjk4Y2Q0YWFhM2NiYzE4MjM5YWZhYmE3ZmUxMzUxODRiZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2ZmMyNDM5ZDE4NzQxZDAyMzBhNTU1OGM0NjllMGRjYTE3NWFmMzNjZTE4YzQ4NDIyOWNlMTY1NjI5M2JhNTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY5MjRmMTJmYmE5YTQwYTRkYmMzNTZlNmFiMjFmZDdmZmVjNWMwNTgyYzE4ODc1MjhkN2RkY2Y1OGI5M2MwMGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA3OGZiODQ1NGI0MjM5ZTZmOGMzMjVhZWNhZWZkN2E2YmU2YjNkOTc1OGE2MmQ4YjAwNzNhYmZjMGVhOGYwMTkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_123795ac1d2347f5ac34b6d024fe2a17",
+      "statement": "The binary initializes JSON logging using LOG_LEVEL, then RUST_LOG, then info as fallback, and installs the Prometheus recorder before serving.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L82-L110",
+          "version": "repo-lines-v1:sha256:f0170c4b8f1cc92d22414d665cbae87f34f4b7ac306da21f811fa7ff4edeb526:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlMWVlZGRjYWEzNDY2OGVkYTFlNWQ0ZDkzMTJlZjVmM2RjNGI5NmJjYTQzOTJjYjI5OGFjZTU4MjlhYTU4OGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4ZWVjNDZiODdlZGExMGJiYTFhMTNhNjUwZjVlMzMzYzUwYjUyOTMwNTQ3M2Y3YWFmMmY0YTk4MDg4Y2YwNDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ1YzQyMDNlMTllOWM0ZTgxYjZhNTIxNmMwMDFjZmUzZGI4NDkwYTJmYzdlMTE2ODI0NGZmZmIxNmFiYzUwZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdmODFjZmE5ZDE5M2QyNmQ5M2YyYTM3MjYzN2Q1MTNmOTU2ODZiMzUzODgyODVjMmNlNjg3YmRkMjU1YzYyMzEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a6ba26b1318a4d1199762450a182e96f",
+      "statement": "OTEL_EXPORTER_OTLP_ENDPOINT enables a separate batched OTLP gRPC tracer; the Prometheus recorder and scrape route are present independently.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L108-L110",
+          "version": "repo-lines-v1:sha256:807f0fa5ae274afefed5a7803589f3e784e333459aee175d73c216f5ec48921e:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNThlZWM0NmI4N2VkYTEwYmJhMWExM2E2NTBmNWUzMzNjNTBiNTI5MzA1NDczZjdhYWYyZjRhOTgwODhjZjA0MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmZiY2Q3ODJiZWNlNTI2MTExZDQ3YTAyOGUwYmYwNzZmMTE2MDZkNjQ5ODZiZGU3N2YwNDhjYWE3ZTk1NDIxNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2Y4MWNmYTlkMTkzZDI2ZDkzZjJhMzcyNjM3ZDUxM2Y5NTY4NmIzNTM4ODI4NWMyY2U2ODdiZGQyNTVjNjIzMSJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L60-L81",
+          "version": "repo-lines-v1:sha256:f3200e2f334a303185a819ae8891f68f8f7dbb9ff4f88fb1333d5f3c273557d5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlNjUyYTFkMThiOGM4ZWY2MDUzZTA5YTg4ODAyZjk4Y2Q0YWFhM2NiYzE4MjM5YWZhYmE3ZmUxMzUxODRiZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY5MjRmMTJmYmE5YTQwYTRkYmMzNTZlNmFiMjFmZDdmZmVjNWMwNTgyYzE4ODc1MjhkN2RkY2Y1OGI5M2MwMGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZhNzI4NjQ4YTEyYmRhODg3NmEyYWNjODZhMDJjMWRlMDkyOGNjNjM4ZWMwNzFiNzMxN2NjYjRkNjgyYTQxZjAifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/telemetry.rs#L16-L54",
+          "version": "repo-lines-v1:sha256:f1fb690142dd2aefff5337e1a928bdbab38a4e78652b2fdb946b151876629adc:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5MzE4M2I1OTQwNWNmYmM2ZGU3ZGNlZjBiNzM4YjZiNWIxYTNlOTA1ODQ2NzMwZmFmNTk0MjI1NTlhM2EyZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyMzdkODNlZWU1MTk2MThkZTRiNWE4YmMzNDJkNmJiYTAyZGIwYmQ2Y2EyYTZjNTRiMGE4NmE1N2FjZjc3NWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzYmU5ZmI0YWRkOWQ5YjFlMTFkYjhiNWY3NzUzM2Q4OGExNDc5ZGFlNjNiMTYyNzYwNDIxMDc1Zjk3NWExNTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjYjc0NDYxNGY1NmFmMzVmOWFmMjM4OGU1MGRmYzc1N2JlOWQwMTJhMDM5MDk3Y2YyYzU0ZjAxMzk0NzhiZDMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f3e9d43e822b45999ac804c8b36bfdfd",
+      "statement": "Config path selection loads one TOML file: --config <path> overrides CONFIG_PATH, which overrides the relative default anthropic-oauth-proxy.toml.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L190-L201",
+          "version": "repo-lines-v1:sha256:406007a37ee842e87b86f912089c5f3985f50ad9c60ac4e0dbdddc8beeb06dd2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MjJjNDJjZDE5YzZkMDNkODA4YzQ1MjcyMDU1MjgyNWI3ZWExYzViNDkxYjIxODUxMWNhYzc0MTVjZjlkOWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4MzY1MzdhMDY5YmY3MWQ5YjQ3NDE0ZTI3YzExZDQ5OWFhNzg3YWU0OGViZjIxZmZiMDVjNjYwNThlMDdhYjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1M2Y3ZjU3Y2YyNzI1NzczYjI3OWJiMjVkYjcyMTMyNDVkMzM2Y2FmNzU0ZDdhNDY0ZDg5Y2RhMDRjMjFjZGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA2ODgwOTFjNzQwMjM3MzE4M2ZlZjQxYTM5NTUwMmE3YzJiYmM5MmMyZGJiYTNmMjI1NTE2MGM2MmJkZTM0NjIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L115-L128",
+          "version": "repo-lines-v1:sha256:f1218e7293f7cb52fd050c85809956b759f46baf34c53b6192f1360288efc0a3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlOTA2YzE2NjkzN2JkODhhYmFkNzU1ZTZhOTIwNDlkYTlkYWJjYWM4NzAyMmIwZGRmNTFhZDBmN2QzNzE3NjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiODc3MTk4N2NjNzcwZjFiYjBlOWJiNjJlZDI5ZmU1YTQ2NDljZWVmZmIxZjYxZGIxMzgwNWM2NTZmZjNjM2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcyMWIzODZkOTc2ZWQ3MzEyYWFlNDgzNTA2NGYyZjFkNDY5ZmQzZDA1YmI4ODY3ZjcwNDIzYWVlYTFjZTJmYjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgyMWVkZjU2ZWZkZTY1ZTBiZTAyNTg1YTA2ZDExMzRhOGExY2UyOWE0Y2JhMjM2ODRkYzczMDZlMzRmNGJhNzIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5b320b96fb1841209edc92d10c1c9dbb",
+      "statement": "CREDENTIAL_FILE overrides oauth.credential_file after deserialization only when [oauth] is present; it neither creates the section nor waives the required TOML field.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L106-L117",
+          "version": "repo-lines-v1:sha256:dd4f0046a6da4e92e49945df4c1b698b5a3e7414f194de2d29dfbf17201cf987:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0NGY4YjAwN2MzYWEyZDgxZmQ4Y2Y4N2VhYTg2ZmQyZjZhZmY3YWE4OWM1NThhOWVlM2U3NTM2NDAyMDNmYmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4MGRhNjgyODA5YzNmYTEyYTJhZTM2ODI3MzE1ZDBhOWI4NDVlYzZmYmQxYjg5ZThmNDQyN2Y1NzUwMTJjMmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE3MzNlY2FkOGI4YzZiZWE2ZTU3MTI1NzM5ODFmZmFkMjUzNzdiMTBmM2E0NWMyZDVlMGRjZjM2ZGMzMTczN2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0OGNlNjBmZjFmNGMzZDZhMzBkZjVlMTU0YmQ5MzU4NTljMzZhNDhiMzNlZjViZjFkZDUwNDY0NjU3YjNjMGEifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L47-L59",
+          "version": "repo-lines-v1:sha256:8def6c5517e165e88e7cfbfe4a3ab365261fba40a74a4f82e9841ce320db4cfb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5YjUxZGNmMTUwNDc0MTUyZmFjMzQ0NTY3NzQ2ZmI4ZDRjYzQ4ZmNjM2FkZmQ0ZDE2ZGNmM2ZkNGEyODcwOTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkOGNhMDk2YWMyODFjY2M0NzExN2M1Y2QxNzQwZDkxYzY4MGQ5NjU2MDQ3NzdlNWY1YWM4YWM5ZGYyODM1ZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU2YzE5NmRjMmU3MmY3ZDM1M2I1NzllODMxYTgzMzNkODZlOTEwNDFmOGI2N2U3Y2M3N2ViODk1YjRiYTliNjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhYzYyODgyZTlhMDYyYWMwMzUzMDZlMjY3NWYwNGZmMmU0OTBhNjdjZGY3YTA3ZmNjMTQ1YzQ3NmM0OTZiOTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_64b8bab2213348dfa652d801542c8725",
+      "statement": "A present [oauth] selects OAuth pool mode and causes nonempty [[headers]] to be cleared with a warning before header syntax validation. With no [oauth], passthrough is selected even without static headers.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L22-L30",
+          "version": "repo-lines-v1:sha256:7c1c65b0c84633dfa9a3b6bc12d1a8164b2e1ca5362ffbd06be66fa412a9e1bf:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDRjOTAxNWVkZGNjMzFkN2RlYTdmNzYyNDJjYTAxMDcxNjVjNWVmZGU4YzIwM2NkM2NhOTZhYjUwOTY4M2I4NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDgzYmQwZTM1YzRiOTg2ZjYzNTUyNzA0MDU4MTc2YzQzNzU0ZDNhYzZiYmZmYWY1MzQ5NDQxZWNmOTIzNWZmZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzlhOTFkYjRmOTc1YjA2Yjg3NDY1NThmNzE3ZDZlYzYxNTMxMmRiMGNhZWJhYWZmZmUzZDZiNDQ0OTNmOGQ1YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTQ3NDIzNWIzZjYxMWUxNjVmNzU3N2ZhYTVlZWE4NjQ4NGUzNTIyY2ViYmFlYTBjZjI5NGVhMTU4MzU4YWYxZCJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L96-L155",
+          "version": "repo-lines-v1:sha256:5c6e813f902ce2e8ebfe6dec00c0069abf4e54ef7daf495c0c50ea7efbaff692:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2OWJkMjhjMDI5YTAxMWYxYTE4ZWM1YWY0YmIwYjgxMzcxZjVjZmRjZTM1YTYxMjNmYmJiYmE5YjcxN2Y5Y2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlZTkwODJhZmJhOWE4MTJkN2UwZmRmOThkMjAzMjA5ZjhlYTg4ZmZjMjU3Mjk1YWQzNDY2MzVhMTU4NzdlZDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1NDg4MjZiZjY4OTIxZWE5ZGM2NjQzNzAzYWI3MWZjMmRmNDdkMzcxM2YxYjQ3ZjFiM2FmOTU2YTQzMzk4NWIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_36fa6350e581433a89b43d55527caf34",
+      "statement": "Startup requires readable, deserializable TOML with the required proxy address and upstream URL; config validation rejects unparseable or non-HTTP(S) URLs, zero proxy timeout or concurrency, invalid active static headers, and an empty credential path or zero cooldown or refresh settings in OAuth mode.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L106-L188",
+          "version": "repo-lines-v1:sha256:e5acfa3fb3309ac423cd625771439e5b2345f6eca887b7e67c48fc7c2d0ea1f5:eyJzZWxlY3RlZExpbmVDb3VudCI6ODMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0NGY4YjAwN2MzYWEyZDgxZmQ4Y2Y4N2VhYTg2ZmQyZjZhZmY3YWE4OWM1NThhOWVlM2U3NTM2NDAyMDNmYmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlZjZhMmFkZTU3YzAzNzY5NTY4OTI3ZmI4M2YxZWIwMDM2YzI2YTdjYjhkZWM3MWNkOTBkZGM5NTA0NWY2YzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE3MzNlY2FkOGI4YzZiZWE2ZTU3MTI1NzM5ODFmZmFkMjUzNzdiMTBmM2E0NWMyZDVlMGRjZjM2ZGMzMTczN2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3Mjc2NzI0NWRmZDA3NGI1MDdhNzdhYTZhNWI0NGU2ZWIwMjYyMGM1NzFiMzRhOTBkYjEyYWUyNjZkNjgyODQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L22-L59",
+          "version": "repo-lines-v1:sha256:df5ceddf53ac7d0baeaed366e42095ddde56999101facdb0b92c9f72af52ab52:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0YzkwMTVlZGRjYzMxZDdkZWE3Zjc2MjQyY2EwMTA3MTY1YzVlZmRlOGMyMDNjZDNjYTk2YWI1MDk2ODNiODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkOGNhMDk2YWMyODFjY2M0NzExN2M1Y2QxNzQwZDkxYzY4MGQ5NjU2MDQ3NzdlNWY1YWM4YWM5ZGYyODM1ZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM5YTkxZGI0Zjk3NWIwNmI4NzQ2NTU4ZjcxN2Q2ZWM2MTUzMTJkYjBjYWViYWFmZmZlM2Q2YjQ0NDkzZjhkNWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhYzYyODgyZTlhMDYyYWMwMzUzMDZlMjY3NWYwNGZmMmU0OTBhNjdjZGY3YTA3ZmNjMTQ1YzQ3NmM0OTZiOTUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L123-L128",
+          "version": "repo-lines-v1:sha256:94add77f69ee4c5260cbd166da1bf7c43b99d35f0fe5c7bacca580d420e8d20f:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmRhYWM2NThmOWQ1YmQxN2JhNjdmNzI3NDQwZTU3OTcxODVhOWFlMjExYzVmMjk4ZmUzMjExMDhjZTgyZGM1NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGI4NzcxOTg3Y2M3NzBmMWJiMGU5YmI2MmVkMjlmZTVhNDY0OWNlZWZmYjFmNjFkYjEzODA1YzY1NmZmM2MzYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmExNDQ2YTdkYTQ3YmExMmZiZTQxNzRiYTI5NmZjMGQwZjY2NTRjMmIzNjA3ZWNmN2Y3MGM2YjAzNjdlYmFmYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODIxZWRmNTZlZmRlNjVlMGJlMDI1ODVhMDZkMTEzNGE4YTFjZTI5YTRjYmEyMzY4NGRjNzMwNmUzNGY0YmE3MiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_d0e8514357ec443ca12ca2bd4cb6ba7c",
+      "statement": "The binary builds a reusable reqwest client with a five-second connection timeout, distinct from the configurable timeout passed to the proxy handler.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L155-L160",
+          "version": "repo-lines-v1:sha256:9fdd0c70ecda00727906e4f30b66f924e49e47fd2e11f69f529236745bdc730a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmI4ZjJhMjVmNmQzOWFiOTQ4YjgwNjU4NDMyZGYyNDc4YmExYzY0MTQxNjBhM2UyMDY3ZmViYjdhODM2OWJiMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTRhM2NlNDY0ZDRhZmIwYjViOTk5ODA1MmNkM2I2ZGQ0YWQxNGE5MDIzNDBmZjFiYWNiNDc1MjI0MmFkYWIzNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDdlYzVkMzU3MDk2Y2U2YjlmY2IwYzkzMGZmMTA4MzRkYmRlNTQxNzdjMzYwZDkwMDUzYzk5MzQ2MTNiZWUzNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTM5NmU1ZDE1MGJkM2IyNzkyMWYyYWVlZmNkMjRhZTI1Mzc1NTRkZjA1N2Y4N2I5Mzc1YTU1MTE5YWY2M2YwOSJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L234-L245",
+          "version": "repo-lines-v1:sha256:2277ec7c66162c7d8d7adff1d1b82b6195a003953d2ff5233685491c822a169a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxNDkwMDJhZTZiMjQ5YWQwOTQ2ZWMyYzM3YmYyYjVlN2ExMjg5NjBhYzE2NGM1ZjdmODQ0OWQ3Yjk3MDMzMDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmNjNhZTQ4NDk0YWEwOWJkNWY1OWYzOWU1YTkyZjg1YjY5Y2QwZDYxNjhhYWFjMzU3MGU3N2I0NTcwN2I0ZDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIyZWRkNjlkNzY5NjIzZjk3Zjk1ZWM1M2E5MzFjZTM0MWZmODUyY2FmOGJmZTQ3NGJhMmZhYWRlNzc4NzQ0MDEifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L36-L41",
+          "version": "repo-lines-v1:sha256:50503ec7e4e6734d59df11db93e0896ce8e1384ff1b68bd3d135f1fb27b851aa:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTRhZDA5MzA2NmYxMDg1ZDQ3MGQ1MTRhMDI2NjVkNGUxZmY3YjQ4NjcyYjI0OTI4ZDJlZmZiMDdjZTk2OTlkNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTU4OGM4MmY0Y2QwNjRlOGUwZTg5OTZlYjZkOGI0ZjQ1MzQzYzdmMTkzMGVmMzNiMmIzNDE4MmJhZGFhN2I2YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzM2MWZjYTZkNGE5MzA1YjE2YzdjYzAzYjg3NWQ0Y2Q0Y2RjYWE1YWRkNjVkYzBhYTFkYzRkNTA1YjkxZjI2NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDJkZGE3MTM4NjM5MjI0NjliMDgwYjBiZmZhZWJkMzlkZjQyMWIyMjEwYjg3M2M1Y2IxNGQ4NGE3YjhhYmM3NiJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L347-L353",
+          "version": "repo-lines-v1:sha256:d8dedb41029d3fcb6d3ad4d8510b6cb97d9b99badedab0fce1965d97dd994105:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTY2OTVmNDMzZjMzYjY0Njg5ZGE1OTE3M2Y0N2ExYmExMzI4NTRjZGIzY2E4ZWJkZmFkOGZlOTYwNWNjNDI3NyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDljZTM4MDFhMGQ5ODlhMjhmMjcxYmQwZmJjYjM3ODliMjcyZDMwMzhkMWUxZWI2Zjk0ZGVhZjhjYjkwMjBmMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGNmYzY3ODI2OTFjMmFmMmEwODJkNjBmOGM3MDJhZWY2ZTJmN2ViZmE5MWQ1M2JmMDQzNGVmNzM4MDBlMzhjNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjc0NmYyMzc1NjFkNzdiZmNlYTFjMzUzNGUxZWU5YTdiMzcxNjk2OWNkZTk2NTJlYmEyNjBhMjc0MjZmOTlkZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_fee6ad9a7c074a06a534e4a2409b2f8b",
+      "statement": "Passthrough applies configured static headers without overriding Authorization, does not rewrite the request body, and does not participate in account failover.",
+      "evidence": [
+        {
+          "resource": "repo://crates/provider/src/passthrough.rs#L19-L77",
+          "version": "repo-lines-v1:sha256:abafddcd987fcd0d5d5a135cb42638acdd7ebf2372ee630f8fd983c1c9892147:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjNGYyMTUzZmU5NGFlNDJhOTM5YTg1MzYyYTM2N2Y1YTViNzNiMTNkY2U4ZDg3NTIxZTAwNWQ5NWU3YTE5OWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2YWI0OGU1ZWIyYjZjZjM2MDExMGIwMTJlN2M1MmVkODFjYWJmNjljNDk0NTE0NjM2Y2U5YzA5MGI2ZGY2MDgifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L162-L176",
+          "version": "repo-lines-v1:sha256:7f079c0c6ffbf434426d38646a29ac9d5e859f92867492eff4bcf4b668c7027c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhY2M4MzczNGRkNGY1N2U4OTkxNDQ5ODQ4YWVhYmFiOTlhNDliMmQ1YWQ5ZjcxZjVjOGRlOGYwNmE1NDc4NDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4ZTYxNzUxNWRkNDJlYTc5YzFjNjNiMGE1NDljN2FkZDJkMmI2MTk3OGZlNDM3N2M3YjlkNTFlZTg2MmQyNTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU1OTEzYTNiZjM1Y2ViNzM2ZjllYTZjMWM5ZjEwNDM3MGRmM2FjODFiY2EwNGQ1YmI4NzhmMWMxMDJhZGM2ZDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc4M2E3MzYyOTNkMTgzYzFkNDVhNDRlNDRhMWI5NTJmOWM3MWM3ZDM4ZWJlZDExYmIyMGI2NTNlYmM3YjQ2ZWMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L329-L336",
+          "version": "repo-lines-v1:sha256:21509dd7d38fff44abfe5aacbc8629e390613518e58a89ace42647c9b6266c11:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDNmOTk5ZTczM2NiYTlmM2ExODZlOGM0MTRiZDIxMDk5NmExYTJiYmUzNzRmNDlkOWM3ZThmNGFjNjNmOWEzZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2U5NzYyY2JlMDQwZWUyNDQ2NTdiMjdjY2FlNzA0YjA4NDgwYjBlMWNhMWYxNTUyMTI1ZDdmMjUwZTczN2VjZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjk2MjM1ZWRmZGMwMTY2OWM0YWRjY2Q4ZWE2YWQzZjMzNzBjNDI4N2EzYTFjYTc2NWFlNTE5YzRmODg4ZjI0MCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ccd2cebdf60a4486b7ed469bc18e57b1",
+      "statement": "OAuth startup loads the JSON credential store and initializes a missing file as an empty store; reading, parsing, or initializing the store unsuccessfully aborts startup.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L47-L72",
+          "version": "repo-lines-v1:sha256:5fb80e56f53cf2f3fc70c247c877a8f07c7b6548d2f085660c00d1148c2c350d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlZDg2ZGFhYzc2ZTkyNzAzMDNhN2JjODE3MTNjMjk0MWUwMzUwMzY4ZDBjMDJhOTM3YzNiMTI4Mjg4Y2U0ODEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5YjE5ODJlOGRkNzQ4MTE4MTQ2YjM5YTJkMDA2MmY0MDgxZTM0Nzc5Yjg2NzVjMjM0YzRmYjEyNGRjMzkzOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3MWRjNzI5NzhhYTc3OGVhYjY1NGVlYmNiYWI2Yjg5MTgyMGQwODUwNTIwNzk1NTFlNzFjZjRjZmI1ZmNkYzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ3MGQxMTFhYjZlNzg4YWJkMGQyOWRlYmI3Y2M4N2ZiMWMzN2M3YTg5M2U3OTY0YTVkYjQ3NThjZmRiMjBmNWIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L177-L189",
+          "version": "repo-lines-v1:sha256:dbb4ad9bb2698f756dab7f9c866d0e7307940cb63083cae9aef7b51bdce0c422:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkNWYxMjI0YzZkNDJlNjVhZWMzNmY2ZGNiMGIxNzZjYWQwYmNiNTQzZTVmMzcwMzM4ZDhmNjNmOTRkYTBlYzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2NGNkNGE1YTgzZWU1Y2MyM2FlM2ZjZTdkODk5YjAwMDQzMGE3MDg4MTc3MjIxOTdjNGZiYWE0ZDk2NzkyOTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk0ZTk0YjFjMTYwMWNhYzRmNTY2YzFhMmEyMGFiOTI1ODg0N2E5MTIxNTAyZjZiZDNiNmNlYWMxZWQ1MmI3OTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyYTNlMThkMWUwY2M4MjUyZjhjNGRkZTMzZTdiNTk5MTk5N2U5YzhiZmIxOGU3NjEzYmEzZjdiZDM1NzhhNTkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c3b6b847cd394bea90113fbb077d3531",
+      "statement": "The OAuth startup pool is seeded from oauth.providers when nonempty and all stored account IDs otherwise, and is shared by the OAuth provider and a proactive refresh task that periodically checks for near-expiry tokens.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/refresh.rs#L14-L61",
+          "version": "repo-lines-v1:sha256:f2d48bd90996a8ea430f128a8d92062bd6629deca5081eba620fa8b9e1dae5cf:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0ODg5ZDIzNGUyMmEyYTEyMWFiMDI5MmFiYmQ5ZGI2NDg3MDAyYzgzOTNjNTAzOWRiM2Q1ZTE2NzEwMjNkZjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIyOTY2MmIzMzBiZTRiYTNlODBjNzg2ZWRlZDAyOGUxMWY5ZmI3M2FjZjAwMmQyZTgyMWMyZDdkMjk0NTE5NmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI2Yzc3MzUxYmRlODhmYTFiMjBjYTcwZjgzM2JkMTRiZmNlYjkzMDdjZGNlNTYyZDZjMmI4ODIyNmNhNzgxYWEifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L190-L234",
+          "version": "repo-lines-v1:sha256:ea906e9f3ebcf748dbdf4d8913cbd8b29dcdbc3cf538675822afc6e9c969842a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyMTFlZjhiMWIzMGJjNWQ5ZTk0MTE0Yzk5MDlkOTA3MjNjY2U4MTExNjgxYzg0ZWEyOTc4MDA2NTQxYjVkYWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxNDkwMDJhZTZiMjQ5YWQwOTQ2ZWMyYzM3YmYyYjVlN2ExMjg5NjBhYzE2NGM1ZjdmODQ0OWQ3Yjk3MDMzMDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxZjk5OWMzOTU5NzkyOGM1ZGZlZDc1MjAxYzYzYzUyZTc3MTJmYTJkYmI3YWNlZWQ2MDc4MTE1NWFiNTBiZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZmZDM0NmYzMDdmOGM5MjUzMjUyZmE1M2M2OTgyZDhmM2U1YzljODI4NDdiNThiNGViNDc4N2MzZTA3ZWJmMTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_803cabad6c444ab1a1f14322e12f3a2c",
+      "statement": "OAuth max_failover_attempts is fixed from the initial list size with a floor of one; runtime enrollment changes pool membership but does not resize the proxy's request attempt budget.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L266-L293",
+          "version": "repo-lines-v1:sha256:9ac6dfc1e3bf4dd92f455c43e33e7d0a7c0f43c0c602ca5c2c36d417e7d45139:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkOWUxMjU0NjQyNTU3NmQzZGVhZThjOWI5ZGJmMTI4ZDVkNmRkYWY1ZDdmZTg1NzkzNDkyN2RlZmZhM2I5ZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwMzY5YjY4ZjQ3N2IwNDExYzk2YWFhZmUxZTE5MWMzZmRiOWQ1NzBjNTc1Y2YyYTdiNmQzOGMxYjhkM2Q2ZTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1ZTM1ZGI4YTdkZWUzYmViNmY5ZTZiYjZjMjdlMTcyMzJkMzNjMjNkNTAzOWMwMDdjNmY1NjFjZWEzMjAzYzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUwZTk3NjVkNjUzMmM4ZTFmNzdlNTIxYzFmOTRhYmQxM2MzNGJlMzhlZGE0ODJmYzU4ZjMxYWIyNjc5YzVjNGUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L190-L199",
+          "version": "repo-lines-v1:sha256:07175603facce8236498a760f0e8754e091dfa6c9ec08dc814f35ba920edd22e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyMTFlZjhiMWIzMGJjNWQ5ZTk0MTE0Yzk5MDlkOTA3MjNjY2U4MTExNjgxYzg0ZWEyOTc4MDA2NTQxYjVkYWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxN2MyZjFjYmU3N2I3NDNkZjQ2OWE3ZjY4ZGU0OGI2MGMwMTdmZGE1OGM4NDlhZWI5Y2Q2ODNjYTAxOTE3NGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxZjk5OWMzOTU5NzkyOGM1ZGZlZDc1MjAxYzYzYzUyZTc3MTJmYTJkYmI3YWNlZWQ2MDc4MTE1NWFiNTBiZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAxNzhkMDk5ODFjODVjNjk2M2RkMzFiMTg2NTczYTcyYWJiNWViZjkzYmViMDgyZjU0YzlkOGE0NzI1MGEzYmMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L229-L245",
+          "version": "repo-lines-v1:sha256:1aa2833139bd513e0c7f50400d0440ad63cba271756b364ff314967e38e4f694:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlMDkzNGYxNjgyZTQ3MWRhZTgxOGI0ZDBiNjA4NzJmZjUwOTc0ZjVjYzIyZWM2ZTBkOWZjNDdhOTBjYjRmYzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkYzZmZDJmOTJiNzVmYzIyMjY5ZDYwZTNiZmY5MjM1ZjU1ZjVmY2U0MTgwNWMxYThiZGQwZDBjYjcxOTA3ODciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIyZWRkNjlkNzY5NjIzZjk3Zjk1ZWM1M2E5MzFjZTM0MWZmODUyY2FmOGJmZTQ3NGJhMmZhYWRlNzc4NzQ0MDEifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L294-L310",
+          "version": "repo-lines-v1:sha256:2c14cae3b8577dfcb16da797d67c549b1b365aa5bf356f323acbcc1ceb41bf3a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJhNzZjYjI4YjFmYWIwZTNiNzgxZTY4MTUzZDAyN2YyZjdlZDRlN2QwOTc1YjE5ZjcyZjJiMWI5MzA2MjI3OTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3ZmIyYjFlM2VjZTM4YTU4ZjQxMGE5NTg4ZTI2NDkwZWFhMGMyYmFiMGEwMDQyZDAyZmQ5OGYwZDlkN2U3MTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY4YWQ4ZjQwMjVlMGU2OWVjMTY5Mzk1ZmJkY2MzNzA5NTRhMWJlMDUzODBjYjFlMjI3NTgxOGIwYzYyYTc5YWIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_27288c3b91974de89d2a1a3f004928a8",
+      "statement": "Provider is the extension boundary for whether the proxy parses request JSON, request preparation, upstream error classification and reporting, and provider-specific health, rather than the Axum router choosing credentials.",
+      "evidence": [
+        {
+          "resource": "repo://crates/provider/src/lib.rs#L62-L109",
+          "version": "repo-lines-v1:sha256:7c6efd2036dd2106b00fc88f899a9892c4173ba389a2fdf0e7f3c38ef564d496:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjOGM4ODk4OGVlMjlhYWYwZjY0YTJjNjIyNWJjNmMyMGViZWJjYmM2Yzg1ZWUwYzFkN2JlNDg1MDQ4Njg5OGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlkMzMxNmUzMWYzOWRmMTdmMTBjNDcyNzFiNzhhMjcxNDcwYzZhZmJhNDFkYzQ4NTMyNzE0YzYwMzgxMTRkNDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L339-L358",
+          "version": "repo-lines-v1:sha256:16ea804dd4ee671c858cdce0dc7bea68165ab5127e753e1ac75ccd591ee5fa5a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgxNGVkMjk2YmY0ZWQyNmJlYTBhMTRiMzY0NWI5NWY1YWE0ZGNiZTk5MGFiNWNmZTMwZTVhNDg1MDY4MWEyODciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhNjhiODc0ZDUxOTI0ODNhMmMxNmQwNGQ5YWE1NzdjM2U2NWNjMzAxZmU5ODAzNmNjM2JjNzAwOWRhYWYzYmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkNzlmNDA0ZDdiYmY2YzZmMTBhNzIzOTM5NDZkMDNjOWUyZmZlOTJmOThjYjdmNGM3MWY3NzIzNTg3ODIzNTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY2OTA1ZmI3NzViMzRhYmViMWZlMjVlMDg4ODdiOGU2YjUyNWIzYmFmNDI1YTlmZTY0YjljMDNmMzU2Y2E5YzUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L267-L313",
+          "version": "repo-lines-v1:sha256:e03e9c57d396b7b39a70bb3108e02b0938f30eaa1926b5ca039c8ace983e5b92:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3YzM5NzkwNGFmYTQ4ODg1NjgyZjQ5ZWU2NWE3MzdhYjViNGZmNmU3YjM1MzEzNjQwMGJiNGQ0NmIzNWViMzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4MDhiNTI5MzQyYTk2ZDQ1YmNhZTg2MjU4Mjg3ZjE0OWVlZmI2Y2E0ZDA0MWNmZTk4NTA4NjIxYWNjMzFjZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1ZTU2ZmRlMTg0YWIyOTA4MjI3MTM5YzgyNDNlYzE1NDBkMGRiNjVkNWQ4MzFjZDM1OThiMGZjNDVlM2VlODEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkwMjIyMWZiNjk4ZjUwZDMyMDhkOTVmOTcxMjBlNzQzYWY2NDdkY2M0M2E5NmVjNDYyMWMyZjYwYzE5ZTQ5MDMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L357-L401",
+          "version": "repo-lines-v1:sha256:032eff68cac13b8accf53128777ee069ee5644f9b562b9b9e28208153060109c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhYzBjNjExNDE4YzdhMTE0MWU5YWRkYTJjNzhhMGNiYmIwYWNlNThlZmU3OWY3YzkyMmUxOWRhMmJkOTViYTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwYjZiNjhlMzhiYzQ2YzUxOTJjYTBjYzU1YTQ0NzE5MDBhZjU0YzNhMmY1NWJmNGY1Y2M4MWViNzMwYThjODkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3NDZmMjM3NTYxZDc3YmZjZWExYzM1MzRlMWVlOWE3YjM3MTY5NjljZGU5NjUyZWJhMjYwYTI3NDI2Zjk5ZGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ1YzI4OTY5MzhjMjU3NjZiZTk5NjE1MmUzZjUyYTE5MTExMTkwOTk1YmI0MThhMzI3NGI1MWFhY2RmNWU3MTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0d78cb22099e4f269c3658c299747a69",
+      "statement": "AnthropicOAuthProvider selects a pool account, removes client Authorization and x-api-key, injects the selected Bearer token and provider headers, and modifies the JSON body during preparation.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L101-L157",
+          "version": "repo-lines-v1:sha256:4c9ce01700225cf6bc92b244fce894160c4c10191215ccc536f4fd3bea1f08d1:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5YjE5ODJlOGRkNzQ4MTE4MTQ2YjM5YTJkMDA2MmY0MDgxZTM0Nzc5Yjg2NzVjMjM0YzRmYjEyNGRjMzkzOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzNmViMDI1MWE4ZTRiMzU0ZWQ3NTQyMzk3ZWNmMzY3OGJkM2FkNDFlMzU5MWYwNTkwOWVlMjMzYWNhM2I5NmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhNDI2OTBiYWJlODFjNWJmMWE3NGIwNDYxZWQwNjEzMGRlMzJlMzlkMzZmNTI0MjA2YjU2ZWYzNTQ5MjViN2IifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e43381d491144eff8fad42f72244685c",
+      "statement": "The committed tailnet route is the Tailscale-class Ingress with a TLS host and prefix / to the unannotated proxy ClusterIP Service on port 80, whose named http target is the proxy pod's port 8080; forwarded data requests go to the configured Anthropic HTTPS upstream.",
+      "evidence": [
+        {
+          "resource": "repo://k8s/config.toml#L1-L5",
+          "version": "repo-lines-v1:sha256:93e0e778d5d35bd2da2720082d0a3aaa37c4ebd4ddba17b689d4e52084dd9050:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjUzNDFmZGYxMzBmNTFlY2EzMDljY2FjNzE4M2M5ODAyODFiOGQwODMyOGI4YTJhZGE2ZmIwZWU0NzNhYTVlNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGU2MWVhYzgyMmI1MzljNGU1ZmU4YmRmMTYxNDNjMTM2OGEyOThhNWM2NmM5OWQzNWQ5MWM4ODIwM2UxZmM0ZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOWE1YWE5ZjJmZTQxNTJhNGMyNDczMDBlOTM0YTFjZWU3OWI3M2RkMzNiMjQ0NzI3YmM2YjljNjg1ZWE5MzdlMCJ9"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L29-L37",
+          "version": "repo-lines-v1:sha256:db10bad8ea9bc8fdf42d6c57ec5d7587ea6038e683f7338336bf82895e17f824:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmZlN2QzOTc1Y2JhOTdiMzdhODY0YTg5Mjg4NjFmMDUyM2JjZjQ2NDE4ZmYxZWJjZTkxYzE0NGFkMTFmNDU2MCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzNjZDQ4YThkNjgwZWQ5NzZhZjBiNTE0N2RkZTQ0NzkyMGM0ZDQwZWVjY2NhNjU3ZGZjNDQ4ODBkZmIyYzNjOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWMwZjg5MDZmZDFhZmFjMTNkYjFhZThjOTk4YzFhMDE0MTljM2U0NzY1NjllN2I1MWY4Yzk1YmYzYjk3ZmEzMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODA0NWE4ODQwNDlhZjIzNDczYzFiNTMxN2ZjMDEyZTFkMWU3M2U4OGE3YzU4YjNmZGY5YjFhZjM3NzRkOTg1NiJ9"
+        },
+        {
+          "resource": "repo://k8s/ingress.yaml",
+          "version": "repo-file-v1:sha256:56a43b309f9cd088e952de45f9ea1e34bb7da3407fb38b45fda9baa7dcdb7d14"
+        },
+        {
+          "resource": "repo://k8s/service.yaml",
+          "version": "repo-file-v1:sha256:a14a4895167f98b69a4ff073d04268c59d88fa5d4aadef48366ad445681f9964"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L377-L383",
+          "version": "repo-lines-v1:sha256:0d65651d40192269704180bf6bfc761e7d5cb871f70a8d6dcc867d0e2ba16785:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmFkM2VkYTE2NWIwNDhiYTcyY2ZjMDJhM2E1M2NhMDQ5ZDg3OGYzNTA3MDAzYjQ1ZTcxZTA3MzNjMDc1MTk3MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWM3MzA5MTAwNTkyOTMwYWI1ZTYxYjY4ZjJhMjI1ZTJmM2E0M2VhOWViMjllYTkyYzU2NmUwMWNlMDJjMDE5YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzFiNTBmMWFlNjg5MWY5ZGM0ODNiNWIxZGYzYmYwNWU1NWRjNGEwOTcyNzExNzBiMjdiNzFkNWQ4ZWEzNGJiYSJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L217-L222",
+          "version": "repo-lines-v1:sha256:d5e6d9f1db392e4647a3bba4052fad9bc7b9cc7c4dd9bd3a22e02e97ad886b21:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmNhZTk1ODhjNzA2N2RhN2YyNTcwNDBlYzAxNGM4YzUxMGY3NzJjODI4Y2JhM2VkNGEyOGM1NTI1ODVkNTg3NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODk2NWRjYjVmNzczMmUxZjE3ZTgwY2YwNmE2MzBiYjAyNTg3ZWY2ZWRkY2JlMDI1NzJlYzE2YmU2NWUyZTg5OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODJlOWVjYWE0YWYyNDU5YWEzMDIyNGM4ZGFkZTg3YzhhYWI5Y2NkYWFkY2I2Njc1ZGIxYjAyZTBjMmMzZDhkNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmMyMTJmOTM3NGUyNjBkYTRlMjAzYmU3ZTVlNzQxZjFjYWQyNmY3ZTYyNGZjZjkyZWI2ZTYzMTZjYTRhM2I4MiJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L344-L353",
+          "version": "repo-lines-v1:sha256:5caf17205c1fae13577704f706dce6710136f67e29fc7d3719d9fc1a13a15593:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzNmUyNTQ5MTRiNmVkZWE0OTdjMjk1OGI3ZjMyYjE3ZWNiOTY0M2M5NzQyZDAyOWU0YjdjYjMwZjZmMmFkZTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5Y2UzODAxYTBkOTg5YTI4ZjI3MWJkMGZiY2IzNzg5YjI3MmQzMDM4ZDFlMWViNmY5NGRlYWY4Y2I5MDIwZjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMTU0YTcxNzFiZGI1ZDNiMDc2MmNhNDM1MGQ3MmEwYWRlNjIzOGJkZjg5MzY4MmIzYzI3NjY4OTcwODQyNTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3NDZmMjM3NTYxZDc3YmZjZWExYzM1MzRlMWVlOWE3YjM3MTY5NjljZGU5NjUyZWJhMjYwYTI3NDI2Zjk5ZGQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_54eb6082a7bc4ab7919733805d03397a",
+      "statement": "GET /health and GET /metrics are local routes on the proxy listener, reachable through the same Ingress prefix and outside the fallback's max_connections concurrency limiter; /metrics renders Prometheus text.",
+      "evidence": [
+        {
+          "resource": "repo://k8s/ingress.yaml#L11-L20",
+          "version": "repo-lines-v1:sha256:aa37883d493daba1e1cc6c61a8acfa34d501b5af8236b2f387ba87ba4a56d490:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBhNDcxNTJlMjFkYzEwOTIwNTBiZDc5YzRlN2U4Y2FmZjNlZWRhOGI4ZTVmZmQxYjdjMzcyNzU2MTg2NDQ0ZjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlMzNiMzhjZjQ2NzBhZThjZjY4ZWFhMWI0ZGEwMGQzODc4YjVmY2U1OWQyNTg5ZjRkNDU4YWU0ZDViZjBkZTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0Y2MwZGZmYmFhMzQyYmEwYWQ0NzAwZjk4ZjA0MGNmMDQ3NzlmODk4MmY1Yzc1MTczNzg3MWJmNGE2NWE1ZDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L364-L374",
+          "version": "repo-lines-v1:sha256:2fb5107f0cf511420c793e7d375297764b00e489173fbbe9de8f8b69d1d16375:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlZjI2ZGRiODhlZDk4ODFiYTdhNTg3OTI3YTcwZmU5NWI4MjFlOWFkMDEwYWE3ZTZhZjk2MWNiYTExNjNiYmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5NmY4Y2IwODNmYTgwMGE0ZGNkMjk2OTcyMmQ3YjkyNjg2YWRkOWViZTM2NTU0OTJmYTY3MmIxYTdjZWQyNDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxYTRmYzEyNTU0ZjQyMzg2ZTRiZjJhNTY0N2ZlZGQyYjBlYjhlY2JkY2M5N2M2NzZmMDY0MDJhMmQ5YjNlYjUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L53-L71",
+          "version": "repo-lines-v1:sha256:197d2a4cc2a54f9efdb1e5f320d519364e39b5cf6208d6773cc684d57ea9cc40:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmOTk3ZTdiOWI4MTgwZDZkNzhjNDk5OTI4MmU2NTBkZjQ2MGM5NzI4ZmRmOGI5YjdhOTE2ZThmZjM4MTIwYjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkOGU3OTY5ZjE3YzBlYjg0OWQ1YzQxY2JjYjllMWQ3NTBhYTE4NGMyNjEwZmFmMzFjZDg1OWUyM2YyYjAzMGUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a85fbaa83497428c85d95f306ce18396",
+      "statement": "The Deployment uses /health on the proxy port for startup, readiness, and liveness probes and annotates the pod for Prometheus to scrape /metrics on port 8080.",
+      "evidence": [
+        {
+          "resource": "repo://k8s/deployment.yaml#L17-L37",
+          "version": "repo-lines-v1:sha256:0364a69296a33b6f0caf14b125b37d9f8f246ef55c42e807735e656792882352:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhNzliZDVmMDExOWFkMmU2ODAzMDc5MzY0ZWM2NTNkM2NjNWM4ZTExZDNmYmIxNWFlMDM3NDMzMmMwZGFkYTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzY2Q0OGE4ZDY4MGVkOTc2YWYwYjUxNDdkZGU0NDc5MjBjNGQ0MGVlY2NjYTY1N2RmYzQ0ODgwZGZiMmMzYzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5ODYwMGZkMmIzNDRkMjRjOTA2YTA5ZmVkN2YxZjkzMGU3ODk1MWJhNjA5M2Y3ODA3NTA1OWFjZGI3ZTMxYzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgwNDVhODg0MDQ5YWYyMzQ3M2MxYjUzMTdmYzAxMmUxZDFlNzNlODhhN2M1OGIzZmRmOWIxYWYzNzc0ZDk4NTYifQ"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L56-L76",
+          "version": "repo-lines-v1:sha256:efb6fd5748904bc3dc404a50f8cad6d2d5f778cdf13e900230b3d7101a076ca4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0ZWEyZjYyYTNmYWY0NjZjMjY2NmZlNjBjNDA5ZjY1ZTQ2ZTA0OTZkNDVjMjEyNjhjYmM2NmE0MDA5MjdiODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmNzYwMGEwYzI4ODZlMDBmMzk4ZmUxMzU5YTkyYWQwMjNhYWU4Yjc5MzdmMjE2YWZjZGQzOTdlYzBlYThhMmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhOTY2ZjliMjVkMzZjYTMyNDNmMjAxNDgyMTg2M2U0YjIxNzE2YTUyMjNmMzc5NmRjNjJiNTI4Yjk3MWFjNjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjOGRkYzc0ZWZiN2VlNzI0NDk5NDRlODdlYzY4MGNmMDBmMzhiOTVhZDgxZjQ2Mjk2OTUxMDQ5NGU3ZWNlNTQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_bf7cbd8963634ac2b4476eb627dd02e8",
+      "statement": "The health handler returns HTTP 200 with JSON provider status, mode, uptime, counters and optional pool details; it is not an upstream reachability or account-availability probe, so an empty OAuth pool can report unhealthy with 200 while a valid proxied request fails preparation with 503.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L286-L344",
+          "version": "repo-lines-v1:sha256:3056310618a529b06d04fab40f141c3b71b79c51b1249136e81f808add96b6b2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjMTdiNTA2Mzk1NjQ1Zjc4OTFlYzk5OTI5OTg5ZTk0MzRkNWZjODAwM2EyZDA2ZmI3YTMwYjI0ZWQzN2VlNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIyNGUwNDM3ODZkN2I2Zjg1NGVkZjRlODI3OTE5M2IyNzc0MmJmYTU1ZjFlY2YyM2UyMTcwMGU5MGIwNzlmYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzODU0YTAyNzc3NjJkZTY3YmRlZmEwMTIzYTk2ZjlmMmJmM2IyN2FkMWU5NjA3ZDMxMzA4N2QyZDU3Mjg0ZDkifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L337-L362",
+          "version": "repo-lines-v1:sha256:6ce8772a66f10a61c3beae8db52ef40f4b5ce6b609f73e43037c856a5f5f9244:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwMzE5YjQ1NjIwMDQxOTI1YzBmMjllZjFlNTQ5ODkzOGMxYzMwZTQ2MmNlNzA1NTEzYzVkZDFiOTI0YjExMDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNhZTgwNjU4ZDU5NDhhN2E5OWRjYjllODIzY2IxMWFlZGE4MTQ1NmUyY2M3OWMzMzkyZmU0OGRiNDJmMWI2ZGUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L110-L124",
+          "version": "repo-lines-v1:sha256:600bbe6e7a7753c7727c95d7cfc28cce04d682015c013fc704b2900341e68921:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzZjY1NDEzOGYyNjk3NDQ4YWJkNmIyZjExMWE2MWEyNDdlMTc4Mzc3ZTY1ODkwZGE2ZDkzOGUwOGVkMzIwMWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNDUzMmVmNzc1OWZjZjMwMGM4ZjUzZTkxYzg1MjY3MTMyNWY0ZWZlN2MwYWQ0OWFhZTkzZDMwYWE2MGRmNDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEyYTQ1MTI1YzgxOGM0YzFjYjQ0MDZiZmIyNTg2ZWViOGZkMGM5ZGQwYjBjNzQ4MjU5NmMyOGJiYTAwMTczYWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkYTdiMWM0M2FkYWZlMWNhOTA5MjRmZjc1OGIzNjE1NGUzMDBkYjNhMDZiOTNiOTU1ZWRjNmI4ZmQ3ZDdjNzkifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L176-L190",
+          "version": "repo-lines-v1:sha256:958e9cdc9a15800c8658ff66512690c59925c1d6f56285a8ed641b0cc5824c20:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4MzM5ZmM0ZTJiNjIyYjY2NmNhNTU5NDc1MDdkNTFmNGZmNjczMDU5NGI1OGJkNjYyMjMwMzY0YjAyNDVkNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViOWEwOGJjMjlmNmViZWJlOWE1ZjAxOTAzZDk4NDVkYmNiNTg0MmE0NTVmMDdkNWY0MDAyZGFjMzJhNWM2MDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ5ZDYwMTM4NDk4NGFlMzcxMGM4ZjIyNjJkZjkwOWI2MWM3ZDIwMDE5YzM3ODhjMmZiMmI2ZGFmZmE2OGExZGYifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L308-L325",
+          "version": "repo-lines-v1:sha256:f728df5ed091be4f6a455e4cc9af5aeb700fff3efdadf99dc7abd5b3f9d6ce86:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY1MzI1YjZiMGVjNTBlNTFiZmIwNjNiYmU0NDNmNjQxOTZlNGI5ZWUwZWNhM2Y5MjdiNGVlYmExMzE0ZDI5YWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0ZWNhNGQwMTVhZDY1ZGE2ZjBmMWRlNDM4OTVmNGU4ZTU0YTAyZmU4NzliYzFjODVlMmJkOGM1MmNjNjhhOGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY2ZjNhZTQ0ZDMzN2I1NzMxNGE2NmQwYjhjZmZkYWFjMWY0ODQzMzA0YjFhMGE0MWRjNjYyN2I0ZDU4MDIxZDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNlOTc2MmNiZTA0MGVlMjQ0NjU3YjI3Y2NhZTcwNGIwODQ4MGIwZTFjYTFmMTU1MjEyNWQ3ZjI1MGU3MzdlY2QifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_05e5406101584e34b525c5110c52c5ad",
+      "statement": "Admin account and pool inspection, PKCE enrollment, and removal use a separate unauthenticated application router with the live OAuth pool, reached through a separate admin ClusterIP Service and pod listener on 9090, not the Ingress backend. The proxy router does not mount the admin handlers.",
+      "evidence": [
+        {
+          "resource": "repo://k8s/admin-service.yaml",
+          "version": "repo-file-v1:sha256:4cd6caebadb7203898d9ecd156df98f1a8de21c69b9cbdd3a6212dde85dfd33e"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L29-L37",
+          "version": "repo-lines-v1:sha256:db10bad8ea9bc8fdf42d6c57ec5d7587ea6038e683f7338336bf82895e17f824:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmZlN2QzOTc1Y2JhOTdiMzdhODY0YTg5Mjg4NjFmMDUyM2JjZjQ2NDE4ZmYxZWJjZTkxYzE0NGFkMTFmNDU2MCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzNjZDQ4YThkNjgwZWQ5NzZhZjBiNTE0N2RkZTQ0NzkyMGM0ZDQwZWVjY2NhNjU3ZGZjNDQ4ODBkZmIyYzNjOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWMwZjg5MDZmZDFhZmFjMTNkYjFhZThjOTk4YzFhMDE0MTljM2U0NzY1NjllN2I1MWY4Yzk1YmYzYjk3ZmEzMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODA0NWE4ODQwNDlhZjIzNDczYzFiNTMxN2ZjMDEyZTFkMWU3M2U4OGE3YzU4YjNmZGY5YjFhZjM3NzRkOTg1NiJ9"
+        },
+        {
+          "resource": "repo://k8s/ingress.yaml",
+          "version": "repo-file-v1:sha256:56a43b309f9cd088e952de45f9ea1e34bb7da3407fb38b45fda9baa7dcdb7d14"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L266-L335",
+          "version": "repo-lines-v1:sha256:d0de03fca7281f1a33564253382bdd922f185705fe559517d2b57d5e64c514ae:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkOWUxMjU0NjQyNTU3NmQzZGVhZThjOWI5ZGJmMTI4ZDVkNmRkYWY1ZDdmZTg1NzkzNDkyN2RlZmZhM2I5ZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1ZTM1ZGI4YTdkZWUzYmViNmY5ZTZiYjZjMjdlMTcyMzJkMzNjMjNkNTAzOWMwMDdjNmY1NjFjZWEzMjAzYzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQxMzYwZTc4OTM3Mjc0OTA3NjlhYzM4ZTYxMjRhNzZhMGIyOGZkZGJiZjFlYTM1ZDJiOTk4MDYzMjNiMWZjODUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L45-L73",
+          "version": "repo-lines-v1:sha256:076b5430857b71692154925862a93992037e7397dc17c131534d27ab657cbc71:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0OGZiYTUxNDM0YTkyNDc5ZjJmNGVhN2QyMGUwZDcxMTkzYjY3NGQ3Y2M0NWViMmI1NWI2M2E3M2I4NGZjNjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkYzBjM2M1NDg2YzE5ZjQ3MTgzYTVjYmEzMDc5NjlkMGQyZjlkNDIzNTFlODQ3M2ZmNGU1M2I4NzczMDRkZjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY3ZjY2YWE5YzQ2YjA3MjJlZDNkNzJhOWQzYzEzZmQ5YzNjZWRkM2FiZmI4NjQ1Y2ZjZjAyODY0ZWE2NGY3MTgifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L208-L230",
+          "version": "repo-lines-v1:sha256:aaec30f144f7ba943b0ab7836eb78dee5d1011ace8eb2bfe1be4e6958c374bc4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3YTVmZmEzZTA5NWRmMDViNmIzMzMzODcxYWJhMWMxYjNlMjVhYjNkYmYxZDQ5MmYxNTRjMmNjMmIxMjJmNTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFjODY0MTk5N2I4OTgyNzFhMjZkNTM3ZDFiN2VjZTk1NzFlMjUxNjQ4YjhhNmRjNmI1Yjk0ZGMyMGZmZGI3ZmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBmNjNhZTQ4NDk0YWEwOWJkNWY1OWYzOWU1YTkyZjg1YjY5Y2QwZDYxNjhhYWFjMzU3MGU3N2I0NTcwN2I0ZDYifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L60-L71",
+          "version": "repo-lines-v1:sha256:22b7137dfb54aa9b2c30bfd4352ba0ac9f61e54642ae22c8ada58fd037b40ce4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlNjUyYTFkMThiOGM4ZWY2MDUzZTA5YTg4ODAyZjk4Y2Q0YWFhM2NiYzE4MjM5YWZhYmE3ZmUxMzUxODRiZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY5MjRmMTJmYmE5YTQwYTRkYmMzNTZlNmFiMjFmZDdmZmVjNWMwNTgyYzE4ODc1MjhkN2RkY2Y1OGI5M2MwMGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkOGU3OTY5ZjE3YzBlYjg0OWQ1YzQxY2JjYjllMWQ3NTBhYTE4NGMyNjEwZmFmMzFjZDg1OWUyM2YyYjAzMGUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5713c28ff49c4b5b8d74e6212f10f303",
+      "statement": "The operator runbook directs account-management callers to use kubectl port-forward rather than the tailnet Ingress.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/accounts.md#L1-L13",
+          "version": "repo-lines-v1:sha256:dc08b3f9b04264d7d34b5bf2dcdc5ba5dd24a5ebd48217d2310ce9b7f3dd7887:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1M2FmNzExNzMzNDRhYjgyYTQ1NjA2Mzc4OTg1NTFhOWYyZTM4ZmQ1MzUwMzE0ZTg4MDYyZWVhY2FhMDQzMDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3OTcxNGYzMzgxODk1ZWMzMWFjMzZiMmY4ODExMTQzZDI3NmE3MjU3YzcwOTM1MmZhOWM4NTE3OGQ4MDM4NDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEzMTU0MTY2OWJhMmVkYzZlMmIwNDk5ZDg0ZGYwNTM5NzJmZGViN2VkZWNjM2UxN2Y1MTFjNDhiOWMyZTA4ZDkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_07ddad19430b4236aad4e9362d22691f",
+      "statement": "The separate admin task only starts in OAuth mode with admin.enabled set to true, which defaults to false; the default bind address is 0.0.0.0:9090, and admin bind failure logs an error without aborting the proxy.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L61-L94",
+          "version": "repo-lines-v1:sha256:e5c7fb054b7268e853220a5864ff1c0fc3951822281709d762c6b59f98af1a51:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhODAwMGQ1NTc3YWU2ODk2N2UwMjZiMDIxZTY0Mzg4MmNlMmFkOGQ3YmM5ODQxYTFkYTlkM2JmZDNkMzIzNDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3YTNiZjFlYjhmNGU2ZmY1YTYzMmNlMTVlMTRkYjYzZjRhZDhjNjZmZWZmMzIwNDg5NGE0ZDc1NzcwNTUzYTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFmNjYyOWU5NmE3MzE3ZmZjMjM2MDAwMDM5MmUxN2E1YmY5N2FmZWVmMTQ4ZjI3NTk2NmIxYjk0ZWRlMzc0YzcifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L176-L231",
+          "version": "repo-lines-v1:sha256:1541d37382d7ac602b180eba8cbf59c11a1f047b614e9827a56283fbce4474b4:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4ZTYxNzUxNWRkNDJlYTc5YzFjNjNiMGE1NDljN2FkZDJkMmI2MTk3OGZlNDM3N2M3YjlkNTFlZTg2MmQyNTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MDcxYjdjMGQwMmY5NjU5MTIyZjJmYzE4MTI4ZWVhMzJjZjI0MDc1M2YyMTgxN2E0YTk0YzVkMTQyMDJiZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ2YWI3MjU1NzM0NzVjZDdiZWU3MmIyMGZiZDJjYTNiMzliMTMzNjMwMjgwOTEyOTRlOGVkZWQ2MzFlNzJiYTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjczZThmN2QxYTBhNWIxZDkxZmExZTgxOGNhMTM2MzYzZTMxZjYxZDBhNGQzNGU4OGU1NjdhYTJmYTE5MmRkODAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_040c7ed1a2fe494bb310b992932e4e69",
+      "statement": "The committed Kustomize deployment loads generated ConfigMap TOML from a read-only mount via CONFIG_PATH, enables both OAuth and admin, and uses the credentials PVC at /data for /data/credentials.json with an empty providers list and ignored static header settings.",
+      "evidence": [
+        {
+          "resource": "repo://k8s/config.toml",
+          "version": "repo-file-v1:sha256:42893bae4fa599f5913cef8354951ac1e90f771c00ab902c9a777190a8c53dc6"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L38-L59",
+          "version": "repo-lines-v1:sha256:9faf77fbd16691b091a81d56db2d4324806f8994dc630e7dca800a6e195081f5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM4YzI1YzFkMjE2Mzg2OWM3YWJjZDNkY2JlNjIwNTY5ZTBhMThiNDIwMjQyZDM4ZWVkZDQwZjgwOTM3Y2EwZTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlZTc3ZWU0Y2YxNGI1NjQ4MWJmZDQ1MGJkNGVkZjMxZjI5MzUwMzU2YjczN2YzNTE5ZGU5ZDIxYjc2MDY1M2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNjZTY5YjgyZmZmZDAyNTE2NzU2ZWZhYzFkOWU3YjNmNzFlYTU2ZGZlNTQwYTI3Njc4NmQyYmM4MjYxOTI5MGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjM2RhZDdiNjk5YjU0YzczNTA2MWZiODRlNTMyZGNhNzQ0MzQzNmRjZGY4NzA1MDM3YmQyNzRlZTUxZmE0MGEifQ"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L92-L99",
+          "version": "repo-lines-v1:sha256:a64401fe1ea028c24b3746b39e5443d146120660cf727a3a5a7382b0af71d46f:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGY4NDE4YTdjYzE3ODM5MWY4MDRlZTc4M2MzNTdjNTVhMTY4ZDJjMWY3NmM0NTkxMTY4MDI1OGM3YmFjZjM0MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2ZhMTU3OTRjZDUyMDU2Yzk1Zjk2NDczMjZiMGUwM2NlZDRlZDVkYTcyNWQ3Zjk1ZDE1ZTU4MGQ2Y2Q1MmNjOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGVhZjgyYmM2MTBmY2NhOTI3NWU5ZmMwMGI3YjA0MDYxNDBjOGI1NmNkMDIwM2Y2YTEwYWM1YTkyMWZkNjYwOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://k8s/kustomization.yaml#L8-L21",
+          "version": "repo-lines-v1:sha256:6bffb48ffff824e104dceea5cb657fbac53cbbe470689669ef4a36c7f5c081ff:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiYzE3YWZjMjYzMTg1M2E3NzQ3MTJhOTcwOWU0OGRmOWYwYWUwOTI4OGVmMDViZjE2YTUwNzE4ZjQ0OGRiM2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1NDAxOWE5OGZiYTUwZDBiMTM2MTBkM2JiNzZjOWIzZWRkYjMwOTE3M2VmZTVkMTI4Y2Q0OTE4MDA0MTBlOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlYjM1NzgyZjk5NDc3YTE5OTlhMTE3YmMzOTM1NTdkOTRjNTdmNzg4ZGQ3MjYyMTA0ZDA2NjE1ZGE0ODdkNWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L114-L125",
+          "version": "repo-lines-v1:sha256:e9382a7d31dcd5602637a0365c63246fe064b37b13856487056a723582c143fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlYTVjZjcyMDRmYzgwODg1YzI0M2IwZGQwMDZlZWI5MWIzMjI2ODFhODkyNjE3NDJhMGUwNTJkZDA4ZTNiZTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcyNDA4MTVhM2I0MzUzNGIzNjRjNDhlMDAzZjU0Y2Y3MTdlYTg3NjJmZDViMDBhYWY4YTU0NTZjMGNjMjUyYTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0NDYzMjQzNDUxNmZjNzYxZDRjY2ZmYmFlZTczOGM0NjA4ZWQ3ZDZmNmRiZGI1MGM2NzQyZjI2MjllYzczZjMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L190-L197",
+          "version": "repo-lines-v1:sha256:903285e0790eb508a796bdd855556b5f5d4b610121efb6173e64b8ac836d7fdf:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODIxMWVmOGIxYjMwYmM1ZDllOTQxMTRjOTkwOWQ5MDcyM2NjZTgxMTE2ODFjODRlYTI5NzgwMDY1NDFiNWRhYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjg5ZWY4MDdmMWU1MGMwN2VmNWY3YTQ1ODcwZjgwMWFjNmIxOWIwMDY2N2Q2MTQ3NDUxNjI3MmE0YmU5NTRjZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzFmOTk5YzM5NTk3OTI4YzVkZmVkNzUyMDFjNjNjNTJlNzcxMmZhMmRiYjdhY2VlZDYwNzgxMTU1YWI1MGJkMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOWY4Y2Y4NGRmNTA4OGJiOTA3Y2ZiYTM0NzA3Y2EyYzRhMDRlMTE0ZGQ4YmM0ZjM0NGE2YjU2NDA4MGVhZWU1OCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_81d314d53e2b45d29eab0348a8bcabe0",
+      "statement": "The committed Deployment uses one replica, the Recreate update strategy, and a six-second pod termination grace period.",
+      "evidence": [
+        {
+          "resource": "repo://k8s/deployment.yaml#L9-L25",
+          "version": "repo-lines-v1:sha256:a2e6e447b5c59dc9db58281a445470fc75a5e46239473ff750d3c30a390c6d53:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdiYzMzY2I3NzM4YjVlZmI5OGZjZTU2NmYyMGRkODJmNzY1MDQzNjJmZmJhMTE5NDRiYTJlZjgyYmIwOTQxM2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4OGI0ZjdhZjhiNDY5NGQ2NzQxOWZkZWZlMjdkYjE0MzQxMzg4YTEwMjIwNDhjYzk5ZGNiNjMwOGI3ODEzNDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1ZGU0Yzg4Y2E5MWJkMTE2ODVmYmRjMGViY2VmOTM2NWQwMDc1MzllOTAwOGI5ZDA1NGRmMTBkMzI0NTIxZGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFjMGY4OTA2ZmQxYWZhYzEzZGIxYWU4Yzk5OGMxYTAxNDE5YzNlNDc2NTY5ZTdiNTFmOGM5NWJmM2I5N2ZhMzEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6f7f767be44545fc850e390ed794839a",
+      "statement": "Ingress-only exposure supersedes the sidecar and Service-annotation models: the addendum documents a duplicate tailnet hostname conflict when Service annotations and Ingress coexisted, while the committed pod has no tailscaled sidecar and neither Service carries Tailscale exposure annotations.",
+      "evidence": [
+        {
+          "resource": "repo://k8s/admin-service.yaml",
+          "version": "repo-file-v1:sha256:4cd6caebadb7203898d9ecd156df98f1a8de21c69b9cbdd3a6212dde85dfd33e"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L29-L99",
+          "version": "repo-lines-v1:sha256:be67bf8ed84c601e90259575d64ff40e6c27506a58238272875958cfc4f931e4:eyJzZWxlY3RlZExpbmVDb3VudCI6NzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmZTdkMzk3NWNiYTk3YjM3YTg2NGE4OTI4ODYxZjA1MjNiY2Y0NjQxOGZmMWViY2U5MWMxNDRhZDExZjQ1NjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmYTE1Nzk0Y2Q1MjA1NmM5NWY5NjQ3MzI2YjBlMDNjZWQ0ZWQ1ZGE3MjVkN2Y5NWQxNWU1ODBkNmNkNTJjYzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFjMGY4OTA2ZmQxYWZhYzEzZGIxYWU4Yzk5OGMxYTAxNDE5YzNlNDc2NTY5ZTdiNTFmOGM5NWJmM2I5N2ZhMzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://k8s/service.yaml",
+          "version": "repo-file-v1:sha256:a14a4895167f98b69a4ff073d04268c59d88fa5d4aadef48366ad445681f9964"
+        },
+        {
+          "resource": "repo://specs/README.md#L10-L16",
+          "version": "repo-lines-v1:sha256:37d96f974a3d3bcd90a8f29a9e1130a39a1b35a34f3e190c584dceb58fc7f80d:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNThlNWJiMmNjZGUyMzI5NDg5Nzg3OGZmMDkwNWJhNTY2MmQ5MTliYTc5ZjZkMzUyNzcyNmZhZWEzZWEzNjljYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2FkY2E0NmQ1MGZkYTVkZDM5YjJjZmM2ZjJkZjdjZWM1NGMwOWQ3OWQxMjA5NDQwNTJiMDZkYWMwNTIxY2E0OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGJlOGNiNDliNjA1Njk0MTIyYmI0MDI5OWM4OGEyYzdjNjdjNDIyYjNlMmI1ZDM0YmZkNGU2ZGMxYjQzMGM1OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://specs/operator-migration-addendum.md#L10-L39",
+          "version": "repo-lines-v1:sha256:57562c65c79f0b63e634af4985344317253b327e5498d527cc97a5080f7e05ad:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxMDU1NjY2ZjM0N2U4YWNlZDQ2YmFlODQ4YTJkNDdhOTM1NDlkNmZmY2FmYjVkMTRmMzMzZjZhNDk3OGEzNGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwMWYyZWMxNzU5M2MxMDU0ZWI0NjM2N2Q4NDUzZWYyNGExNzNjZTk2YjcxMTdkOTFmOWE2OGQ0NGZlZjhiMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxNjg5M2MxY2Y4MDQzMjg4NWI2ZjM0NjM0MzQ1Njg5ZGUzNmMyZmM1NjA4ZDcwMmY3MmFkNDY4OWQ5MTY0MjgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e11a5814177449a99baebee8256d885b",
+      "statement": "main uses the I/O-free service state model on startup: ConfigLoaded yields Starting and StartListener, a failed main listener bind aborts startup, and successful bind dispatches ListenerReady to enter Running.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L139-L153",
+          "version": "repo-lines-v1:sha256:07608e57d599e5e9f9a26b92d7e4bc97efcce5593ef12cafe36379428a947987:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjZmQ1MTFkZDIwMjRjYTUzZWY4NzY4ZDBkZWNjMzFlYTRiZmE4YWI5ZDJkNWRmYTMxMmQ0NzRjZTFlYjFlYjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2NjAwODI3MDhmZTgxNzEzOTMyODhlMDc2ZjljNjJkYjk3MWNiY2FiYjMyMGMzN2MwYzI2ZDhmYWM2Zjg2NzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEyYjU4NmIwZWVkN2UzZGE2Zjg3NDRjM2RkODQ0YjI0MDkxYjZhMWNhNjhkMjA1MzM0NzkzMGMzODdlOTJiOGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE5ZDg4NGNjNTEyZGVkNGVhNGUwNDY4OTY5YjE4NzQ2MmIwNGQ4MGE3NzUwODViNmI3MjM2ZmJmNmJiZDNhMWMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L253-L263",
+          "version": "repo-lines-v1:sha256:c145b5d5c93d5250c3c0df72a9b8e26c9dd1fc6e0a6e39099c77a4e57abcecfc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1NzE5YzgyYTE1MmQ1MzBkNzk1OTk4ZGEwYTU2MTQxYzc1MTMyOWQ4MmIzY2VkZjBkZmQ0ZTU0ZTgwNzM3NDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ2YzJmMDRhOTg1ZjM4YWM3NTlmYzNmMmMyYzRlMzIzZTBiZTFjZmI4NWQ2NDBjMjAwM2QxNTc4NGEyYWJjZTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmYWI1ODhlYWZhYzBlZTkyYzlhMzlmZmU4Zjc0ZWRiYTRhZWRhYjZlOWI1MmQwMDQ1MjcxMzhhMDM2MTA1ZDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwODE3NTU2OGUzZjc1ZTljYWM3OWNiOWYxM2NjOGMwZTMxYjI3ODM3MTAyOGFlYjIwOWE1N2I1NDE4ZDJmZDUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/service.rs#L93-L106",
+          "version": "repo-lines-v1:sha256:6571435eb664a5538501042ca15112f3c8c3f02fef30f53e5898eadba35aba69:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4M2MyZWY5ZTQ1NzI3ZjdlYjhiY2Q3NDQyY2JkNDZlNWQ2NTJiZGYxYWE4MjM4NzkxYmMyOGI3ZDU1MGEyNDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczMWNkNGE2NWNmMmU5NWE0MzQ4ZWNhNjVlMGU4YmRjYWY0NGRlZjFmNTdmNDkwMTU2Mjc5ZmY5YzQ1MmUyNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEwZTkxNWUzN2FhZmIyMzFhYjgxYzRiYTkyZjM1ODJjODViMzQ2NWUyMTUxOTFlZmFmNzQ5NWI3YmY4ZWM2MzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljYWQ2YmY3YmQ5ZjNkZjcxNjYwMzYwYjYyNzBhNGFjMTA3ZDAwOWUwNzczY2E3Nzc0MTRkYTI2ODZjYmEwYTkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5a371d5f6496479a88eef89eac7b8530",
+      "statement": "The model's Running-to-Draining-to-Stopped transitions describe shutdown and its redundant-signal or timeout behavior but are not dispatched by main; request events are no-ops in the model and proxy handlers track counters directly.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L261-L319",
+          "version": "repo-lines-v1:sha256:1a24c946e55b44035b232f41947988db33fa865105058b9d900c05d16cf36c9f:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkOWUxMjU0NjQyNTU3NmQzZGVhZThjOWI5ZGJmMTI4ZDVkNmRkYWY1ZDdmZTg1NzkzNDkyN2RlZmZhM2I5ZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNjYTU2OWQ3NGE3Y2M1NWI2OGQ0YjM1NmQ5NmY1NThhYzM5OWI0ZjI1ZjkyNTQ5NTc3YWRhY2Y4ZGZiYzQ2ZjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ4NjU4NmU5NGFkMjFkOGI0ZGE2ZTI4NmRhZjFlNGQ0MzRjNWQ3YjdmZjQ4ZjBkMjdlZWE3OTIzMGZkODU0MWQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L170-L183",
+          "version": "repo-lines-v1:sha256:ff90298565cfdcc941873968fa310265f842a3b29526239fdc35ea969e7f8051:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiNzRhNTk2YzZhMGM2ODFlNzIyOGY2ZDcwN2E2MjYwOGY5MjM0MDAxYWFhN2U0MzMyMWZiYjY3MjQyMmYxYjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYzhmNDc2NWVjODc0MzJjNzQ0MzBmNjk1MTgwMGViMWY2ZGU3ZDM1Nzc2N2RiMWY1M2M4ZTMzNDM5YzIzOTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2YTZhODU2OGI5Nzg1MzEwYTQwOGRhNGRlYTY4Nzk0MWQ1MmU4ODhkNWVlZmQxYTg1ODM0NTM0YzgyZjA2MjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcwNTgyODZlMTAwNzBmNzM2MjE4ZjkxMjUyNzMxYWViOGE5MzAxOWVjZWRlNzk4NmZmZDRiZjFmOGJjMzJhNDkifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/service.rs#L108-L149",
+          "version": "repo-lines-v1:sha256:96809e8fc445be22e902e12a7690b326103acf07cfabaab7b0dd5f7e9d18a54d:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1MjM5YTBkYjFjN2ViMTgxYzA1Yjc1ZGZmZmZmMzhlMmM3YjA5YTEwZjcwOWY2YTk2YmJjOGNiYzYzOTFhZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFkZjU3NTQ3YWM3MWM0ZTBmMGYxNWE1MWMwNjM1M2Q4NmRlMTM4ZmFkNjNjOWNjN2EzMjk2MmEwNDk3OTEyZWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlM2FiNDJmNzg0YmNlMGRkMDdkYmFiYjMwNzEzYTlhNzhkMGY2ZjYzYjAzM2I4NmRjMWEzNDdiY2NjM2RlNTQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e00925799aed414084e46d58c50a415e",
+      "statement": "At runtime SIGINT or Unix SIGTERM triggers a one-shot Axum graceful shutdown notification; main bounds its wait for the proxy task to drain with a five-second timeout started after the signal, not at server startup.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L267-L319",
+          "version": "repo-lines-v1:sha256:64792a301e5c763ea58f0c0cee1032dbb8a77051f742dcf444dec2b332f25b7a:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkNDg3NGYwM2M4MzZmYTY3YTdmZWVmNjQzY2ViOGE3NzU5ZWQ1MmI3OTgzMjUxYjQyMjRiMjFhYjQ2YThkODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwODE3NTU2OGUzZjc1ZTljYWM3OWNiOWYxM2NjOGMwZTMxYjI3ODM3MTAyOGFlYjIwOWE1N2I1NDE4ZDJmZDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ4NjU4NmU5NGFkMjFkOGI0ZGE2ZTI4NmRhZjFlNGQ0MzRjNWQ3YjdmZjQ4ZjBkMjdlZWE3OTIzMGZkODU0MWQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L385-L408",
+          "version": "repo-lines-v1:sha256:a31eb53f3355d52ab76cfd6434c3b3eb9f7e7448ac69c146c0bfee2bfdfdc24e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1NmRlYWQzMTQ3Zjc2OTc0MDQ1MmVhM2U0NTg3YjBhOGJlYzlmYzJjM2QyYmMwNGU3OTYzZTUwNjU2ZjkzYWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyOGZkMWRlMmJjMjA2NThlMjE2YjU4MmE0MGFlOTNlNWNhNzUyMGE5OGI4N2UwYmQzOTc2YTlkOWNlMWQ5NTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiYzk4ZDZiMGRjNDkyYzUwMTZkZjEwODA1YTNhNTRlYjljMTg0YTVhNjEzN2U3ZjRiZWNmYTBjMjIwNTUwZDAifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/service.rs#L88-L91",
+          "version": "repo-lines-v1:sha256:42b2ef080b9c6d2c5fc7d883fa1ccf3341466a29acf2e9fd9092c432f5980861:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzdhNWMwOGQ0MzUyODY3NTNkMDk2MGExMGJjNDgyZDcyMWZlNzBjMTM3OGVjN2U0OTQ2Mzc1MjYxNGRhY2EzMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjAzNjM2OWNmOGIzZGIzYjdlMmNmNTczOWU1NGI2N2Q4MDUxMDA3ZjQ2MTkxZWNlZDM0M2NkY2ExNTZkNzc4OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzBhZTg2NjRlNTczY2RkOGM3ZTdmODI0NDc3NTZlMWU1MzI2ZDFjNGZhZGQ3OTkzN2ZlNjM2ZDI1NDQyZWNhMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzA2NmMyZjFjYzAxZTU2ODRhZTUxZmNmYTdiYjIxMDkzMDViOGM2N2ZiN2E2NjE1Y2NlZWNmNmM1YzRjNGVjYiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_d3567d93d1854b2fa12be425fa24db97",
+      "statement": "The proxy handler's in-flight count is logged when the drain deadline is exceeded and is not a shutdown gate; its guard drops on handler return even if an Axum streaming response body is still active.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L292-L319",
+          "version": "repo-lines-v1:sha256:faa897557b3c8313c89b7b81b0e5331d037d0759b03e425e36c864ce26434a48:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIyZDExY2FmNDNlOTdlZjM2OWU2YmVlZDFhMjY4YmQwNTgzOGYyOWI5ZGQyNTRiZjY5YmE2NDg4NDE0NzIzNGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdjODU0NDk0MGFhNzM5ZTVjODYyN2VhZmQ1YTdhYmQ5ZDU1ZDA0YWM4N2I2ZWVlNDEyNjJhMjljYzdiOWZmN2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ4NjU4NmU5NGFkMjFkOGI0ZGE2ZTI4NmRhZjFlNGQ0MzRjNWQ3YjdmZjQ4ZjBkMjdlZWE3OTIzMGZkODU0MWQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L174-L183",
+          "version": "repo-lines-v1:sha256:38fd99eae1804f67d831807801317c0377502c4025b9893f71ddf1b349149367:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYzhmNDc2NWVjODc0MzJjNzQ0MzBmNjk1MTgwMGViMWY2ZGU3ZDM1Nzc2N2RiMWY1M2M4ZTMzNDM5YzIzOTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5MTIzZjU0MjFjNTc3ZmQwYjA0YjViNGFiYzM3NDNkODk4NmMwY2RhYWVmMjU4M2I0OTFmZWM1MmQ2ZWQyM2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcwNTgyODZlMTAwNzBmNzM2MjE4ZjkxMjUyNzMxYWViOGE5MzAxOWVjZWRlNzk4NmZmZDRiZjFmOGJjMzJhNDkifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L462-L482",
+          "version": "repo-lines-v1:sha256:725266b8ccfd65309e234a41b38a60e431504a84aa151db5a661e2d383a7ec67:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0NGYwM2M3Y2FkZTJmNzlmNTE1OTE0NDJhYTVmYjliOTA4NzgwNDA0ZjcyYzE3OTlhYmY5NzY2Y2IzMjQxYzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxN2VhZDdjNTc0M2RmNmFhZDUyZThjN2RlZTJiMTFjZTc0YmUzNDM2MjY2YjllY2UyNzUyNWM3MTJlMDMxZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ0OWFhM2U1MmQ4MzY2YmVhYzk4NzBmYTQwNDkwZWI0OWI0M2Q0ZTdhZGQ4NThmNWIxZTc5MWQ1NDEwOWUzYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUyNDc0NWU4NDhlODUzMzMyYmU1ZWJmNGI2YmFkYjcyMjgwYzVjYjk5NTc4MGJiZjE5NjMxMDM5NTY2NjYzZmQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L80-L88",
+          "version": "repo-lines-v1:sha256:a366f8e909a316dbca57584350c93627e373b402fcfa34d068934b966ac1e832:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjYzMzVmNmQ0Y2ZkMjAxOGJiODBmODhlN2I4ZWYwODlmMWY4ZDBjNTM1MjI2NmU0MmY4NWZiNjM3ZjNkZjlkOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTAwYzc3N2NhZDVhMDQ2ZDYxZWVlODY1NmNmZWNhZGZhMTM1ZDdhYjI1ZDEzZDIyNWIyZGQyMzcxY2NmNTg3NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjVkZDQxNDFhYjJkZGU3YTZmNmYwN2VjMDQ2M2M5ODc5ODg5MDZhOTk0ZDU3MWZiZmUzNjc4OTYyOGNhMjZhYyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_3609e093240f41e39d83a61a2f04dd53",
+      "statement": "The admin server and proactive refresh task are not included in the proxy server drain; after the drain wait main separately shuts down the optional tracer provider to flush spans under the exporter's own timeout.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/refresh.rs#L23-L38",
+          "version": "repo-lines-v1:sha256:3c8c05b80143cb248425e0a7932835d50c2185eb1e10ac1ab99e56c893903f18:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkMzAyYzk5OTdlOTBmNWIzN2IwMWNlY2JiMDg1MDI2M2EwOTA4MzAxNTE5ODYwMmE5ZmQ4Yjc0OWExMjE1YmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUxMWMwZGI5ZTliNTc1ZTNlYmFlMzZiNzk1M2EyZjQ5NTBlZTY2NTg0ZjFhMmQ3MTYyMGYwNTQxNjBlMTAxNTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5NzZiODNjN2UwYzhhNGRjZDVjZTUxNWI3MDAyMGJiZjg3MjVhODZjNDA2MjE5NGU2OTM2MjdkOWVkYTM1N2UifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L204-L231",
+          "version": "repo-lines-v1:sha256:49f2f856c6860864fc5e1a4baf17414176f56d99d5959c2623ebfcccdb630798:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmNDIzYTQ4MDU3MGQ4ZWE1MWMyZDc2MWFkYTQ3ZTRiOGRiMWRhYTBkZjBlMDc1Njg4ZmQ5ODUwYzhiMTYzYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MDcxYjdjMGQwMmY5NjU5MTIyZjJmYzE4MTI4ZWVhMzJjZjI0MDc1M2YyMTgxN2E0YTk0YzVkMTQyMDJiZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwZjkzM2FmMzU1ZWYzNmM3NzQ0ODNiMjJmODZlN2ViMThhM2MyZjVmZmIxNmI5YzdmNGM3ZjgxMzY3ZmU0MWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjczZThmN2QxYTBhNWIxZDkxZmExZTgxOGNhMTM2MzYzZTMxZjYxZDBhNGQzNGU4OGU1NjdhYTJmYTE5MmRkODAifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L277-L334",
+          "version": "repo-lines-v1:sha256:23536e2c174b7027f0cbfab05cce3631175faddebf82276f8135e59ddaab0c23:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU4YTRjMjk2NGQzMjk0OTAxMDA3MjdjNzZmM2IyNDk3MDg1MTc0NGM4MDA3ZmMwNDVlNGU0YmNmMGM1NmNlMWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4OTc3MWZlMWI2NjI4ODc1YWEyM2U3ZGJlNGFhNzE0NjFkMDBjZGZiNjZkZGYxMWI5ZDgyMGFjNTg5N2ZkZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI3MGE5MWEwZjE3ZmNhZjFhYTU0NWE0YmQ3ODMyNmVlNDNmMzNhNDY2ZDdmZTZhYWEwYzE0ZTVmY2Q2YTdhOWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBkZTMzYjVmZWQ3MjU3MDVmYzdmYmJlMmUxM2U2MjZlMWM1NzBlZDg0NDE3MTI0NjkzMzYyM2ZkMjViZDBmNmMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_885ea037ec48465383b5b835142001ff",
+      "statement": "Focused config tests cover CLI-over-env path selection, validation failures, OAuth precedence, and the credential path override.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L275-L309",
+          "version": "repo-lines-v1:sha256:2205f5ee32bb17ede02f9402c42f8f4d796c5e7af75829810e75a2317f8dde28:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyYjVlZGY1OTQ5Y2ZlYTY3ODIyY2Y2OTExMzIzNjNkNjhkNmYxZTE2OWY1ZTBkNGY3YzE0ZTVmYTFlNmQ0ZTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAxYTc3ZGQ1NjIyYWQwMDJmYjQ2YTFiMWI2NmQ0ODFjNDRmOWQyNmNhNGZkMzc5YmM1NjFhZjAwMjk4MmY4MzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzNzkxNWYzZmU3Njk5NjA5MWNkMzg4OWRlNDdiNjE4NmE5OWJmMWVjMWMzZWQ3Yjg5OGU4ZDVkZDc2ZDJlOTgifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L331-L450",
+          "version": "repo-lines-v1:sha256:f49308ace488a204150d3a378d612d3852a50519ec93434d792b6703bbc983aa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5MmI1ZWRmNTk0OWNmZWE2NzgyMmNmNjkxMTMyMzYzZDY4ZDZmMWUxNjlmNWUwZDRmN2MxNGU1ZmExZTZkNGU1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwMWE3N2RkNTYyMmFkMDAyZmI0NmExYjFiNjZkNDgxYzQ0ZjlkMjZjYTRmZDM3OWJjNTYxYWYwMDI5ODJmODMwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0ZjMyY2RkN2JhNDNiZTk2ZGUyYmE1OTdlNjUzNjkzNTJiNzQ5M2RlMjk4NzEyMWUzZWRjMTNlY2Y4OWJiMTliIn0"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L583-L687",
+          "version": "repo-lines-v1:sha256:cc3e50dc4d2477d8deab5c7b0669cc2569604146e38cecb9a148662da959cfe3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJjYmMzNjM1YWY2Njk3Mjg2MGUxMjQ5MmE1ZDQxMDdkOWU1ZDFhZmJjMzQ3YTUyNmUzNTA5MWNiYzBlYTFmYTllIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhMDBkYjA0MGYyOTA5YmY5NzhmZjBhOTU2YTU1ZTgzYzY1MzQxOGRlNmJiNjhmODA0MWRhOTc2ZjhkM2QyMjcwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhYzBkNGI4ODJlYmFkMTdjOWM4MGE3NzcxZmIzMzc0MzBmOGFhNzE2YmM2MmZjODVlOWY1Yzk3MDdiY2Y3NTBmIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_a45a7726f1f34161b01bed9e702c51b0",
+      "statement": "Focused router tests exercise monitoring with a slow upstream and a single proxy slot, check that OAuth health includes pool details, and check that an admin-router request to /v1/messages returns 404 without involving Ingress.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L837-L857",
+          "version": "repo-lines-v1:sha256:feef42d154251ca76c6b640877e60765896839439175405351ae8aad3fc47db9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxY2M0MDY4N2QyNDRlOWRhZjkxY2VkNDY1MjMyNjU2OWE0ZmI2ZGZjODFkMDNmYmU3MjNhNWVhM2NjYmU5ZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ0MmRjZTBhZjlmZTA4OGNiNmNjNDIwODZjNjczYTAxZDkwMTg5YjYzMzE0OTk0YTVjNzJhMjgwMTg2YWQ1MTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzMTk1ODQwOWViYmIzZTAzZDVjMWIwNTZkMjMzYmM3NDhiYWMwMDVkZTc3YjJhOTRmOTJkODQ4YzI5ZjVjNGYifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L2191-L2261",
+          "version": "repo-lines-v1:sha256:eff43a66d80db6657a4550e85048f749420f7ecddde9bea966054d559191bd7a:eyJzZWxlY3RlZExpbmVDb3VudCI6NzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxY2M0MDY4N2QyNDRlOWRhZjkxY2VkNDY1MjMyNjU2OWE0ZmI2ZGZjODFkMDNmYmU3MjNhNWVhM2NjYmU5ZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYyZDgyOGEwMzdhYzFjODE1MzViMWQ1NTAwODMyMzIzYmZiYjg2NmEzYTNmODdlN2E2OGMxM2EyYmFlNTZmZmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZiMDExNmIwYzkyNmQ2MDRmMjg4OGE3NWM5MTRjNTI0MTRmY2YyYzFhYjZjNDNmMDNhNjJkNTQxNWVlNjE3YjEifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L3380-L3416",
+          "version": "repo-lines-v1:sha256:1ed4929c3ced17f44beb14cb1b7d695c64ad60f37ecd990c610193b322a0f2fc:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxY2M0MDY4N2QyNDRlOWRhZjkxY2VkNDY1MjMyNjU2OWE0ZmI2ZGZjODFkMDNmYmU3MjNhNWVhM2NjYmU5ZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5YzNjOGNhOTY3OThhZmFjYTMzMjY1ZTJlZWRlMWRiNjA3ZmJmNWEzODIzNWU4NzFiNjNjMDVjODAzZTcwMTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVkY2IxNTA1MzA0MTY5YmEzYWUwYTE3OTVlZWRkOWNiZjRhYTZjYWVmYmUzMTJiYjJhNjBiZWY5MmI3NWEwYzcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e10a2cf25c8d43df8073f23c6c0edcc2",
+      "statement": "Service state-model tests directly exercise drain timeout, redundant shutdown and terminal Stopped transitions rather than sending OS signals or exercising the exporter.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/service.rs#L223-L329",
+          "version": "repo-lines-v1:sha256:a22665e5d13a15d50860346e62bb74ed53ecdb030cff01cc3c9c8b9d1eaaebec:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2YzU2NDNhODhhYzE5MDExNDI4YmIwNzBmNTQ2YWZjOTUwYmI1NGI1YzZlOWYyODk1MTk1ZmMzNzBkNzAzN2I1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4NjY3OTc1NzEzYjQ4YjBmY2M2NGZjOTc5ODc3OGYwZTdhNjY4NDUyOTFkZTgzZGJkNGFlNTRjMTVjZDAzMWY4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI4NmFhYTAzYTA0NWUzOTNhMDg1OWI0OThkYjY5ODhkZmM1YWQ3NjQ1ZmU3ZjllOTUyZjU1M2U3YTQ1MDIzM2ZkIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjZWMxNjU4NDMzOWM1MTM0OTg4MjMyNDZiZDEzZDc3NTAxMzQzMjNiNjhiZTUxNDY3YmJiOWY1OTFlYzQxZjlhIn0"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-26T08:08:48.465Z"
+  }
+}

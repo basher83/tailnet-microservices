@@ -1,0 +1,442 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:9fd8fa42563ef7f81b1c52e5fc624a4e4d86c215d8d2c5b06fde0f8a051f9da2",
+  "claims": [
+    {
+      "id": "claim_a4b6c1bae0d9411c880ec7ea1f435ff2",
+      "statement": "The proxy delegates upstream authentication and request mutation to Provider::prepare_request before sending the request; AnthropicOAuthProvider uses that seam to mutate both headers and parsed JSON and return the selected account ID for upstream error handling.",
+      "evidence": [
+        {
+          "resource": "repo://crates/provider/src/lib.rs#L64-L99",
+          "version": "repo-lines-v1:sha256:7d21e9fd720c4bd260729fc323e2552a511c50a7dc72a34816c3a9bbf775574f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0ZDRjYzc5YTU3YWQ2YTBlZmM2M2JmMGZjOWZkOTBkMzczMDJlNmE1NzllYzQ5MWNkYzFlYTc5N2Y0YWI2YTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0YWNjMWZlNjAyNDNiYzE4YWQ4MDE3YWQ3ZjIyZDY2ZGJiYTlhMGM2MTU0YTJhZjA2OWE5NTExNTk3MTllZjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzYzY2MTVjMTdmNWQzYjM4MzQwMzA0NzNiYjdhOTI0MmZkNmY1NjkzMzQ3NjEzM2ViZmJmNmY1ODQyMjVlM2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3YzMzNTdhNzBiOWRmNjI2YmFjMTMzMTkxODI4NzJhMjNmMTZkY2VhN2ExMzMxNzRlOGIzM2JlNWY3MmNjNzMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L94-L153",
+          "version": "repo-lines-v1:sha256:b2c8630218b6767bb62b586980ac1047a2a920cb67a267bcff43437e48f83291:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5MDUzYjYzZTg2NTYyZmEzODY2ODdhNjA2NjZkYjEwMzkxMjViMzNkOGJjOGRhNjJhNWU2Y2E0Mzc1MDE4ODciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1ZjIxMzhkMDc0YWUxMzU0MWE5MjRmNmFiZTAxZjYxMmU4NDU4NDBjNTc2ZTNlODAxNmFmMGE4OTMwMGI4ZjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFkZjcxOWZlODQ0MGJhOWEzM2E1Yjc3NGQ3YmIyYzAwNzRmM2Q1MDA5NWEzMzViNDcyMzVkZDljZDhiYTdiZmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2MGIwZjFiYjBhMjMxZjBhYTY0NGNiNzVmNDFkZGQwZWRjNDc0MGU2ZWQ5MjQxYWRiZWQyZGE3MWY1Y2U3YjkifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L299-L373",
+          "version": "repo-lines-v1:sha256:f35463015888aea3987b758741a2bc0ca8d0fe0e29131db3755502b2bd12cb95:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1NTM1OGI5Mjk2MTI1NmYyNWMzY2VmYTEwOTAxOTljM2RmMzFlNWNiNWY4NzcxOGU1YzRmN2RiYTYyNWZhNjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ2NzI1ZTQxNjQzZjJjNDViMjM3MTZmODkxZjUzY2E4OTczODk3NDE3ZTVlMjA0MTk3OGIyNjhhMDM2NWViODYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg5Mzc4MTFjMWY1MzE3ZTY4MzEyZjhhNTAyZjk5ZjVmNDFlYWFiZDgxMTYzMzIzMjRkYjI3ZTg5YTEyMDk4ZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1Yjg3YWNmYjJhOGY4MmMxNmZlZTlkZjY1NWM2MGMzZjdjOGNlYzMxOGIzYWYzODA0ZmI2YTk2NGY5MmFkMjIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_740e856620404d528c2a0d30ef48762e",
+      "statement": "The presence of [oauth] selects OAuth pool mode and suppresses [[headers]] configuration; the committed Kubernetes configuration uses OAuth mode.",
+      "evidence": [
+        {
+          "resource": "repo://k8s/config.toml#L7-L25",
+          "version": "repo-lines-v1:sha256:9becc39da2bca458d5545516422977a9a010a01608197170f97ac052c67da97a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1ZDE1MTA4MTc2Yzg5NGVlYmIxMmI2M2IyYzE5NDc5OTM3MTNmNTYyOGVjNmI3MTIyODE3NzRlZDgzZWQzMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3NWE5YWZiY2YyNDU1YjY3MTdjNGE4N2EwMThkMTViODUyMDkyMDI0YWQ1ZTg1YTRlOWQ5OTJhNTNhYWZjZWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2ZDdkZjVmZTQ2ZTFkZDhjOWU1MWQ5YzA3YzQxMzQwOWNmYjUzMGIwYTI2NzJmNjY1NTRlMTczZTFkNmM1N2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L100-L129",
+          "version": "repo-lines-v1:sha256:2c81a599b25eff81bb98b67a2ed01ec4e73b848c4d363c7c03ca3e0ab3335eba:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4MDc5NGE2MDA2MzNhZTY5ZGFlMWYzOThjYTk3ZTc5Yzg3NDc5ZDFjNjE3MDg0ZTRkMTgyODZmMTlkODFjMTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI1MGM5MGMzNzY4NDYyYjU4MWM0Y2NhYjRjZjdlNWU1NjViODIxMDFjMzU2MmJjMWI5OTFhN2QxNGI2OWIzZDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdkODgxMzliZjA2YjQ5ZjViNDgyMTUxOTNlZmYwZmQ5Mjc2NDc3OWIwZDFmNjRjYzQxYmZhZjE1YThiY2UzZTQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L158-L177",
+          "version": "repo-lines-v1:sha256:ed752f8e32e9df26c0bcfaa5c482926d7be8d3da030770e8c54f3aa619ce6d2a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkNWYxMjI0YzZkNDJlNjVhZWMzNmY2ZGNiMGIxNzZjYWQwYmNiNTQzZTVmMzcwMzM4ZDhmNjNmOTRkYTBlYzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3ZDE5YTJlMWIzNmE1MDg2MTdjOWYzY2FjNDg3NTM0Mjg3M2Q5NGRhMGQzNmJiNmUxMjAzNTM1ZWFlN2VmMTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ4ZDRkZWFiZDQ0ZTU3NmU3OTlmMWJlODBhMzNmY2YwOWRkMWYwZDk2NTQxMzdjNDdhYzI5NDZiNTA4MGY0OWQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L233-L236",
+          "version": "repo-lines-v1:sha256:873931cb575a06ce89f9c1b8eb1b64e1ca1af73b1ed27b6f7d55f2dd55573715:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzYwOWFhOTFjODIwNDNiOWRmZjlkY2YzYmJkN2JlOGI3ZGE2M2IzNWViZjFiZWI2MWRhMTVmMmIzOWMyNzlmMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2Q5OWU3YzQ5NzEzYzMzNzY2NzcxMjkxZGJjY2MzNzY0YzQ5OTU3ZTk3ZTQ2ODI3ZTc4MjEzOWIzYWJmOTk0MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGM3Zjc1NjA2MjAyMjI3OTcxNGVjOTk2YjdlMzY2N2U0MmRhNDBlZGY5MTkzMjQyNjA2M2IxMWQyZWY3YjA5ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTlmNGEzNjk4YTZhNTZmNmUwZTQ3YjRmZmZmNzM3MDU2MjZkOWNlOTBkOGYxMjM3NTMzNzlmZWY4NGJjYTU3MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_8118b4a868c44dd8b4341f5da977f13d",
+      "statement": "Passthrough applies valid configured static headers without selecting an account or parsing or changing the body; it refuses to inject or overwrite Authorization, and a configured anthropic-beta replaces rather than merges with the client value.",
+      "evidence": [
+        {
+          "resource": "repo://crates/provider/src/passthrough.rs#L192-L224",
+          "version": "repo-lines-v1:sha256:578a2573b22cc71c5c02746f6018be9b0d64cce727ca6ce49593f2aa87322691:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4OGYzYWE3ZjMwYWRmMDIzY2I4YTcxMDY2ZDExNDE4YjFkNGM3YzU3MWZkNGIxNGY5YmZhZWU0ZjIwYjQwNDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxYjZjYTUwNTczOTQzMGJjYjc0MWE5YzljNGZhMGQ5YWIyMzk3MGQ5NWY2Y2IwZDgwOTdiZDczMzc1YzA1OTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkxMGYwZTM5YmM4MmU0ZDc5ZWFiYzcwNGM4NWVjZTkwNmVkZmVjNjFkMjczMmI5ZTUwM2NhM2FlZmYwY2YzZTgifQ"
+        },
+        {
+          "resource": "repo://crates/provider/src/passthrough.rs#L33-L67",
+          "version": "repo-lines-v1:sha256:f24e90e79b568ff7f2d51c97606affcd19de1512001629a148b8e980060bc677:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJhYzJiYzc1YjdhMWI4N2QwZjFlMjJjMGMyNDVmYmM5MzZiNmVkYzAyYzI2NjQ4OWMxMzliYWMxNjJhMjIwNzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmNTVhODgwOWRiOTVkMjBiZmFhMDVhYzNiZTllYTM4ODBjNzQ2Njg0NWMzNDUyMGY1OTQyZGUyNjYxN2FiMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0N2U4OTBmNGYzNTM4YzgwMDMxOGM5MTVkMzQ3ODU0N2NmMTdiOTBjMDU2NDgzY2M5YzJlMDA2N2Q1MTY4YWMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L270-L293",
+          "version": "repo-lines-v1:sha256:f7db8e15b664f5b85a3de6038cf0f1d19036de8c265e9a15c0bb2fd6d076b3e8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1ZGNlOWIwNjU1ODgxODQyM2RkOWExNThiMDllYjE3Nzc1MjFkMjE3ZjE3NjA0MmE5ZTcwM2FmNjBiYjVkY2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzMDNmM2YyZTQ2ZDA4YzZiN2E1MjVmYmUzMDIxNDlmZjVjN2YwNzk3MzFkMDg1ZWQ0YzdiYTBhOWQ2ZTc4YzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIzOTVhYjA2ZWQyYTk4NzY0MWY3MWY1MWMwODQ2MTA1Y2Y3NGU3YzI2MDEwNDJlZWE1ODVkYzQ5ZDFjYjEzNzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2MTA3YTcwYjQ5YjdmMjk5ODE2MWUwZTcyZTAzYzJmMzZkOTQ2MjI3MzE2NzBiYjE4NzZkMDZiODZmOTc3YjAifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L335-L341",
+          "version": "repo-lines-v1:sha256:038014463ac07113e25a31f5f9d917c97f66f1491889cac301cbe344f89f6508:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMGJkYzlhYjkwYWEyZjNkODVmYWU3NzZhZjliZmM5Mjc3OTU4N2M5ZWUxNzUzZjQ5OGZjODBkOTg1ZTAxZjQ0OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjlmYTllZTk2MDI3N2Y1Nzg4MmEwNjY0YzFiNDMyZDMzZGUwMjMxMTFkOTA3NDkwMmI4NDViYmEyYzY4MTA1ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjNjNDIzMTEyNmU4ZjdiYjkxZmFjNzg1MTQ4NDYyYzgwMDkyYTRlNDQxNGIxZjgyMzA5MjM4ZjNjNzJjOWUzYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDMwMWVjMWZkNDMyN2Q1M2FkYmQ2YzliNzE0OGNkNjNiYjUwNjQ4NjA1ZjYzYWE4ZmY5OWM3YzFkNzU4M2JhNCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_7a03d10ba94543a4a415e8b39ef5860e",
+      "statement": "Before provider preparation the handler filters hop-by-hop headers, Host, and Content-Length so that the outbound client uses the upstream host and frames the reserialized OAuth body without the inbound byte count.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L222-L245",
+          "version": "repo-lines-v1:sha256:025181febba7c88ee00007c63f0b127bb896cd9d88a54b3e89f37c0fe8371b3d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5NjVkY2I1Zjc3MzJlMWYxN2U4MGNmMDZhNjMwYmIwMjU4N2VmNmVkZGNiZTAyNTcyZWMxNmJlNjVlMmU4OTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1N2FkOWQ4ZDExZTkxMjA1N2IwZmM4NjBiYzJkMTU0MTNhYWYzYzM3ZjJiNGNjOTAzOGM1ZTY3YjU1MzQzZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ4YWQ3N2VjNzM5MjY4MjlhYjZlNjg5Nzg0YWVhN2Y5NWI0YTZkM2E3MjJlY2E3MDY4OWIyZjNkMmI0Y2VlOGQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L335-L359",
+          "version": "repo-lines-v1:sha256:57352949bc7950c3f48bfacfd930f55d7661c6d34508746d4750d34255158c8b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBiZGM5YWI5MGFhMmYzZDg1ZmFlNzc2YWY5YmZjOTI3Nzk1ODdjOWVlMTc1M2Y0OThmYzgwZDk4NWUwMWY0NDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5NDUyYWJhMjdjNTBlYTExNWY5OTYyMjkxNTk1MTEwNDBkM2IyOTE4ZjQ1MWQ2ZjAzYjk5NzczZGYyMjMxMTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzYzQyMzExMjZlOGY3YmI5MWZhYzc4NTE0ODQ2MmM4MDA5MmE0ZTQ0MTRiMWY4MjMwOTIzOGYzYzcyYzllM2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBiM2UzMjM2MjA5ZGU3ZGY1OGI5MTAwZDBlYWI5ZjcxYTc4OTc4OTk0NzM3ZDFjNjU5MjkxNzkzYWQxYTUxOTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_fac3668353bf4e41b3f5357c6715c261",
+      "statement": "Invalid JSON in OAuth mode produces HTTP 400 before account selection; provider preparation failures including pool exhaustion produce HTTP 503 rather than sending the request.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L3328-L3381",
+          "version": "repo-lines-v1:sha256:00360a445d53952af0e16f23de97493789ab91906950b6c7a761953ff593ad66:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1OTQ1ZTJkMjFlYzQyYjc1Mzk4MzY0NmRlYzg5MWE5YWNiNzM1MjQ5ZDJlNGFkMzdhODMzNTYwNjQzOTA4OTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZjM2VmNjk0OWJkMTM5ZDFlY2ZkZGYwMTM2OTc4ZTU1MTQxZDkzMDc0YWFlOGRhMTYzMTM0ODM0NTE1ZGU3YzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE3YTU4MDA3MGY1NTVjNGE5NWI4M2E2ZTA0NTk1NzVkODg1NGQ1YzEzODQ1MGJkNDMwZjE5NmM2NzcwNTcyYTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk1ZmY4MzBlNjc3YmUyMTViZmEwYTZlOTM2MDJlMmU1YmVkZDkxM2Q1YWUxOWVhNDM0ZDdjZjZkNjE4ZjQ3YmQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L102-L118",
+          "version": "repo-lines-v1:sha256:595b46fe10a8323929cbf4ca66d9767a901632cf44db2ca035b8a9d2b42c5969:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkZTc2MDRlZjE2NTUwNmRiOGY0YWExNTIxYWJkMDhjZDZkODUxNWM0NDkwNzFkNjlmYjEyNDJhMDgyNzFiNGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3MTM3N2VkZmIwMzYxNWNhN2NkYTg5ODM2ZjQ5ODAzYWNmZTFlMDBjMzY3NmRkYjNhMmQ2OWZmZjc2OWVmZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlNTE2Zjc4NTAzYzNjOWFkODk5NzU4MDVjOGZiZDM3Mzc3YzBjNTFjZWQyMzI2MjBkZjZmZjAxMDcwZjRkYTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjYjkwYmE3MzkyODVhNGIxZTEzYzAxZjM5YzM5YThjYjY0YTA3YTVhNTZiMDQxYWViYTU3ZjkzYTkxODhhYWQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L270-L330",
+          "version": "repo-lines-v1:sha256:2a1f6295a369e6ab61a94b47304d61163a534130a0f769eca597b6e082d2ae17:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1ZGNlOWIwNjU1ODgxODQyM2RkOWExNThiMDllYjE3Nzc1MjFkMjE3ZjE3NjA0MmE5ZTcwM2FmNjBiYjVkY2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhNDJkODE3Y2ZmYjIwNzEwNGViM2E2OWY4ZjI3MzZlMTlhZTE3ZTk3ZDI2YjA0NDZiN2U1YjRlZTBkM2JlMGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIzOTVhYjA2ZWQyYTk4NzY0MWY3MWY1MWMwODQ2MTA1Y2Y3NGU3YzI2MDEwNDJlZWE1ODVkYzQ5ZDFjYjEzNzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxMWI4ZjEzNzlmYjAyMWQ3ZDEzM2ZhYTczZTZhNzlmZGY5N2ExZjRlYzIzZjMwN2FiZGRkMGFhZWJiMmU2YzcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d723b7721ca74156b21acea307cddf49",
+      "statement": "The pool selects usable accounts by round-robin scan and can refresh a near-expiry credential inline before giving it to the provider.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L105-L222",
+          "version": "repo-lines-v1:sha256:d0b1cad2994a498d4eec04426ead4b6e7685296196a4b209a9322ae1a26de534:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwMzY3OTA4YTI4N2JkYTA4Yjk2ZmIzOTIxYjhhYThlN2U0NzY1NWRjY2U0MWVmYTg3M2VjMjAwMmMxOWE5Yjg1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ZTQ2MmJkODVlYTM1MjI4MjJhOWFkM2ViMjQwOTliMDMyYTFiNjI3YmVjZmQ3YzU4MzFlOTkyN2Q0YmFjNDBlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI5OTliZGVmZWVhY2E2MzQwZTAyOTBkYzg2ZTg4OWM4OWQ1ZTE4OWFhNWJhNDRiNTg1YjNiNzA3MzRmNGE2MmQ4IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjZjE1YTJhMzE4OTE1NmRmMzI1ZjA2NGJiMWM2YjQyMTJiMWZlOWIyMGE4YjE2NzJhM2ZlMGI5YmQ2NjBlMWMwIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_a8b83eafd3394f74a9a00ba85d1afe81",
+      "statement": "A quota-classified upstream failure puts the selected account into cooldown and triggers failover when another attempt is available; failover preparation starts from clean copies of the filtered headers and parsed JSON, while transport timeout retries within an attempt reuse the prepared headers and body.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L232-L248",
+          "version": "repo-lines-v1:sha256:8d811d1509e64c929abb40fd064d068e79891f4ccfe1c1a394cfbbe942b29825:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY4YTAxZTU4ODA2NWVhYWE1Yjk1MmEzMTc3YmRiMTE4MjdmNjFjODM4ZDJhNTQzNjJlMDVhNzU4NTI4NzQyZjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIwMjA4MGU1MzJjMWNhYTU0YTMwNWJhZWU1NGExZDA0MjZlNTdkZmFmMjJhODUwZjE0YzRlMjUwODViMzBlYzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5YWJiMDRiMTIxMGE0ZTg3YWM3NzE2YmU1ZTI2MTA4MThkMzEzMTY3YTZhY2M4NmE2Mzg2NzUzN2MxYmE0MTUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L156-L166",
+          "version": "repo-lines-v1:sha256:aa93694e68e866e1b6394f47c806790df001d97ce3d666741259ee2a690e3a62:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmYjAwNzA3MDRmOTI2ZDM3MjEzMTM1YzBmZGE4OWQ2ODJmMDE4OGE3Y2Q5NTg2ZmM1Njk3ZjIzMGEyY2EwZDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI0MGI0NmMzMDM5OWY3MWFjMDQ0NjM4OWNlYTczNzM3M2Y0NmYzMzRkNzEwOWFhYTY2ZjNmMjdhODU5NzA5NTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJiMDM3YzU1ZTY1N2E3ZjM4YmRkMWQ1YmI5NDJiZmM0NGRkZmI0ZTdmZGRkMDUzZWVjYjI4NGUyNWFkZmFiMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMxMDM4OGRiNTkyNmUxMzU3MjcxYWE2N2MyNmFiOTlkYWYxNzUwN2FhMzhjNmM4YjZiY2RjYzZiNmMxNjg0ZWIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L299-L405",
+          "version": "repo-lines-v1:sha256:db0c498753f778b0f784d1ae3099ac1e747c7f341ec9fcf318a0af28fc8eefdd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5NTUzNThiOTI5NjEyNTZmMjVjM2NlZmExMDkwMTk5YzNkZjMxZTVjYjVmODc3MThlNWM0ZjdkYmE2MjVmYTY5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4ZDUwOWJlN2UzOTkyOTE4ZjBhNWQ3YzFiOTgzZjQwN2RhZjk3Yzc4OTM4MWFiZGZkMjVmODU5NjY1NjA0NDg3IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI4OTM3ODExYzFmNTMxN2U2ODMxMmY4YTUwMmY5OWY1ZjQxZWFhYmQ4MTE2MzMyMzI0ZGIyN2U4OWExMjA5OGY1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5Yzk0NTlhNTA2MWFjZjk2YmI3YzA1NGY3NGU5ZTlkYjZhNmQ0NTNjMzM1ZDEyMzg1NDkxM2VlYzI0YTZiOGQxIn0"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L522-L551",
+          "version": "repo-lines-v1:sha256:03312d062dffb1664415f64241a9b9e1d54bafe5397b7f02e290c214534178ff:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiMmEwOTIwOWY0ZTMyNDliZTAyMzQ2ODE2ZTZmOWE1ODE4YWRjN2QxZDA1NTQxNmFiZWZjNjdjMDdiODZlOTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYyZGRkMmRmZDVjNzk2ZDE3NDhjYzk1ZThhM2VmNTdkNDk3MTUxY2UzMzgzNjQyNGJmZGIwODUwZWE2OGE3ZmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRkYmVlYTczNjBiZjY3NThhYzAyYjI4ZGJlY2JhZWVmYzVkN2NlNWU2YWU4NDRhMTQ1YjU1NjQwYWZiNDBlZDMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_34651d684d4b437180b5c496c2c5b389",
+      "statement": "OAuth mode removes the client Authorization and x-api-key and sets Authorization to the selected account's OAuth Bearer credential, so clients should not send real Anthropic API keys to this gateway.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/clients.md#L26-L29",
+          "version": "repo-lines-v1:sha256:d2963e51c9dd6828ee91a8beb73ea9a2d9f0276f5bb91d3d9e40687152ee3ff6:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDdjMDZjNTYxZDVjMzI3MzQzNjg1MjY4YTQ2YjMzOTFmMzk5OGVlZTg5MGQyYmU1MWYwZDIxY2M0YTUzYWU2ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGUwZjcyOTNkMTU2YTZkMTI1MjhkYjEyOTMzNzllNTJhNWY4MzY3MDQ0Mjk3YjIyODJiOTdmZjJjODYwNDM4ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDY3NjVhODY0NzU3MTJiNmJlNzgwOTYzZDc1MmI0NGIzMzRiYjQ3MjY5NDVmZTcxOWJjOGMxY2MyMDU4YThiYiJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L102-L119",
+          "version": "repo-lines-v1:sha256:eeaa3c5f48588a3de0840c03293fdcc585904c52f70d6136c781c82af84b67c6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkZTc2MDRlZjE2NTUwNmRiOGY0YWExNTIxYWJkMDhjZDZkODUxNWM0NDkwNzFkNjlmYjEyNDJhMDgyNzFiNGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlNTE2Zjc4NTAzYzNjOWFkODk5NzU4MDVjOGZiZDM3Mzc3YzBjNTFjZWQyMzI2MjBkZjZmZjAxMDcwZjRkYTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJlMjQwODhkYTg0N2U1YjEwMGFhZjMxZTIzZjE0MDBiMjdjNjJhMTE3NWFiNDU5MGYwMzA5ZjZlYjY0ZDRlOTAifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/tests/inc_2026_001_seam.rs#L106-L108",
+          "version": "repo-lines-v1:sha256:7dd28864acc1abd9e8fef34cd5a24a8e447a856a37ff8890db385eb49d23b6d2:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmMxOTk2OTM3N2E2NTYyNTNjMjk0ZmM4Njg0NTE5ZjRlY2Y0MDJiYjIzNzM1ZmQwNWQ0OTMyM2UzYmRiZmY2MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODg1ZWQ1OTAwYzlmNTM0MTQ5YzI3ZGZiMmQ3YjE2N2QwY2YzYjU3MDMxZDkxMjI4YTE1YTkwOGZiMzMwODRlYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2YyYThkZjEwYzYzNzAxNDRjZGVhODFiYmEyZDBhNzhkNjU3ODUxNjMxMmM2MzQyODE1ZTYxNzI5ZDE0NmNiNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjMyYWJlMGYyZWZmOTEzN2ZjYzAwMzQxMjYyM2U2NzFlNDRhMjQzMTliNzVlYTI3OGU2OTg2YWUzOWZlNzUxYiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_9ffbb72100334df1ae5db95592c85c6f",
+      "statement": "OAuth beta merging writes a single comma-separated value with the ten required flags first, then distinct nonempty client flags in order after trimming; it reads one HeaderMap value rather than aggregating repeated fields or combining body flags.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L121-L123",
+          "version": "repo-lines-v1:sha256:aaf91e16ebaa32ac354eccbd219987fe3556938c66f94e7bdbcf06e430d74c7f:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzEyZDdlZDc3NjA2NmJiY2NjOGE2NjA4YzZiMzU2YWMyZGE1OTM0NjY0YWU3ODk0NGE3ZTJiOGU0OWNlYjc0YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWMwNDRmMjJkMDg4YzIxZmRkNGM4ZDNlYjBlMGQwYzBmNWJjMWUyZDhiODhlNmIwNDVjODU5NDFlMDc4NThhYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWRmMzk1ZTExM2ZhMmM4MTY4NmE1NjU3MzYyMTc5ZTU1NGEwMDdmMjM1YzIwYWI0YzVjOTU2MzZjNmRhY2JiMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmI5OWVmZTI5YmI3MDZkMDA4M2JiYTk0NmUxOTY3OTNmYmJmMDE5NDIyOTRjMGMxMGI0NmMxMjU2Mjk1NmVmYSJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L185-L209",
+          "version": "repo-lines-v1:sha256:663206da930208e47407700e6ba8066380e8514e17a97598428662d2c5d5a4bb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxYjg5NTk5NjBjYWY0M2QzOTYyMDNlYTYxMWJjMDVjOWFkNTk0YmQ5ZTQxMTQxZGI0MTlmZmZkNmQwM2JmYWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUyYTU5YzY5ZDk3ZDM5NGUxYWVkZGQ4YzU1MmE0ZTYwMTJhNjNiODFkMThhZTM3ZGZkMGI5ZDM0MmVmNWVmM2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjYWE5ODc3ZDcxMTBjZmMwODg1ZDQ3ZmY1NjdjMTM0OGE3NTU4NDlkYzQ2Y2ZiODQwODY5ZTQ0YTdlMWNmYjYifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L26-L43",
+          "version": "repo-lines-v1:sha256:505e4ef09b9b1b2bf718532176e1750b7fa60177668535f67c7906e7ee5d946e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjYjQ0MGY0ZjI4NjYyNTg1MjJjMDg0YzcxMjMwOTBjMjI0NzZhYzAwMTU4YmZjYTIzNGUwOTVkMmNlMTRiYjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMmQyYzBkNmRjNWU3NGQ5MmZhMTRiOTFkYmVhMjY0MDkwYmViMzVmZGI5MTg4ZDliMzQxMTgxZGNlOWY0Y2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJhZGJiZTUxMjdmMmRhNjFhMWM0ZTAzM2EwNDQ3NTUyNmVmMDZiODk3NzkxZmRiNGNiMmQxYmJmOWFjYzZmMWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ1M2U0ZjYwZmI3YWE1NTIyODkyMjNhZGZjMWEzNGE2NTc1MTMxMWZlOTAyYTA0ZmMyMDZiZThjNThmZGZlZWEifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/tests/inc_2026_001_seam.rs#L94-L103",
+          "version": "repo-lines-v1:sha256:5e8ee30444cbc74be0d55dd0978bf2052e0a9ac537de67ff71f486f240bc14ae:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzZjgyMDVhMjliMzMwM2Y0ZjQ5NWM5N2VlNWE5NjM2YjM2YmI1YjA2NWU4NDIxZjg1NjQ0ODUwM2RiOGU5ZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwZWI3MTU3MjkyMDcxNzRiMjY2NjYwMjQxZTlmOGE0NmMxZDU5OTU0ZTA0MDM3NWFjMjdkMDZkZjA4OGFhNWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMxZDliNDQ2MGNjNGZiNjZiM2E1NGIyZjNmNjkyMDQ5ODc3MWE2ZDU1YjFhNDkzY2FiM2E4MjMyZWFkZDM0M2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5NTE2MzViYTQ2MmNmYTUzZjdiZmRkZTg3ZTExNGMyNjUyYTY4YzUxMjRlYmQxMGM2Njc0OTE5OWUwZWU2M2QifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_45407dcdee464787a27a8d13bfa94974",
+      "statement": "The forced beta list reflects the Claude Code 2.1.198 capture rather than the full 2.1.280 capture; adding a forced beta affects all OAuth clients and can alter response shape even when upstream accepts it.",
+      "evidence": [
+        {
+          "resource": "repo://docs/audits/anthropic-beta-flags.md#L25-L63",
+          "version": "repo-lines-v1:sha256:069453b27699a22db543fdf492c62591e9eae1acff72d83a3fe2a9ae34bffd06:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNiOGU3MGRkM2VjODViM2IzOWNlMzdhMGY4ODAxOGFhMzFmMzI1MmJjMDg1NDVkOGM4OTczNGM3ZGYwMjU5NTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyOWY5ZDU5YTgwYzRiOTI4NGIyMjcwYzVjM2M5Y2VjNjNkOWI2ZDBiODQ2ZTRiMjBiZTAxNGFhNmMzNDNiM2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1MmI2MzJmMDY0ZWYyNDA0ZWU4NGE0YzRjMmVjMTY0ZmM2NzRhMmVmNjBiNWVlMDI4ZTNhNDU5OWU3OTRiZDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNmNzY5NWE0MDZlMGYwZTJmMTMwYWU1ODZmZDFjM2M4MTEwZTM3ZTc3NGNjMGNmNTAwZjNmMmRiMDU1ZTlhZDAifQ"
+        },
+        {
+          "resource": "repo://docs/runbook/header-parity.md#L82-L93",
+          "version": "repo-lines-v1:sha256:9aeeb55cb0d2e3cbf2d21265e4c220b562aef17e62dc05e4e0196c4c2cd14df6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwNzg3NGY4MzYyODcyMTFjODQ3ZWQxYTJiYjNlMjcyZTk2MDFjMDNlM2QzOGNiY2FmN2YzNGM2OTExZjQwY2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk2NzMyMDNmYmFkOGIxMzZhMTQxOGM2NjhhNGI3ZGFiNDQzMWE3ZTY5NGU2ZWZlOTczYjIyMmMzYzRlODQ2NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcyMzNhMGNkYzE1YjFmNzViNjc5Yjg5NGZiNDJmY2ZmMWYzZGUwODA2N2NiMjRmMzY4NDJmYTJiMjI5NDdhZjIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L16-L43",
+          "version": "repo-lines-v1:sha256:91fd5ea1a6f30170eb30e6acf2398e58e1316a4d91b2b093bc6c0d5e79ac71b4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmZjljMDJkZWJmNDIyYWQ4ZTczZmFmMjUzMzdkOTUwYmQ5ZDcwYTYxMjA5ZDUwNGE0OWEyYmUxYzIzOGY2OWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMmQyYzBkNmRjNWU3NGQ5MmZhMTRiOTFkYmVhMjY0MDkwYmViMzVmZGI5MTg4ZDliMzQxMTgxZGNlOWY0Y2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0NjBlOWEwMjAzZjU1MWZjODZjYjU5MjZiMDY0ZTBlMDk1YjJlNTIzZmFhOTE0MDdlY2YxZWU5ZWEyMDM0OTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ1M2U0ZjYwZmI3YWE1NTIyODkyMjNhZGZjMWEzNGE2NTc1MTMxMWZlOTAyYTA0ZmMyMDZiZThjNThmZGZlZWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_60628b2ab3ab4ea399696c79d8715b23",
+      "statement": "The OAuth provider overwrites user-agent with claude-cli/2.1.280 (external, sdk-cli), x-app with cli, anthropic-version with 2023-06-01, and anthropic-dangerous-direct-browser-access with true, using source literals rather than client settings.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L125-L142",
+          "version": "repo-lines-v1:sha256:7b65da50d1c701cf8ebb185709181ba3f8976d0730dda0ac5a6120926221fb1b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzYjA1OTc4OTYyMWM0YjJhYTk2NTk3ZGJkNTQ0MWY1MjEwNmU0OWY1YmZiN2FiZjVlNzdjODlhNDQ0M2VjMDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4YmMzNWQ1OTdlZDMwYzFkNTc2MzE1NjFiNTdmYTNjOTdlYmEyODFiMGMwYjA5M2U2N2I0Njc4ZDRiNzBjNDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhZGI2ZmNiZmMyYzk0ZDczODZmODAyYTY3NGZiZGE1NmEyMGE3ZjE1Nzg4MTMzNTIzYzA0ZGNlYzg3OWIwOGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYwZjU2OTYxYzU0NDdjMTI3ZDU1NDQzOTIwNWI5N2Y0YmZhMjUyMzEwZmVkMDI4NGE3MzdjOTVhZmZjYWY3NTUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L45-L65",
+          "version": "repo-lines-v1:sha256:4e477e8edb0c687694dec715d3b9211cc204171d0480ecee076b6416bfe644d5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllMGE5YWM2MWU2YzQxOGE5ZGY5NjNhNTQzZDMxNzIyY2Y0ODBjNzQwMWFlZjYwMjg2OGE3ZDI0N2MwMTMyNDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE1MTc4ZTBmN2U0NWYyODZjNjBhZWNhZjRmNzZiMjQ5OTE5MjZjMmU1NDE5NzMzYWNmZjBlZGE2NTVkYmRlMWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNmYmVlNWNiMWQ4ZjZhODFmMjQ3ZjEwNTYwYTJlYjQzYzk2ZGIwZDVkZjE0YWZmNzZiYmE2ZDg2M2Q3ODdiN2QifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/tests/inc_2026_001_seam.rs#L104-L120",
+          "version": "repo-lines-v1:sha256:a21d57ee88acd985dcc629110369d3c2e244601412568977d1fc7fb725db27f8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkNDYyNjcxY2MzMmViNjk0ZjNkZmU1MGVjMWU4ZWMxYjc1MjA0NDU3NzQwMDk1ZDEzYzI4ZThmMzA5ZjdjOGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxMjQyODg2YzE3OTEwNThkM2EzZWE4MGNjMGU2YzMxMzAxY2JmZTM5ZTFkNzc5NzhiNjJhY2ZmN2RmN2M3YzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk4Yjk2MWQyNmQwMzBmNWIzNmMyYzYyZjIyNWIyYmM1MzI0OTkxYzAyNzk0ZWU2ZmMzODRhNmYwNTc4MWM4NTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY5ZDJlNzFmYTdlNDVkY2MyZmVmNjc1ZmMwNDE3NTUwZGVhMDQ3OTRiMjNhYjRjNzY4MTg1NzUzZmE4MTA2MGMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c361d899f0ac4704955ba86f074e35dd",
+      "statement": "In OAuth mode x-anthropic-billing-header is stripped if present and never injected; the provider also does not synthesize the attribution system block seen in genuine Claude Code.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/header-parity.md#L24-L30",
+          "version": "repo-lines-v1:sha256:fd2e53a1d0c5731701e730f7ae8981fa659db9429d4103099a1c595e94f96b16:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjg2MGJiOTZmMzIyYjg0ZDUzNjQwYzA2YjYzOTcyNGQ1MzBhODJjMjdlY2ZmZmI4NTg4ODI2MGM5NmMxYTgwNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjBhNjRlN2NiMGU1ZjI2Njg5OWNiZGM1YzQzOTBkMjNhZWZhYmU1NGU0MGE1ODU0ZDQwOTgwZjcyMDIxODVjYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDAxMjEyYmU1MWQ0OTNmYmU4ZGQ0YzdlZjBlYzM3YWU2MWMzNjBmODAwMmQyYzI3Y2IyYmY2MWMzODUyZjc2OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzE3YzRhMTZjNjhmOGYxYjhjMmQyMWI4ZGI5OTBjODA4MmJlZTM2MzZiMGQyZmIzZjgxNmYzYzcwZDg4ZDE3ZiJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L141-L151",
+          "version": "repo-lines-v1:sha256:e7256084757fec422645d969651c021d63ec8000259e7e2f01edde9d19e285d4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4ZmUzN2UxYmY4NTkyZDdiMDJiN2Y0MzU2MGY2ZWM0ZWY4Y2RmNmMwMTIwOTRiYzE4ZjZiZWM2MzJkMTlmMDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhNDAwZDc4NWMwYTMyOTc1NGI3OWYwYmM2ZGExYjhjNTdhMjMxOWQxMzQ2Y2ZkMzViZWM0YjZlYzBhNGU2OTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVkMjcxMmU1NzAzZWI3MjAxNjMyNDNhNTY1MDU5YmI4NDJkYTA5ZTdjNjE3NjEzZTg0N2EzYjQyOWYzMGI3NGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1ZmI1NGEwODA3Njk0ZmE1NThlZTViOWIyNzNkZmMwNDZlYWRhYWVhNzhkZjY2ZTEyYzYzYmUxNzU4MmE2ZmIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L312-L355",
+          "version": "repo-lines-v1:sha256:239add3e15d45ce479625f71772c36716d5e5d3e826ca9d5d18e2111bb1b2816:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmNmZhOGVkMTA0ZWVkZjA3ODlkZjQwNDMyZjQzZmJmZDViODRhMzkzMjZhZDNlNDZhNzY0MDZkMzBhZDY4YmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlOWJlNDc1NTE3NDczM2I2YWIzM2ViMTM0NjM0ZmEyODVjOTI3NzA0MzMyOTNlNDhhODg2MGRlNmI5YjcwODgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1NTM3ODFhMmZjZmRkZjliYWM0Mzk3YzE1ZWUxMzY1MjRmMzFlMGQyNDE3MDIxYTFkOTkzNjg3YzQzYjg5Y2QifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L67-L78",
+          "version": "repo-lines-v1:sha256:dbd6b8824718776d3160bec7c8366a6fe2f2caa7d5367353addb57bca58c47f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxMWU4YjYyZTMzYmM0ODQxYzg2YTUyYmJmZDQyNGFlNDFlMGJiZWE4MjQyMmQxMGUwZDIwYjlmMzA1ZmI0MGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3YzNjMmFkNzZkMDNjNDQ2NTU3OWZlYTA4NmI2MjcwYzk3ZmNiMTM0Nzc4Y2NiNWMwMWVhMWZlZmM3MDlhYzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIyYTIwMzI5MjkwYTIwZjUxMzMyMzA1MzFlZTNkYzA5ZWM2ZjE3Y2FmMTlmYWYxZWVjZGE3NWYzY2FjZTVlNzgifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/tests/inc_2026_001_seam.rs#L106-L126",
+          "version": "repo-lines-v1:sha256:26a45aff0895d9ed010af6e03ddecd2b475d24dcb60290728b1fc28c427ad17a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjMTk5NjkzNzdhNjU2MjUzYzI5NGZjODY4NDUxOWY0ZWNmNDAyYmIyMzczNWZkMDVkNDkzMjNlM2JkYmZmNjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMzOWU4MTk1YjlkODhlN2QwZGM1NDIzNTc2MTMxZjY2YWRkMzAyNmU5MjQ1MTBjOTEwNDkyZjAyZGFmODJiNzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNmMmE4ZGYxMGM2MzcwMTQ0Y2RlYTgxYmJhMmQwYTc4ZDY1Nzg1MTYzMTJjNjM0MjgxNWU2MTcyOWQxNDZjYjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUyNGJkMjJjOTgwZWIwMmFkZDkxNjAzZTVlN2ZmMWFlZmYzMjI1N2VkNGY3ZTBiMjRhZjc2MjgzNDM2YTI4ZTYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f168db5fc49849649dc56a8550739c4e",
+      "statement": "Claude Code debug attribution text was historically copied into a proxy header but was not proof of an HTTP header on genuine traffic; the 2.1.280 capture located genuine attribution in a system block instead.",
+      "evidence": [
+        {
+          "resource": "repo://docs/audits/header-provenance.md#L271-L285",
+          "version": "repo-lines-v1:sha256:3fd7332b2fdbe4c8d44e650851bc9c01d700e1d6a7f1623c1b0c0eca1fee16b5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmYTU4YTc2YzZiMzNhYWY3ODhjNmY5ZDYyMzQ4NDdhMTdjNDQ0MzBhYjEwZWFiMzQyYjhkMDY5ZDMyZjNiODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjNTJhYTAyN2FmOTVlNDYwMGY0MzFjZTdkZTQ5NGNiZWEyYzY5YTU0NzM1MzQ4MzdlMDllMTRmZjI1MWZhMjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUxMTIwNjkwNGIyOWM3MDFkYWIyZWY1ZDdjZjRjOWM2MTIyMDY4NWM3OTBiM2I1ODg5ZGFjYzY2ZDdhMjFmNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5MTQyZGEyYjQ2MTU3ZTIzZjZlOGQwYzUxZDIzZTdiNzMwMDdjZDUwM2UzODc3YzFjOTE5ODQ1YTc1N2M1MjkifQ"
+        },
+        {
+          "resource": "repo://docs/audits/header-provenance.md#L97-L131",
+          "version": "repo-lines-v1:sha256:722d0ef19b70c8df3b831045ce1c76502ffbad986a5a9a76e29b5b10020c31f7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5MjNlZjk4YTVmMTA3ZmMwZmUyNTI2OGJjYjBhMDlmZDkyZTAyNThkZDg5NTZkYzVlZjExNGJhNTQ2MGI1ZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhiMjBjN2Y1NDMyNWFlOTdlMTU0ZDcwOWZlMzYwNzNhYzAxYTcyOTA3ZjVmMzg4NTUyZDQzM2M0ZTc2ZDA0NDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBmNTI1YzU1YzNkODllOTc0ZmNiYzhlYTg3N2EyODUzMWM1MTkzNDBlZTk2MTQ4ZDRmZTZjZjhiYTMzNzE0NjIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6df10bec93f14042be79f1bd7bedcdaa",
+      "statement": "In the INC-2026-001 live Fable comparison, clearing claude_code_version_too_old required changing the User-Agent version, not changing the retired billing attribution version.",
+      "evidence": [
+        {
+          "resource": "repo://docs/audits/header-provenance.md#L273-L278",
+          "version": "repo-lines-v1:sha256:bf62bab0c925c20ff663098935cf8763850713d51999be17fd9acacba1b8f4a4:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiY2U1OTQzMTcwNmM5NjY1ZDFlZWE4NDNjY2NmODc4NDI3NzFhYzhiNWViYmJkOGU2MWEzYTM5MmYxOTAzOWE1ZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWY5OTZiNzMwNGRlYjExYjEzYjEwOWE4MGE4ZWMwMTcwNDg3ZjFhZTJlZDMxMjIwNTNlZWUwOTRiNzUxM2I0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODU3ZmI0ZDVkMGQ0NmNmMjFhMTFiOGJhYmRjNDA4YTI5NjBlYzMzZTA5ZDA5ZjE1Yzk0ZjBlMzk4ZmFiNDIzMCJ9"
+        },
+        {
+          "resource": "repo://docs/runbook/header-parity.md#L34-L46",
+          "version": "repo-lines-v1:sha256:10e5ac6fe8ed6a966195fae490e154391c44696a3f8878f4f78f4131e0c5cb7b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkNjI5YWNjNTkxYzcxNGYzZjU5MTUwODI2YWYwNzZjYzY4OWQ4NjUzZDExZWYwOTA2YTVjMzBkYjUzYzljYmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMxN2M0YTE2YzY4ZjhmMWI4YzJkMjFiOGRiOTkwYzgwODJiZWUzNjM2YjBkMmZiM2Y4MTZmM2M3MGQ4OGQxN2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjODcxNjNiMDllMjgyZGQzNDRkYmViMzkzMWVjNmE1ZTQ5YWI5ODg2YzY2OWZiZTk4ZTE3MmQ3Mzc1ZDI0ODQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_853a6c358c964c14b22d1177742077d8",
+      "statement": "The live D003 attribution A/B returned 200 with and without the legacy billing header, supporting retirement for acceptance; those responses did not establish which plan paid for the requests.",
+      "evidence": [
+        {
+          "resource": "repo://docs/audits/header-provenance.md#L281-L289",
+          "version": "repo-lines-v1:sha256:b492d0bb26b18f0dfbb335b1d8ff8ee9864f655942b97ff4148723eb9ec223da:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTQzZDNkODkxMjFjMTJkZTAxNzExOWQ1ZmViMGVmZjAzYTM4ZTgxMDA5MTZmMjVjNzAzMmUxZjgxMmI0ZDNjOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOGUzODgyYjJjOGVlOTI1NTEwY2JjZmQzMGZiYjE4YWUzYmE0NDcxYzAyMmQ3YmUzOTJhYjBjOWNlMjE4YTQyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWUwYWZkODY4OTQyMGExMjQ5NGVjM2MxZmYzMmI3NjJlMzMwM2VhNGYwZjlkNzE0OGM2M2RmNjUwMGUyMzBjYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDJlYTc5NWE5Nzg0YzM0M2Q1NGE1MTg0M2MyMTk5NDMxZjFlMDI5OTQ5MjcwOGYzMjAwYjk1YmUzYmZhNTdhMCJ9"
+        },
+        {
+          "resource": "repo://docs/runbook/header-parity.md#L24-L30",
+          "version": "repo-lines-v1:sha256:fd2e53a1d0c5731701e730f7ae8981fa659db9429d4103099a1c595e94f96b16:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjg2MGJiOTZmMzIyYjg0ZDUzNjQwYzA2YjYzOTcyNGQ1MzBhODJjMjdlY2ZmZmI4NTg4ODI2MGM5NmMxYTgwNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjBhNjRlN2NiMGU1ZjI2Njg5OWNiZGM1YzQzOTBkMjNhZWZhYmU1NGU0MGE1ODU0ZDQwOTgwZjcyMDIxODVjYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDAxMjEyYmU1MWQ0OTNmYmU4ZGQ0YzdlZjBlYzM3YWU2MWMzNjBmODAwMmQyYzI3Y2IyYmY2MWMzODUyZjc2OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzE3YzRhMTZjNjhmOGYxYjhjMmQyMWI4ZGI5OTBjODA4MmJlZTM2MzZiMGQyZmIzZjgxNmYzYzcwZDg4ZDE3ZiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_8c9e2e1b221643d48e6a25f96e5f0f77",
+      "statement": "OAuth system prefix injection uses the shared REQUIRED_SYSTEM_PROMPT_PREFIX when model is a string, including Haiku; it skips a missing or non-string model and leaves unsupported system types unchanged.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/constants.rs#L26-L30",
+          "version": "repo-lines-v1:sha256:bd6bb8416e5bcae3a557899295311402a92bc23447e99e858bd1fe535dfc32ae:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDQwOTZmNzQ2YjUzZDY2ZDg3NDA5NDY3YjAwZmVjOTYyOTRmNzA1MzIzZmRjZTljOWEyZWEzOGM5OGY5N2UzNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGIwODM1MmFmYTllNTFhZTY1ODMxODkwYzE5NzI4MWFjYjhiYTdlYTg5MTg3OWI5MzNjYWY0NDIwZGI3N2FhZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2QzOGE2MmI3NDNjMWNkZGViN2I2ODdlNTUxYWMxYzA4YzE4YjgxYzEwNTc4YmNiMGE5ZjQ3ZTYzYjU3Njk1YiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L211-L214",
+          "version": "repo-lines-v1:sha256:4611c2e7ffd5ad95ac68590a7f316c17d840220de5c1c85f7fd9b46eb1273bf4:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmEzNjY0Zjc3ZmZiMGZhYzI5MTNmMzRhNjY5OTU1YTQzYTI4MTBjMDNkNzllZWFmNWFhZjYxNzkzOTYwYjM5YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWFiY2U2NmQwYjY2MTNhMzA5MDcwYjIxNzY4MTdjOTc1YmVlZDc4ZmJkMDRhYjA5ZGE3NzJhNTc1YjlhMDA3ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTk5YmRlZmVlYWNhNjM0MGUwMjkwZGM4NmU4ODljODlkNWUxODlhYTViYTQ0YjU4NWIzYjcwNzM0ZjRhNjJkOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDkwYjI0ZTUzZjMxMWQwOWVlZDE1ZmJjZWM0ZjU2YjA1MTY5YTgwNDcxODRmYjRiZThiOTk0OTM2MzljMjIzMCJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L312-L357",
+          "version": "repo-lines-v1:sha256:b12637a3648ea12b9e91a3db0e7dc5037514fcebd0fa7a29724f5e7041c51d60:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyYTIyYWMzYTgwN2E5Y2VjYzdmMzJmNDYxOWVjOGVjYmQyYWZmNzY1ZDk3YzE3ZmNiYzAxZDNhNjRkMDY4ZjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlOWJlNDc1NTE3NDczM2I2YWIzM2ViMTM0NjM0ZmEyODVjOTI3NzA0MzMyOTNlNDhhODg2MGRlNmI5YjcwODgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJjODg0ZmZkNTM1YjMzZjRjZmY4OTY0NzcxZjhhOTQ4YTQ3ZDA4OWNmNTk1MDNkM2JjMzU5OGI5NjFhYjU4NDIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L598-L638",
+          "version": "repo-lines-v1:sha256:b852261e6444ea0493b3b20e5a5c026aba1a811019e908b3f6b5f657f06da271:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwYTViNTczOWVlMDkzZTc4NzMwYmNiNzI3YTJjYjkwYzc3N2VmYTNlYmUxYjFhNmFjN2Y5NmE2NzczZWM5NDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5ZDY3OTUwZGQ5NThkN2UxMzU5OTNlYzg2Y2ExZGE5MTE1NzE5ZTYyNjVhMmI2YzEzYjgwYjRkYmFlZDYwZDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2MWMxOTA5NGFhMjU1MDcwZDgyN2I0MDc5ZmI4NjAzYTcyODViNTlkYjVmYjBiYjA0MDgxYzgyMjc4YmU5MGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRiYmQwYTYyOGRkMTk2YTY3ZTlkYzNlNTZjNmY1MmU4NWQzY2YyNDEzZmE0YzlhYjZiODdkMTBjNTNhZDI0YTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_51cb8be54e254479982df0dc0bb94126",
+      "statement": "For prefix injection, a missing system field becomes a single text-block array and a string is converted to an array with a separate prefix block only if needed; for array input all existing blocks and metadata are kept and any text block already starting with the prefix prevents insertion.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L312-L357",
+          "version": "repo-lines-v1:sha256:b12637a3648ea12b9e91a3db0e7dc5037514fcebd0fa7a29724f5e7041c51d60:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyYTIyYWMzYTgwN2E5Y2VjYzdmMzJmNDYxOWVjOGVjYmQyYWZmNzY1ZDk3YzE3ZmNiYzAxZDNhNjRkMDY4ZjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlOWJlNDc1NTE3NDczM2I2YWIzM2ViMTM0NjM0ZmEyODVjOTI3NzA0MzMyOTNlNDhhODg2MGRlNmI5YjcwODgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJjODg0ZmZkNTM1YjMzZjRjZmY4OTY0NzcxZjhhOTQ4YTQ3ZDA4OWNmNTk1MDNkM2JjMzU5OGI5NjFhYjU4NDIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L566-L597",
+          "version": "repo-lines-v1:sha256:ea6bfbb9698197aa183ed7e38d21f45e3e2f76d1130481c104c4aca577480ae7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyYjVlZGY1OTQ5Y2ZlYTY3ODIyY2Y2OTExMzIzNjNkNjhkNmYxZTE2OWY1ZTBkNGY3YzE0ZTVmYTFlNmQ0ZTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3YTU2ZTNlZDk0NTRiMjhhYWY0MDQ4YjEyNDM5NjRmNTc5OThhMDc5ODc0YTU5MGI5MzcxMDliMDg1NzhhZmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFiMjk4ZmIwZDFhMGZkM2ZkYzIxNmUwODdkMDYyMDUyZmY3YzZhOWI2YWNlMDQ2ZDc4ODI1NWRhNDA5ZGY0MzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2MzU4NjYyYzdkNzhiYzU5Zjc0NjkzNDg3MDljMzM5YjkwODIxZDY5ZDA4YTE5NWIzNWY0NWFlZjQ1NWJhNTQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L650-L719",
+          "version": "repo-lines-v1:sha256:303a29c4e375a657e2e925133f5686f3c9d7d4118230e1a42572bd0e0861cad2:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyYjVlZGY1OTQ5Y2ZlYTY3ODIyY2Y2OTExMzIzNjNkNjhkNmYxZTE2OWY1ZTBkNGY3YzE0ZTVmYTFlNmQ0ZTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMzRmZTlmNjYxMjVkMzU3MDA5ZmNjODk5OTc5NWY5ZWU2MWNjZDhkYjg4YTI3NmMxZjNiMDZiYjc5ZDBkYzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a62828318f67480eb75cbb61e73ce17a",
+      "statement": "After prefix injection the Pi sanitizer only visits a system string or the text of system text blocks; it removes a recognized tagged Pi docs element while keeping surrounding sections, or removes the legacy paragraph tail while retaining date and working-directory lines, and leaves unmatched text alone.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L144-L151",
+          "version": "repo-lines-v1:sha256:3ef04c0a0dc97c38fe0465430736c2a49a13971a29e40ae18439de56376a3376:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzEyZDdlZDc3NjA2NmJiY2NjOGE2NjA4YzZiMzU2YWMyZGE1OTM0NjY0YWU3ODk0NGE3ZTJiOGU0OWNlYjc0YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWE0MDBkNzg1YzBhMzI5NzU0Yjc5ZjBiYzZkYTFiOGM1N2EyMzE5ZDEzNDZjZmQzNWJlYzRiNmVjMGE0ZTY5NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjU4MWRhNTQ0OThiYWUxM2QwNjc5ZTI3NGE4MDBhMWVlODFiMjMwMjNiMzI4ODNjYTRhMzQwNjU3YzIxNDVhMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTVmYjU0YTA4MDc2OTRmYTU1OGVlNWI5YjI3M2RmYzA0NmVhZGFhZWE3OGRmNjZlMTJjNjNiZTE3NTgyYTZmYiJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L238-L310",
+          "version": "repo-lines-v1:sha256:202f5a4d8ac1988b51acf1b78350dc654676c62c455567fb77a5192e44acc8eb:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExNTEwZGZmOWQ5ODI0YzhmZjY3YjA4ZTkwNjk2NTFkYmQyNDUyYWNjZGU3M2U5NWEzOGY3OTNjZjJlOWFhMGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyOGMwYjIwMGY2MmM5NDhlMTgzZDQzM2ExM2Y5ZWRiMmVhYjVlOGVhMDNiZjMyNTQ4ZGVjZGI4OWM1N2JiMTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzNWNmMTAwODFiMjNhNWRiODZjYjhjNzJhZjcyMzM3MTI4NDE3ZmZmZGYwNWVhNDIyYmQ4YWFjODliYmUzNjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L484-L562",
+          "version": "repo-lines-v1:sha256:bc4651bd9e8bfccf147be7275878fc3a627f2ecf3aeb814f65aacb792629e5de:eyJzZWxlY3RlZExpbmVDb3VudCI6NzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5YzEzNTkwNjY1NjMyM2QxYzVlYTQxNjU0ZWU2NmFmYjU4NWFjZGNmYWVhY2ExMjFkNWUzMGJmMTkzZWVkZDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkMGZhODYwNTJlZTRhZDA4NGUxMTUwODc0NGNjYzZhODRjZTVlMThiMTQxZmIxNGQ1ZjY4MTQyZjk2ZjAxOGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3YWEyYTNkODA2ODJkM2Q1ZmQ5MWZjOTk5OTg2ZjIxNTU1MzdkZTBlNmU5MWJmNjYxYWEyN2Y5NTIxZDVjYTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFiMjk4ZmIwZDFhMGZkM2ZkYzIxNmUwODdkMDYyMDUyZmY3YzZhOWI2YWNlMDQ2ZDc4ODI1NWRhNDA5ZGY0MzEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_fd194d67bd8347df9c41cf470d7c0414",
+      "statement": "A Pi-only extra-usage 400 can reflect an unmatched client prompt layout rather than identity header drift, as observed with the Pi 0.87.1 update; a successful minimal client test does not cover that prompt shape.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/clients.md#L54-L69",
+          "version": "repo-lines-v1:sha256:69e336436447e6bd06154f85e73c068befc3123511429977f1d33baa9b854c28:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFmYmM0ODEyOWExNTM4MGRiYjc4MDY5ZWQ4MzI0OWFmOGYyOGQzZmJjYmNmMGZiNjhlN2IzMzZhMGNhNWJlZDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFhNzI1YjA5MTU2YTNhYWZkN2Q0NGZkYmFmZjE1YTJmZDIxNjYyNzdkODVlMGZhNWQ1NjhlYzRlMTYyNTJjODMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3MjUwZTVmOWUyODhmNWMzZjg0MjczNTFkNzVhZTczMGVmNjk5NzE4ZTljNmI1NzY0ODFkZWEyOWI4MmVlYjUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L238-L288",
+          "version": "repo-lines-v1:sha256:a01eec443cd62472a77ffa087c233868b420a5363137c2c4d9d92daeb8922e9f:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExNTEwZGZmOWQ5ODI0YzhmZjY3YjA4ZTkwNjk2NTFkYmQyNDUyYWNjZGU3M2U5NWEzOGY3OTNjZjJlOWFhMGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzNWNmMTAwODFiMjNhNWRiODZjYjhjNzJhZjcyMzM3MTI4NDE3ZmZmZGYwNWVhNDIyYmQ4YWFjODliYmUzNjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJmZjlkZTEyZDUzYWY0YTNlMjYwMmU5NGE1ZjdlZWJlNTg4NTk2ZmEwNDI1OGQyMGFhZWE1Njk1NjYxMDNhYTAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8c30c6c19b434abfbfbe625c7ed7b613",
+      "statement": "The OAuth provider's JSON mutations are limited to system, preserving other parsed fields such as model, messages, tools, parameters, and stream even though the proxy reserializes the JSON.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L144-L151",
+          "version": "repo-lines-v1:sha256:3ef04c0a0dc97c38fe0465430736c2a49a13971a29e40ae18439de56376a3376:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzEyZDdlZDc3NjA2NmJiY2NjOGE2NjA4YzZiMzU2YWMyZGE1OTM0NjY0YWU3ODk0NGE3ZTJiOGU0OWNlYjc0YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWE0MDBkNzg1YzBhMzI5NzU0Yjc5ZjBiYzZkYTFiOGM1N2EyMzE5ZDEzNDZjZmQzNWJlYzRiNmVjMGE0ZTY5NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjU4MWRhNTQ0OThiYWUxM2QwNjc5ZTI3NGE4MDBhMWVlODFiMjMwMjNiMzI4ODNjYTRhMzQwNjU3YzIxNDVhMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTVmYjU0YTA4MDc2OTRmYTU1OGVlNWI5YjI3M2RmYzA0NmVhZGFhZWE3OGRmNjZlMTJjNjNiZTE3NTgyYTZmYiJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L289-L357",
+          "version": "repo-lines-v1:sha256:3891a434b92d42f34ae6ca455db26b04d068d80286aaa52639dac957bd43544d:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1ZjlmOGNmOGM2YmQ5MjdjZGJjNjZjZmU1MjIwNDBjN2MxNDdiOWZmNmNhNmRlYzQ3MjFmNTg2NDU0NTlhMDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyYTIyYWMzYTgwN2E5Y2VjYzdmMzJmNDYxOWVjOGVjYmQyYWZmNzY1ZDk3YzE3ZmNiYzAxZDNhNjRkMDY4ZjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJjODg0ZmZkNTM1YjMzZjRjZmY4OTY0NzcxZjhhOTQ4YTQ3ZDA4OWNmNTk1MDNkM2JjMzU5OGI5NjFhYjU4NDIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L335-L341",
+          "version": "repo-lines-v1:sha256:038014463ac07113e25a31f5f9d917c97f66f1491889cac301cbe344f89f6508:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMGJkYzlhYjkwYWEyZjNkODVmYWU3NzZhZjliZmM5Mjc3OTU4N2M5ZWUxNzUzZjQ5OGZjODBkOTg1ZTAxZjQ0OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjlmYTllZTk2MDI3N2Y1Nzg4MmEwNjY0YzFiNDMyZDMzZGUwMjMxMTFkOTA3NDkwMmI4NDViYmEyYzY4MTA1ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjNjNDIzMTEyNmU4ZjdiYjkxZmFjNzg1MTQ4NDYyYzgwMDkyYTRlNDQxNGIxZjgyMzA5MjM4ZjNjNzJjOWUzYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDMwMWVjMWZkNDMyN2Q1M2FkYmQ2YzliNzE0OGNkNjNiYjUwNjQ4NjA1ZjYzYWE4ZmY5OWM3YzFkNzU4M2JhNCJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/tests/inc_2026_001_seam.rs#L94-L102",
+          "version": "repo-lines-v1:sha256:bb946c09a617e6aa8b899efc96cfa28670f3aec724cb9643dbb1772a360124b7:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzNmODIwNWEyOWIzMzAzZjRmNDk1Yzk3ZWU1YTk2MzZiMzZiYjViMDY1ZTg0MjFmODU2NDQ4NTAzZGI4ZTllZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGRmMjc5MmI1MWQzNmZhNzRkYjEwNDRkYTMxZmI1NWFjNjAxMGFlMTI1NWE2YTRhNWUyZGYyMjk1NTAwZTQxMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzFkOWI0NDYwY2M0ZmI2NmIzYTU0YjJmM2Y2OTIwNDk4NzcxYTZkNTViMWE0OTNjYWIzYTgyMzJlYWRkMzQzYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiY2YyYThkZjEwYzYzNzAxNDRjZGVhODFiYmEyZDBhNzhkNjU3ODUxNjMxMmM2MzQyODE1ZTYxNzI5ZDE0NmNiNyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e909bcb4917647ddb4ef261c8c44c03a",
+      "statement": "Forgeflare's historical tool-name compatibility fix was client-side, while the proposed OpenClaw tool rewrite profile remains a deferred draft, not an implemented OAuth request transformation.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L98-L153",
+          "version": "repo-lines-v1:sha256:3140656a9f882ebee28809f31b2b2fc5c1792936f5a452430ee533daea5d5766:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5NDcxNjJlMzEwNmM2YmFjMDY2NzYzYjY1YzlkYzk4YjNlODljMWMwMTJhMjg3YmE5ZDczZDhiNzQxMGY5OTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1ZjIxMzhkMDc0YWUxMzU0MWE5MjRmNmFiZTAxZjYxMmU4NDU4NDBjNTc2ZTNlODAxNmFmMGE4OTMwMGI4ZjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU5YjgzMTQzYTFlNGQ4ZjkwMGQ3NzNmNTdiZDM0ZDI1OWMwNmZjYjllNmYwNDcwNDgzOTU0ZWY3ZDA3MzJmNzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2MGIwZjFiYjBhMjMxZjBhYTY0NGNiNzVmNDFkZGQwZWRjNDc0MGU2ZWQ5MjQxYWRiZWQyZGE3MWY1Y2U3YjkifQ"
+        },
+        {
+          "resource": "repo://specs/README.md#L3-L7",
+          "version": "repo-lines-v1:sha256:b5ca5d66b8e8a9b15a693f2e76e07164dc5fc6c26af5b7c13ab9666d65d296fd:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjdhNGU4ZTBjMjcwYTYwYmM2MzYzMDk0Mzc2MTBhMzVmZWQ2OTYzOWVjYWUzMjAyNWZjZmRlNDRlYTg0YjBjZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjEyMzc1YjBmZGIxMTA2ZDk3MDdmODY4MjNlNzI5N2Y3NmM0MjU4NTRjNmNlYmQxZDRhOTQyM2VlNWIxZDZkOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjIsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjhhZjIwNDk3ZWJkODI4OGY0ZDIxYWE5ODM5Y2U2MDJkOTBkOWVhZDdkOWI2ZmRkOWI5MGRjNTU0OGI5OGM3NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjA1ZDJhMzA3ZjI4YzUyNWQyMThlNjEzN2I0NjkzNWFhMTFmNTY5N2UyNjBiODMzMGEzYjBiZTgyYjhhOWVjYiJ9"
+        },
+        {
+          "resource": "repo://specs/generic-client-support.md#L40-L54",
+          "version": "repo-lines-v1:sha256:588ba7f9a8f260406c73de823e19d213f87d0aa32f334365cfe65b3076ba954e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc2MTFkNzRlMTg3ZGNhZmZmZDE5ODUyYTc2NTQxMzNhYjkyNGRiNzk2YjQ1MGJkZDg4NTAzZWE3YzQ0OGJkNmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyZGI5MTNkNmZiZjhiNmI4NjI4ZWE4ZDhmODI4MGFmNTQwYWY2OTY3M2I1ZDdkNGE3OTMwZTU0ZTI1YmQ0ZTAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8a94ecf5449949359ce6a14071404341",
+      "statement": "The D002 synthetic regression calls the actual OAuth preparation seam twice using fresh temporary stores and inert non-expiring credentials, requiring consistent observations; it does not send the messages request upstream and does not establish live acceptance, SSE parity, or plan usage.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/tests/D002-fixture.json#L1-L25",
+          "version": "repo-lines-v1:sha256:cc8eb38e9e4c10ac20a9b1a3c5f34726298b2e565069a52c7a3d57e7780f27de:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/tests/inc_2026_001_seam.rs#L132-L167",
+          "version": "repo-lines-v1:sha256:7bf23e6a84a22e1cc881e8ffc453a6f47a2db3215f72ef60a8ee8922c6eecc44:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5YzliZjg4MTVlNzZiY2FhZThhOTgyNTk5ZmY3MGZlZDM1MGU0MWMyOTE3NWZiMTBkZGNiNjkwYjAzOTdlNTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQxNDBiM2JkZWRkMTFkY2M2MjlkN2VkYzQwYzc2ZDE2ZmE5ZjlhZmQ2M2I4ZTc0NzkxNjg2Yzc5OTYyYjZkMDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/tests/inc_2026_001_seam.rs#L24-L80",
+          "version": "repo-lines-v1:sha256:8a968cd7bea3b935eee3dd46b5ecf3726c656add700e09b558d009a0ebfd6b40:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyNTc4OGI1OWM2Y2U2OGNlNDZlMWIxZjM1YmU5ZWI0M2RiODI2OTM1NGQ4NmQxZmFkZjg3YjJkNjg2NjM4NDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk1NmI1YmI1NjlhODAwY2Q2MmQzNzJhNzcwOWFlOTAxOTUxODdlZmZlMmNlNGNlZjdjODMzY2M3OTEzOTVjMTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdkMTIzZDIyY2E1NmNhMWQ2ZjU4MWFhOWRhMWRkYzVkYTgyOTUxODVkZWVlZTUzYjU0ZmM0NjRjODY4OWE3YTgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_62185721cca44fe383028e1534d9beeb",
+      "statement": "D002 checks exact User-Agent and fixed headers, removal and replacement of client credentials, absence of the retired billing header, required-first beta union with overlap de-duplication, and equality of the fixture body except for expected system injection; observations include only allowlisted public headers and protection checks rather than credentials or request content.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/tests/D002-fixture.json#L5-L22",
+          "version": "repo-lines-v1:sha256:3c5399e3da8c6b7a39b1aae5e011fc97c2180e96514739a3f752afb0f7c88436:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViZjQwNjNkZmMwN2FmYjY3ZjI5N2VmNjgxZjRjMWVkNTUwZDZhNzMzOGE1MDY3NGJmYWJiY2RhZGIwNTc0NmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxMTEwMGZjMjM5OTA0OTE4ZTJhNDZkNDNiYTNhMGY3YWJjYmMxMDRiZTMzMDhhZTRkYmNhY2UxNzYwNGIyZWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmOGY3MGE1ODcwZjI1NWQyMDBjYzA1NmJkOTg2YzI4YmE1ZWY5YmEwZTkwMGJlYzUwN2NhY2ViMjVkNWZkMDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlkODg1YjE0NWE4OGNlZTc4ZTM1NzQ2NjMxMzJmN2M4ZWI0ZGZmMmY3OGQ5YTQwZGRlMmUyMzExZjA0ODM5ZWIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/tests/inc_2026_001_seam.rs#L61-L139",
+          "version": "repo-lines-v1:sha256:ec30c239aef0226d4c448163ff2916a4c9f4cb4f79338ef786ffebd4a68a05da:eyJzZWxlY3RlZExpbmVDb3VudCI6NzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwNWQ2MzVhZjZmYmM5ODI2ZmE5NjU5ZTVmOTJkY2Q0NThmOTg5OTQ4YmQ0MzRkMGIwY2EwZDYzMjJkOWU5OTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5YzEzNTkwNjY1NjMyM2QxYzVlYTQxNjU0ZWU2NmFmYjU4NWFjZGNmYWVhY2ExMjFkNWUzMGJmMTkzZWVkZDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcyYmI5MThkMzY3OTgyYzNhMzdmNGE4M2E3MTI0Y2ExNjE0MGNkZmVhOTQ4ZjE4ZTk3NGIxOWQ3NjQ3MjU2OWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImViMDllYmExMjc1ZjQzMzIzMjIwYmE3ZTE5Y2E1M2E1N2IwZmZmMmY4NjkxZjQxZmJiMTUwZGIwMjE3NTc2ZGEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_27a485d82e334430941f81099763e91d",
+      "statement": "Pi sanitizer cases are covered separately from the no-system D002 fixture, and service tests with a local upstream echo server check billing-header stripping and beta merging after forwarding through the handler.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L2983-L3084",
+          "version": "repo-lines-v1:sha256:e4b38cb6909cbef150904437d43110da729a94840df589164fb7a8fcd9b790c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5MWNjNDA2ODdkMjQ0ZTlkYWY5MWNlZDQ2NTIzMjY1NjlhNGZiNmRmYzgxZDAzZmJlNzIzYTVlYTNjY2JlOWRmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJmMmQ4MjhhMDM3YWMxYzgxNTM1YjFkNTUwMDgzMjMyM2JmYmI4NjZhM2EzZjg3ZTdhNjhjMTNhMmJhZTU2ZmZmIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJiMjBjNjcxYWVjNGMyOTJmYzFiYmQyNjg2NWMxZmNiNDY4MWUwZDlkMjg3ZDhhODNlOTIwNzcxZTgwMTg1Mzc2In0"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L484-L562",
+          "version": "repo-lines-v1:sha256:bc4651bd9e8bfccf147be7275878fc3a627f2ecf3aeb814f65aacb792629e5de:eyJzZWxlY3RlZExpbmVDb3VudCI6NzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5YzEzNTkwNjY1NjMyM2QxYzVlYTQxNjU0ZWU2NmFmYjU4NWFjZGNmYWVhY2ExMjFkNWUzMGJmMTkzZWVkZDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkMGZhODYwNTJlZTRhZDA4NGUxMTUwODc0NGNjYzZhODRjZTVlMThiMTQxZmIxNGQ1ZjY4MTQyZjk2ZjAxOGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3YWEyYTNkODA2ODJkM2Q1ZmQ5MWZjOTk5OTg2ZjIxNTU1MzdkZTBlNmU5MWJmNjYxYWEyN2Y5NTIxZDVjYTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFiMjk4ZmIwZDFhMGZkM2ZkYzIxNmUwODdkMDYyMDUyZmY3YzZhOWI2YWNlMDQ2ZDc4ODI1NWRhNDA5ZGY0MzEifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/tests/D002-fixture.json#L10-L20",
+          "version": "repo-lines-v1:sha256:4b3f1fb11dec248150e870bcc89e2b0f4ef036d02dde0d66a60052885ad7e14e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkMmY5MTA1YjU2NmUzNjdjYzU0ODU2MTkzYjhmZDUzMjQ3NGMyNTBlNTY5NTljZTk5OWRkYjJlZGQyMTJlNzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5YjUxNzBjNDBjMGM5OWUyYjQ2Mjk1MGQ1OTM2ZTZkMGRjMzU4ZWQ3N2IzODUyMzdkNDZlNTdhYmJiZTYwMWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkMWI3N2NhNTc1NzJlN2JmMzM4ODUwN2FhNDg0YWUxMjlmNjE0NDEyZDQyZGEwNDA2MjlkZTM5YjA3MWU2MjYifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-26T08:08:48.465Z"
+  }
+}

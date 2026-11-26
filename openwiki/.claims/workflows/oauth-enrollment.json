@@ -1,0 +1,444 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:1e4b98f365f2fc2bd4c58c6291e1894dc7b801e2c57d21158000f282e4bcb4be",
+  "claims": [
+    {
+      "id": "claim_9225aa371def4a7abfcfefd23fe67361",
+      "statement": "The separate admin listener starts only in OAuth pool mode with admin explicitly enabled; its address is configurable with a default of 0.0.0.0:9090, and a bind failure is logged without aborting the inference listener.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L54-L108",
+          "version": "repo-lines-v1:sha256:11b8701075cfdb47fa07f833bb437128c68c3a99a6d3d3c7155cc0739583b121:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY1MzJjNjJkNWY0YjZmMzVmZGY5NWM1ZjI0MWFjYTg3OGY3ZjZjZGVjNmM3ZjJmOTlhYTRiMGVmNTEyNTYzYjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJjM2NiYTFjNmVkMjIyNGQ2OTk1ODkxYjFkNDVmOWQzYTAyMjA0ZGNhYjFhYjI0MmMzNmMzOWJkOTA0MGM0MjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4YzBlM2VhODAyMjc0YTFhZmYwNTJiN2MwZWQ2ZGUyOWIwNzE0OWY3MTBhNmQyY2IwNzMxYzZiMGY5NjRiYTEifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L166-L261",
+          "version": "repo-lines-v1:sha256:fa23fe5fea9be1b7e20b55c8b00194476ddffed49116c981fccc765086eb170c:eyJzZWxlY3RlZExpbmVDb3VudCI6OTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5MzJhNTczM2NmNjk1OWFhNWNhYzIxZTBlNDQwM2FjYjY0MWY1ODc3NmFkYjRhNGMyM2IzMDA5OTlhMGNlYTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkOWUxMjU0NjQyNTU3NmQzZGVhZThjOWI5ZGJmMTI4ZDVkNmRkYWY1ZDdmZTg1NzkzNDkyN2RlZmZhM2I5ZGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc1MzY3ODE3MWNiNmIyNjFjN2I2OGY1NTg4OWRiMzNiMmNmOWYyMDMxYTU1ZDgxZThlOGVhNWNjZmM0NmUzNmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5ODRiYjkwMDI5NjYyYjhiODgzZDM3OTkxNmM1NDY3YWNmNzAxOTExZGQ4YWE0MDdkMjhmMjg0ZTNkOTRmZDQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e9d211d82dd24fffa7f89a7749a10587",
+      "statement": "Kubernetes enables the admin listener on port 9090 with a dedicated ClusterIP service; Tailscale Ingress points to the inference service instead, the admin router adds no authentication check, and the account runbook uses kubectl port-forward for access.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/accounts.md#L5-L13",
+          "version": "repo-lines-v1:sha256:b8681e6d148fdd0bcc9c1c60017b1c4ef1051d22e320a09a1c71fd14fc109e78:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTYyMTMzZjA2MjgxMzYyNzRlMmMxYTRlMzJiOTg5Yjg4YjA4ZDUwN2Q2MGQ5NTcyOWE1NTNhMjc2YTkwMjY0ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjc5NzE0ZjMzODE4OTVlYzMxYWMzNmIyZjg4MTExNDNkMjc2YTcyNTdjNzA5MzUyZmE5Yzg1MTc4ZDgwMzg0NyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDNmZTFhOGU3ZDUxMmFkZjFkZmExMzM1YTg5NWNhODk2NjIxODU1NTdjNGY2MWJiOWE1N2JlNThjMTAwYjU0MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTMxNTQxNjY5YmEyZWRjNmUyYjA0OTlkODRkZjA1Mzk3MmZkZWI3ZWRlY2MzZTE3ZjUxMWM0OGI5YzJlMDhkOSJ9"
+        },
+        {
+          "resource": "repo://k8s/admin-service.yaml",
+          "version": "repo-file-v1:sha256:4cd6caebadb7203898d9ecd156df98f1a8de21c69b9cbdd3a6212dde85dfd33e"
+        },
+        {
+          "resource": "repo://k8s/config.toml#L15-L25",
+          "version": "repo-lines-v1:sha256:8938808ab9fc7749c3c58e05eff305de3dab1da2723da31e0d587d756bce22be:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3NWE5YWZiY2YyNDU1YjY3MTdjNGE4N2EwMThkMTViODUyMDkyMDI0YWQ1ZTg1YTRlOWQ5OTJhNTNhYWZjZWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUyMDJlNDVmYjU4YzY4ODZhZjRjOTE5NTAzMWIyMmE3ZDhmNDA2YTVmNWU3ZTFiYzhiMGY1Y2MyNTI1MGMwMGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://k8s/ingress.yaml",
+          "version": "repo-file-v1:sha256:56a43b309f9cd088e952de45f9ea1e34bb7da3407fb38b45fda9baa7dcdb7d14"
+        },
+        {
+          "resource": "repo://k8s/service.yaml",
+          "version": "repo-file-v1:sha256:a14a4895167f98b69a4ff073d04268c59d88fa5d4aadef48366ad445681f9964"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L63-L72",
+          "version": "repo-lines-v1:sha256:5cdfe6f9fa1cbf1e71785543855120b533356737bbbbd5d768b2ff3a4a5a5b60:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkYWZhMWUzNWVhYmU3NWM1OWI4YzQyNzllNjE3NWM0MDNjMzc2YWJmNjBkZTRjMmI1YjI3N2UzOTZhMTQyMWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNTAxZTRmZjhiNmNhOGQ0YTg2OTkxMDIwZTA5YTdhNjc5YTg0ZWZmZTU1NDcyN2ZlYTg0MTJjMjExODZiN2EifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4c7a1850064647698153fd211c808627",
+      "statement": "The active authorization endpoint is https://claude.ai/oauth/authorize and the redirect URI is https://platform.claude.com/oauth/code/callback. The hosted callback displays code#state for manual submission to the admin API rather than calling it.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/constants.rs#L10-L17",
+          "version": "repo-lines-v1:sha256:df6572dcf0384d5d3f562f4dc6c9ac631c20cb1bfcbd81e9ed5d80b7d3915dc1:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWIzN2M0YzRjODJmYmFlMDljMTZlYWU5NjViMGI2MWMzMWMxMDNlZTkwNGY3NzYzYzRlNmRkM2Y3OTg1YTA5YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjljYWQyZDk1OThjM2JmZTM1NWU3NGQ1OTVjZTVkOTIyOWM2NTRiYTZhOTQxNTk2NzMwMzY0Y2ZiNDRhZGUwZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjhkOTg1NTEwOGFlZDJhM2NlYWNkODRmYzY1YjAxYTIzZmM4NWUyMWU4NjI1M2VjYmQ1YzMzMWFlZWE4MzQ0NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzFkZjczODU3NWYyYTI4NWI4Nzk4NzBiNjM5ZjQ1N2QwOWU5YjFmYzFiMmM0YjQ1MzMxYzdkZjExNGFlNjE0NyJ9"
+        },
+        {
+          "resource": "repo://crates/anthropic-auth/src/pkce.rs#L58-L68",
+          "version": "repo-lines-v1:sha256:12775fcde67a3e9b1e512ecd675e7ab38b7968a5e73dfb319c3534d72362b6b9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlZDExNGEzMmQ5Y2VhNTk3YWJjNWI1MTQ5NTdmNGI5YzAwMTlkM2RkNjU5NjQwOTEyMWU1NDRlMjkxMmE0OWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwMmFkODMyMWI3ZTlhMTMxMDJkNmI1NmU3YWQyZDA2NjI2YTIyZTI5Nzg4YjJlMjFmNDZmMmNjNDcxMzE4MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjViMjVlN2I4NjZlNDM3MDIwM2E2ODM0MmZkYTA1ZDE3NTViYWZhNGU0YWRkYWI5MTQ3YzgxNDFjNWRkODExNmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZhN2I0MmU4N2I5ZDg0MDFhMDE5ZTZkZTNhNWYyMDUyMDdiOWI2OTQyYzg0ODYyNTM3ZDFmY2RmMGNkN2IyMzYifQ"
+        },
+        {
+          "resource": "repo://docs/runbook/accounts.md#L39-L51",
+          "version": "repo-lines-v1:sha256:d966853612b0f3638565258ff625a463b1c88dbbb09077b93e65f8b48a2f60f2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ5ZjQ0YzMyZTNhM2VhNDc0YTIwMDIwNjg5MGFiMjI5ZWIwNWRjZDdjZGMzMmIwYzBkMGVkMDc4MTRiNjcwNDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4NDFhZTdjNWM1NjViNDIyMDUzOWRiZjhkNTBlZjIzZTNjZWY2NmIyMGYzNzkzMzM3YmIwOGI5YjdhNDJkZTUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L63-L72",
+          "version": "repo-lines-v1:sha256:5cdfe6f9fa1cbf1e71785543855120b533356737bbbbd5d768b2ff3a4a5a5b60:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkYWZhMWUzNWVhYmU3NWM1OWI4YzQyNzllNjE3NWM0MDNjMzc2YWJmNjBkZTRjMmI1YjI3N2UzOTZhMTQyMWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNTAxZTRmZjhiNmNhOGQ0YTg2OTkxMDIwZTA5YTdhNjc5YTg0ZWZmZTU1NDcyN2ZlYTg0MTJjMjExODZiN2EifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_39e91076d34e443b9f0dcab7758621a1",
+      "statement": "The authorization URL uses a public client ID, code=true, response_type=code, an S256 challenge and random state, and the subscription profile, inference, Claude Code session, and MCP scopes; it does not request Console API-key creation.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/constants.rs#L3-L24",
+          "version": "repo-lines-v1:sha256:aff355cd7abb1bb955214c228ec74d9ca8911463e12510de88da06922b6f3f5f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyNWM1OGUzZjgzZWZhMGNiMGY4MDJjODNjYjE1ZDMxNzY1NGFiNWU4NWM3YTMxZjE4MjcwYWFhOTQ2ZTY4YWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1ODczODc0NzI4Y2FlNGJiYzg4MDIxOTRlYTVmYWY2NWM0OTRmNTYxZjBmZTBjZjBlMzQzOTliYWM2NTI2Y2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU4MjM4ZmI0MGI1MjNlMTE3ZGI0NGJmODRhNDViNzU0Y2RjOTcwOWEyYzJkMzVjYzBiMjI3NTQ0NGZmZTdlOWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllMzhmYjgyOTEwNGU3YWM5Mjc5ZGM4OWRiMDY0YWE4NzM1NTdlYTk3NWEzYzY5Y2UyYTYzZGUxNmFmMjM4ZTQifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-auth/src/pkce.rs#L40-L68",
+          "version": "repo-lines-v1:sha256:3711d429bc19a169e0d2ae410e36163db1ca57aafde521ddf750da3d43046c0a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4ODU4MDdmZGJlMTc1MjFhYmE3Y2ZiNWZkN2YzMzVjYjFjNzUxZTlkZDA5YzU2MzRiNGRhMTJkMWI2ZjA4MmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwMmFkODMyMWI3ZTlhMTMxMDJkNmI1NmU3YWQyZDA2NjI2YTIyZTI5Nzg4YjJlMjFmNDZmMmNjNDcxMzE4MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ4MGY3MmJjYTk2ZjU1MzVmMTg3Njk4NmEyOTNiZGIyZDU2ZjFiNzlhYWU2ZGE1NDk3NjVhYTM3OTE5MTM3MDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZhN2I0MmU4N2I5ZDg0MDFhMDE5ZTZkZTNhNWYyMDUyMDdiOWI2OTQyYzg0ODYyNTM3ZDFmY2RmMGNkN2IyMzYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_46a8ee2314654b5d9e4edb55718ed8b9",
+      "statement": "Admin init independently generates the verifier and opaque state from 32 random bytes each encoded as 43 unpadded base64url characters, returns the URL, account ID and state, and retains the verifier, ID and creation time under state in process memory.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/pkce.rs#L15-L45",
+          "version": "repo-lines-v1:sha256:6024d7fedae7c730899fe3a102062eac7c3357bc1d1400a634d9eab62e21f2c2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyOTExZGQ4YWFlMGQ4MzI0OTA3N2ZkY2Q3YmMxMzUzMzlkY2M3MTRlMDk4MmJkMjg3YWNhM2U3MDYyNmMxYjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmNDhlMmRlZGYwNDZiY2I4M2NmOTA3YTVhYzViNjg1Zjk1MmQ5YmRjOGNjMWExOGE3MmYyMjVkYzM4NTdiZTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJiOGM3ZDY2MDhiNjcwZGYxMmQ1ZjM0MGU3ZTY4YTdjODUyZTNkNzhlNTMyZjIzOWZhM2RkMTEwYWYzZTBlMDYifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L29-L60",
+          "version": "repo-lines-v1:sha256:9575945ab692fce3b72b417e964553b22b64d00613eac91c9c9a8bd64ecd9dda:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2YzRkMGI2MDE1NTQyMDM0MzExMjg5MTAzZjk2MTc3NTdiZmU0MzgyMzVjMjNmNGZjNTI4NDZhZDZmNjkwNDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3Zjc4MjVkMWRiODM2Y2Y4N2JjNTI2Mjk1N2QzOGZjZTg4YjE1MGZjYWRlZmRjNzBjMzgwOWFmZDM4MTQ1YzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIzZDQ4ZTViMTg0M2Q1YWYxZWM5YmU3MmIzMDBjNDZkM2MyMmFjMTYwMjYwMzE5MTMzYjQ1NzhiNDY4NzRiMjQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L92-L137",
+          "version": "repo-lines-v1:sha256:a9c852bcc43b734ab37a0360edf7414cb6d421ae02d1040620272074303046da:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlZDkwNDE1NGE5MDJmNjExOTE4ZDg2NjlhMDdlY2MxMjFlZTg3ZjY2M2M0MzAzNDU5NmVhYWZhNmJjMDFlZWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5NmY4Y2IwODNmYTgwMGE0ZGNkMjk2OTcyMmQ3YjkyNjg2YWRkOWViZTM2NTU0OTJmYTY3MmIxYTdjZWQyNDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFjM2NkNTI5MWY5MmVkNzRhZGU1Y2RiMDVkZmI1ZjM3ZDIyNTQxMmE2NjNiMGJlODk2NjVlZmU5NTA1NGYwOTkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6de9ee82bc254afa91a986cf9c0484b9",
+      "statement": "Pending PKCE state has a ten-minute window with lazy cleanup at init; it is instance-local and lost on restart, so init and completion must reach the same process. The shipped deployment uses one replica.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/accounts.md#L164-L168",
+          "version": "repo-lines-v1:sha256:fe96024098b3fa7b71fc4a53b299d400e605532f5bbe40203edd81ebc1a7d740:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWRmZWYxNDUyZmRkMTdjOWQ5ODljYTJmZGIxMTU0MjgwZTJkZmY3ZmU0MGFjMjZmNmFkZWZlZjA0NzI1OTIzZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L8-L12",
+          "version": "repo-lines-v1:sha256:5c0891badac651e98f43fec30d87c5404f83252d5fa14faec9445b18a2e3155a:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWU5MWU1MWNlNTM4ZWYxMjBlZTIwY2JkZjk0MTU4YmFjZTFjYzExNzkwNmY4NjRmZWQyZDk0ZTM3MTEwY2IyNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzM3ZjhiYjUwODMxOTJlODNjNzZmMGRmZDhjZTI1MDk0MTAzNWU5OGMwMDk1MGYwYjkyZmM0NTk5MGQ1YWNhOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWVjYjE3MzE5OWQxMmFlOGE5OTZkOTk4OWM3NGI4ZTExYzIzOGJlOWQ3NjkwZmFjZDIyNWY2ZjBmMmVmMzQwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjAyY2ViYWM2MTg1ZDIyZTI4MmUxNWNkZWJkNDg3NTBhMmJkZjYxYmIxNzQ1NTQ1NjM2N2M2MTVlZDdkZTU2YyJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L112-L123",
+          "version": "repo-lines-v1:sha256:8db08920c50aeb4b06da447a8d0bb8e0514b623a4116018b702205f1ae360cc4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyNmRkOTNiMGY4NWNmZTE4MTBmZGYwZWJkZTJlZmJjYzNkMDNiZTg3MDZlYTk5NzVmNzBiZjNkOGQxNTI5YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2OGY0ZDkwZjhiYmU1OGY2NDZiOGY4ZWMxMzg5ODFhMGU1NjJkNDBkNzdmNzU0NDc1OGU3YjdkNzhjYjg1ZGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIyZjUyNThjMmViOWQzMmU1YzlkOTk5ZDlhYTQ4MWZhMTA2YTM0MGMyNzdhYTJhNTE3OWE0OGY5ZWE3ZDcyMDQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L194-L228",
+          "version": "repo-lines-v1:sha256:86b7e7c9b5292f5f1103a64ce361d56ee418d4993e879009fd28973f2d6ca271:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzOTlhZDdhMmZjNTU1YTRmZGRmMDlkNmFkZTI2MDgzZjFlNTcwNjJlYTE2MTI3ZDY0ZmU0YzFjYWQ5NTE0YjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlNzVjNzBkOTQ2MzYyNWUxMDc5ZmQ4ZmM4ZWU2MmFkMmU5MmM0MmJlYWFiZmQ4NWI3OGQ4ZTBhNDk3OWI5NGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU2NjI2MWUxNjlkYmE5ZGNkMTBkMGVjNTQxMWFiZGRmNDE4YmRhNjcxMGJjYTk4YjI0YWE2ZTBhNjVhMDg2YTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEwNWQ0NmEyM2UzYzJiZDhhNDIyY2ZiNmI1NzYyNDA5YzJjMDE2N2YwNzY4YWVmMjBjOWU4YTI4ZDRiMDlkYWQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L29-L60",
+          "version": "repo-lines-v1:sha256:9575945ab692fce3b72b417e964553b22b64d00613eac91c9c9a8bd64ecd9dda:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2YzRkMGI2MDE1NTQyMDM0MzExMjg5MTAzZjk2MTc3NTdiZmU0MzgyMzVjMjNmNGZjNTI4NDZhZDZmNjkwNDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3Zjc4MjVkMWRiODM2Y2Y4N2JjNTI2Mjk1N2QzOGZjZTg4YjE1MGZjYWRlZmRjNzBjMzgwOWFmZDM4MTQ1YzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIzZDQ4ZTViMTg0M2Q1YWYxZWM5YmU3MmIzMDBjNDZkM2MyMmFjMTYwMjYwMzE5MTMzYjQ1NzhiNDY4NzRiMjQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7fdbb53d37164d94be539d20921dd834",
+      "statement": "Completion accepts code#state or a code with a separate state field; the suffix takes precedence and an optional account ID is only a match check against the saved ID. Missing or unknown state, an ID mismatch, or expired state returns 400.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L139-L228",
+          "version": "repo-lines-v1:sha256:01cc72c6cc13d18e52212f4a46cdc5c4ac80bf5d14b773b3e29ec10fe482a9b8:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2N2U1NTc3ZDQ1Y2FiNDc1OTQyNGQ5MjZiM2NiMzE3ZDQ0MjBlMzlhMzdhY2JhYzI5NzgwOWIyY2M0OGQ3ZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlNzVjNzBkOTQ2MzYyNWUxMDc5ZmQ4ZmM4ZWU2MmFkMmU5MmM0MmJlYWFiZmQ4NWI3OGQ4ZTBhNDk3OWI5NGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5NmY4Y2IwODNmYTgwMGE0ZGNkMjk2OTcyMmQ3YjkyNjg2YWRkOWViZTM2NTU0OTJmYTY3MmIxYTdjZWQyNDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEwNWQ0NmEyM2UzYzJiZDhhNDIyY2ZiNmI1NzYyNDA5YzJjMDE2N2YwNzY4YWVmMjBjOWU4YTI4ZDRiMDlkYWQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8c34bd8a4ace46e7ba28637699df74ca",
+      "statement": "Completion removes a matching PKCE entry before checking the optional ID and expiry, exchanging tokens or writing credentials. ID mismatch, expiry, exchange failure (502) and storage failure (500) after lookup leave no state to retry, requiring a new init.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L194-L280",
+          "version": "repo-lines-v1:sha256:3fb71a0845f1326cb35db9216c11dd9a7293cfd4ab92d535a1f3bbb8004ab46d:eyJzZWxlY3RlZExpbmVDb3VudCI6ODcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzOTlhZDdhMmZjNTU1YTRmZGRmMDlkNmFkZTI2MDgzZjFlNTcwNjJlYTE2MTI3ZDY0ZmU0YzFjYWQ5NTE0YjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU2NjI2MWUxNjlkYmE5ZGNkMTBkMGVjNTQxMWFiZGRmNDE4YmRhNjcxMGJjYTk4YjI0YWE2ZTBhNjVhMDg2YTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllN2Q1YWU0MGJkZTYwZDRiOTBiNjhmM2FlNmFlZjVjOGRkM2Y5M2Q1MGYwMTg5Yjg1MzJhNWRiODQ5YjNmMTEifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L484-L515",
+          "version": "repo-lines-v1:sha256:7f6e157b40a3fe44ddbadef97dbe3820c3fea7b73bb3919f70adbfc60eee66de:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3MGVkZDAzNDcxNmZjNDAxNzAyNmQwYmQzZGUzN2QxZDNhNWI5YjIzZWY0MGE3Y2Q5NjI4MjQ4NjE4MjM1MDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE1ZjJhYjEwODMxMmVkNjVkYmY4M2I5NDdmZTVlZjFiMGIxZDVjODBjNmU5MzI3Y2EyY2Q4ZTYyMDU2NzY0YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZmZDNiOWExZmM3YjcwZTJlZjE3OWQ0OWQ2MjI2OTZkMzgwYWVmYWI1NjkxZTRiNWFiYTYwOGFmNWFhYzFiNGIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_07767733381d46de9a9c71ca661b79d2",
+      "statement": "The account ID is derived from Unix seconds at init, so two flows initialized in the same second can have different state values but write the same credential key on completion.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L95-L102",
+          "version": "repo-lines-v1:sha256:0dcc9103ae6f7488a9c96c7afe81997a0d1213826778e6a50ec8d61c7f357b01:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg5M2Y0MGUzNzgxZWI4OTZjODJkMDQ2YTA4MDY3YTExZTM1Y2RmMmYxZGZhZjI2ZmVhOTBiOGRiNjY3NjQxMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDQ3NzhhNjkwNmIwODJjNTJlNWIwYWVlMjkwYjI2OGJiNjQ1ZjYwNWEwMDhiZGE3M2FlN2NiYjc4ZTc3ZWMzMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDlhYWQ1MWJkY2Y2MDZjMzAxZjAzZmY3M2YzZjRlMDNjODVlZmZlYTNkMDMxNWZhZTMxNTJhYjdiZTVhNDM0MSJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L101-L124",
+          "version": "repo-lines-v1:sha256:36ec868a127ef5022fe5c106b2d607d150287974c6ebf6ef3b52a1e4e37e309c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzNGVmYTkxMzY5ZjJkNWI0Nzc2NTM3NTlmMGUwNWZhODQ1YzUwMzViZTJmNTE5YTA1YzY0NTIwMjliM2FjMWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjOTFlYmNkNzk0NjM0Yzc2NjY0NWVmYjJkMjVjM2MwNDI0MTUzZGY5YWQ0MGE4MmYwMjc2NjNhNmNkYTgyNGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY1NmVlZjc5ZjEyMTkxMjY3NWI1NDJkYzI2ODNlZTkwMWFjOGYwZDhjNWJlYzgzZDgyZWYzOTZiYzdjNzBmODYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0M2MzNjI1NWM5NGVjMGU2OGNlNTExZTBjZDFkYmZjZWQwNDgzMzhjNjlmMzJlYTY4ZTBlMmY4NDVlYWU4ZTYifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L211-L215",
+          "version": "repo-lines-v1:sha256:b9e7a85134559952a5a91fd3bf0544eb8f89551128ff31e2f3cb3e0387bbb953:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWU3ODk4ODBiNTk0ZWYyMDZlZGYyZGUzNDgxZGNiZDAzNmNjYjk4MjQ5ZGVjNmM4MTIzN2VjMzMyN2IyYzBjYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWIxNTNjZWVmOGZhNWM3NDQxMzQwYjE4MGZhYTRlYjcwZmQyOWE0NzJkM2U3NGFiYzBkZWE0ZmUxNzgzNGEzNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDk4N2FiOWMyNzVlZGY0MjdlODExNzEyZmE1ZTM5ZDFmOGUyYzc3OTE0NDkzMTlhMzViMDdjNTYzYTAzYWU0NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjJkODI4YTAzN2FjMWM4MTUzNWIxZDU1MDA4MzIzMjNiZmJiODY2YTNhM2Y4N2U3YTY4YzEzYTJiYWU1NmZmZiJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L255-L280",
+          "version": "repo-lines-v1:sha256:858d76ddfca6f9d8e93e46f6d63c0ae6284f818723d3fba399f0b99b7d07fe4a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyMWVjOTdmZjczOWM2MDUxMWYxMDFhNGU1M2EwNGI0YTRjNTQ0ZDU3OTBiNjA2OGI5NDkzZDI5OWZiM2QwMmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgwNzQ2ZGVjMjZlZjgzYmZmNDM1NDQyYTAxYmE1MzJkNmYxYzAyMjc0M2I3NWFkZjQ0OWRhZGYyOTdiMTM5YTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllN2Q1YWU0MGJkZTYwZDRiOTBiNjhmM2FlNmFlZjVjOGRkM2Y5M2Q1MGYwMTg5Yjg1MzJhNWRiODQ5YjNmMTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1f282eaa887b44c582323eb56085c950",
+      "statement": "The auth crate posts to https://platform.claude.com/v1/oauth/token for both exchange and refresh. Code exchange uses an authorization_code form grant with code, state, original verifier, public client ID and redirect URI.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/constants.rs#L7-L17",
+          "version": "repo-lines-v1:sha256:7dce9408812df146fd7594e7d882a0583d869dae96b9fd50b7c111981ad21bd7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzYTIwNDM4ODAzZjlkMmY3ZDg3YzdmZWEzODdmZTkzMDkzOWNmNmYxYTBhOTNjZWZmMWZmYTQwYjU2M2M4ZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5Y2FkMmQ5NTk4YzNiZmUzNTVlNzRkNTk1Y2U1ZDkyMjljNjU0YmE2YTk0MTU5NjczMDM2NGNmYjQ0YWRlMGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFkZWY2M2YyZWFhNDI4NjIzMjRhMGQxNGEyMGZhMGVlYjRiYzU1OTliNWMwODg5OTIzZTEzN2I1ZGQyMGE2M2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMxZGY3Mzg1NzVmMmEyODViODc5ODcwYjYzOWY0NTdkMDllOWIxZmMxYjJjNGI0NTMzMWM3ZGYxMTRhZTYxNDcifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-auth/src/token.rs#L25-L80",
+          "version": "repo-lines-v1:sha256:b024890e39af28362b5c4d4ba2d5710b98f5443076d0d57f48a3e0a2c2b2d88c:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiOTUxZDNhNDQ4YTc5M2EwNjI0OTQ4ZWM5MmYyYjYzM2FiODkxMmEwNmYwZDc5NDdmZmY1NGU2MTliMTM3ZGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhYTFiMzFkZTg2MWJiMWQxYzc0MDJjZWJkMzRiZmFkYjUxMWU1NzY1MjA1ZTZiODYyMDQxNjQxYWQ0ZTUyZTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc5MGUwMjhmYTg1YTZlMDBlMmZhY2ZmNGMwNzFiNmM5YmM2YmZiOGZkZGM5ZGMzMzFlYzQxMDU3YzQzMzg3NzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkOTlmODk4ZWQ0ZWE1ODU2ZmY2NDU2ZmRlZjUzNzlmN2ZiYmM4MTg2YWFjYWU2NzEwM2ExZWE4ZjhhNWU1MTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_192ab6cea98c454a90caa23f7284c237",
+      "statement": "Successful completion converts expires_in seconds to an absolute Unix millisecond expiry and writes the OAuth access and refresh credential under the saved account ID before setting that account available in the live pool and returning status added, without a restart.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L237-L249",
+          "version": "repo-lines-v1:sha256:d76c875502995b1e8846059a8868c62b6359909756f82f724ab68dd2ddf054bc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExM2IwM2E5OGIzZTc1MTJhZGZiNmFhNjdjYzg5MmE0ZDMwOWVmMTVlZjQzZmI2NmI0NjdhMTM2Yjc0MWE4NmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MjJjNDJjZDE5YzZkMDNkODA4YzQ1MjcyMDU1MjgyNWI3ZWExYzViNDkxYjIxODUxMWNhYzc0MTVjZjlkOWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlMWVjYjM4MTMwOTZlZTI5Mzk3OTU4YWYzOGU3ODQ4OWJmMDg1YTU1MTAxMzE0Y2RjYWExZjhhN2Q1ZGRhMWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkYjU3Yzk1OGU2ZWRlMjU2MDVkMTQzMGU2NjQxZDEzMjMzMGY0YzkzOWM1NWU0MGU2NWZlZjAwMjRjZDZlNzgifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L211-L215",
+          "version": "repo-lines-v1:sha256:b9e7a85134559952a5a91fd3bf0544eb8f89551128ff31e2f3cb3e0387bbb953:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWU3ODk4ODBiNTk0ZWYyMDZlZGYyZGUzNDgxZGNiZDAzNmNjYjk4MjQ5ZGVjNmM4MTIzN2VjMzMyN2IyYzBjYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWIxNTNjZWVmOGZhNWM3NDQxMzQwYjE4MGZhYTRlYjcwZmQyOWE0NzJkM2U3NGFiYzBkZWE0ZmUxNzgzNGEzNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDk4N2FiOWMyNzVlZGY0MjdlODExNzEyZmE1ZTM5ZDFmOGUyYzc3OTE0NDkzMTlhMzViMDdjNTYzYTAzYWU0NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjJkODI4YTAzN2FjMWM4MTUzNWIxZDU1MDA4MzIzMjNiZmJiODY2YTNhM2Y4N2U3YTY4YzEzYTJiYWU1NmZmZiJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L252-L309",
+          "version": "repo-lines-v1:sha256:e32710fa32de6acbc90894462a162158f1ce6d01e1270078f3e52e675ac49286:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkOWUxMjU0NjQyNTU3NmQzZGVhZThjOWI5ZGJmMTI4ZDVkNmRkYWY1ZDdmZTg1NzkzNDkyN2RlZmZhM2I5ZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllODQyODZmMjQ3MjM4ZjY2ZWViZmQ1NjlmMDAzNTA0NjI4NTYxZWQ3OGJhNDYwODNiODE5MWJmYTA5Yzg5NjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhNjVlYTU4NmM2MTcwODBmNzViNmZlYWU2YTEzY2IzYzQ4NDczYTAxOWFiZDgyMzBhMmI5N2ZiMWJhMjhlYTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhiYTA5MjUyNTc1OWZkYTJjZWZhYmQ3OTMyMDdmOGRkOGE4MTY4Y2VhYjExOGEwZTg4NzU5ZGEwYjRmODZjMzQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cc2f3dfdad634712b14f948c06c1934d",
+      "statement": "The credential store serializes JSON writes via a mutex and same-directory temp-file rename, setting Unix permissions to 0600. A failed add write does not roll back the in-memory credential mutation, but the admin handler returns 500 and does not proceed to pool activation.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L150-L186",
+          "version": "repo-lines-v1:sha256:24560339f7ffee85c3aa3253a1eedcd252ce6efc7efb30e79e2208a41cc3c1eb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4OTc3MWZlMWI2NjI4ODc1YWEyM2U3ZGJlNGFhNzE0NjFkMDBjZGZiNjZkZGYxMWI5ZDgyMGFjNTg5N2ZkZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0ZGE3MDU0OGVhNGRiOWIzNThhYWIzOGY5NTk2MDE3ODFlMDg3Y2Q1N2EzZTIwZjU1YzVlMTNkZjFiMmExODIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1MjE2MDRiMzVmYzQwYWYwMGNiYTRlZWEyZmQ1ZTJjM2FmMTg2M2IzOTExODVkN2JmNGJiMDllNzJkMGM4YjMifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L95-L114",
+          "version": "repo-lines-v1:sha256:585427a254ef64581718192a5cd78211156ef25f809e90f7b108fb8d55144731:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxODdiNDYxMDcyMTVlMGIxNzk1MGUzZjE2NzZlMDYzZmFjMGNjOTFlM2UwMDdiNjNlNjE2Y2Y2ZDIzZmU2YjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA0Nzc4YTY5MDZiMDgyYzUyZTViMGFlZTI5MGIyNjhiYjY0NWY2MDVhMDA4YmRhNzNhZTdjYmI3OGU3N2VjMzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxMTc2ZmUxMDhlYzM5MGNkNDgxYjQ4MTZlMmIxOTZjNWM1MWJkOWIyZTNiMjFlYjJhNDg4YTk4MWJkZTM5MjkifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L267-L286",
+          "version": "repo-lines-v1:sha256:45405aeb718a4f1261af9e95f29989a7a3dfc545908b2081bb4347f1d7943aeb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkNDRhZTBlNjg4YjhkY2E2MWY2NzgxZmViZDRjZDllNjViNWUwN2M4MjgyMTcwYWZhMGM5OWI3YmZlYzdhMjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJiMGM1YzRhZmYzOGNjYmI2MThlYzE0ZmZkNTBjNGU4YTNiNjRhNTM2YzQxMmI5ZWI3ZDI5NjY1MjE4ZjM5NzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA2NjE3NDk4NTgzOTgxMTRkMzZhYzE0ZTMyMWRlOGViNjBjMjU2NTMyZDhmNGY0ZWMxY2QxZThhYTgwODVmNmIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b6b5ec74aebb407f9c03e62f72ad0f8d",
+      "statement": "Enrollment modifies the credential store and live pool, not config; at startup saved credential IDs seed the pool when providers is empty, while a nonempty providers list overrides them. Kubernetes ships with providers empty and persists /data/credentials.json on a PVC.",
+      "evidence": [
+        {
+          "resource": "repo://k8s/config.toml#L15-L25",
+          "version": "repo-lines-v1:sha256:8938808ab9fc7749c3c58e05eff305de3dab1da2723da31e0d587d756bce22be:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3NWE5YWZiY2YyNDU1YjY3MTdjNGE4N2EwMThkMTViODUyMDkyMDI0YWQ1ZTg1YTRlOWQ5OTJhNTNhYWZjZWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUyMDJlNDVmYjU4YzY4ODZhZjRjOTE5NTAzMWIyMmE3ZDhmNDA2YTVmNWU3ZTFiYzhiMGY1Y2MyNTI1MGMwMGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L48-L54",
+          "version": "repo-lines-v1:sha256:7cf58997d9792f4323dfac892c1e4cb22bd9b43316f568ae05aa965d5019a8a7:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzQ1NTAzNDE4MzA2ZmVmMTlkODdkMDcyZDllNzRhY2YxMjE3YTdjZWM0YzY1MTA3NmVhNTQ2ZmMwZTc4MjhkZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzg2M2ZiZGU5NDgzOWJhOGM4OWQ2ZTAyMjU3OTBiNWJiMTk5MzVkODcxZDkzOWNkNjFhZDgzOWM4MzY3NTM0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQyNmIwZWI3YWUzMTVhNWFjYmE5NjMwZmE2MjAxNTIzYmJiZWJjNWY5YTI1NjVlMmFiZDU3NzJkZTU4OWQ5ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGE3YjczOGYyZmM0MjlhNzhlMWE3ZDdhMDEzMjVkNDU3NTQyOTIwMmM4MTBmZTUxZjg1YzRkYjk2ZDEzMWZmNCJ9"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L93-L99",
+          "version": "repo-lines-v1:sha256:c2c02348f8c3446c1f65f51f8490fdf853b0deb72ab1a26715a335b0203f498e:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTA2YmQxNDAxMDkzMjgxMDFkMGU5YzFhOGE5Y2Q1NmY4YmZhOGI3ZjJkNzczZDk5NGZkZmIwYzk0Y2YyYTUwZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2ZhMTU3OTRjZDUyMDU2Yzk1Zjk2NDczMjZiMGUwM2NlZDRlZDVkYTcyNWQ3Zjk1ZDE1ZTU4MGQ2Y2Q1MmNjOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTRmMDE1NGJlMjkzOTQ2M2IzNjhlMjhkOWFjYWVhYTRhZTJhYjBiYmZkNGI4Y2E4MGFmNWYxN2ZjODdjY2UzMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L252-L309",
+          "version": "repo-lines-v1:sha256:e32710fa32de6acbc90894462a162158f1ce6d01e1270078f3e52e675ac49286:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkOWUxMjU0NjQyNTU3NmQzZGVhZThjOWI5ZGJmMTI4ZDVkNmRkYWY1ZDdmZTg1NzkzNDkyN2RlZmZhM2I5ZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllODQyODZmMjQ3MjM4ZjY2ZWViZmQ1NjlmMDAzNTA0NjI4NTYxZWQ3OGJhNDYwODNiODE5MWJmYTA5Yzg5NjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhNjVlYTU4NmM2MTcwODBmNzViNmZlYWU2YTEzY2IzYzQ4NDczYTAxOWFiZDgyMzBhMmI5N2ZiMWJhMjhlYTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhiYTA5MjUyNTc1OWZkYTJjZWZhYmQ3OTMyMDdmOGRkOGE4MTY4Y2VhYjExOGEwZTg4NzU5ZGEwYjRmODZjMzQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L176-L206",
+          "version": "repo-lines-v1:sha256:72e563c71bf5b1190653ed62be3f0fa59bfa696439101e0e1edeabb9da40b458:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4ZTYxNzUxNWRkNDJlYTc5YzFjNjNiMGE1NDljN2FkZDJkMmI2MTk3OGZlNDM3N2M3YjlkNTFlZTg2MmQyNTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkZWEwZGI0ZGVkY2E3M2U2YTI0MWYyYTM1Y2RlYWEzYTM3NmE1OTlkNGFiOWFlYWMxNjg4ODY4MTAzMTZhMjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ2YWI3MjU1NzM0NzVjZDdiZWU3MmIyMGZiZDJjYTNiMzliMTMzNjMwMjgwOTEyOTRlOGVkZWQ2MzFlNzJiYTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVmODBjZTNlMTJjYjY5YzY5NWQ3OTFjOTE0NzhiZDdlZTA5MDU3MGMwZTQ3ZGZkYjI3NzdmNjFiNTYzODg2MTYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6c6caa1c33fe4396adf733f4b4e3854a",
+      "statement": "The pool owns runtime status separately from persisted credentials and reads tokens from the shared credential store at selection time.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L15-L39",
+          "version": "repo-lines-v1:sha256:bae3333774e283faee5f91462c54fcfdebd90af663e8b66b401c09e4120f7248:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyNzM1NDMwY2E0MjE3YjU5NjJmNjNjY2Q2OWYwZjg2NWUzNjZlNDQ4Y2FhYjAzZTcxZDZmOWIyM2U5ZWQ4NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkZDUyZmM4NDIzMDAxMGQxMWE4ZTRlYmY1MWJiZWQ4M2YxMmQwYWYwYTY0MWI1NTA3MDYyMzc2NDc5Y2Q5Y2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkwMDQxNmU3YjRkNThjNjM1MWUwMTVjNTQzOTJlNDAyZTUyYTczYjRiZTRkZWY1MzIwMTgyYzFlMzVjZjYxMzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZkNTg5MWY2YzEwNjcyZGZmOWRkMGNlYzQzOTgyNzY5Y2M4M2EzODcwNmQ1OWMwZDQxM2I2N2U5ZGY4ZTY3NzAifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L105-L149",
+          "version": "repo-lines-v1:sha256:7e6cc5a8cd47dbe0736a681db41384bae74a1e3839cabcb560309604d8f4aefa:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzNjc5MDhhMjg3YmRhMDhiOTZmYjM5MjFiOGFhOGU3ZTQ3NjU1ZGNjZTQxZWZhODczZWMyMDAyYzE5YTliODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyZGM2Mjg4MGZlMmM0NjRlNmY1YWNiY2Q4YjIyMDRjZDA4NGNhM2RhYjM1OWZjNTg4ZWFlZjI2NzFhZjk2YWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OWJkZWZlZWFjYTYzNDBlMDI5MGRjODZlODg5Yzg5ZDVlMTg5YWE1YmE0NGI1ODViM2I3MDczNGY0YTYyZDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhMDllMDEyOWFlNjY4NjY2MWE0ZWNmY2Q1OWM0NjMyYjJjYzcxZDdiNmIzMGQ5ODQ2NjUwYmM2NGE2ODY5ZjgifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L46-L88",
+          "version": "repo-lines-v1:sha256:08a89d0c7c3d2aa06c3a871c5e37be679a252a2ffce6b42a26020408ec33904c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmNWRiMzNjOGRhNTA3N2U1YWYxNDA0ZGFkZWY3MjU2OTBlZmU3ZTNmNTAxNDAyNTcyNTdlZjFhZGRhYjU0NmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI0YTM2NWE5MGVjMTFlOTA0MzI3NTJjZjkzNzZlYzVlZDM2YjgwYmE1ZThlNjg1NGZjZjk4OTcwZDMwNDQ0NjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk4OGEyNmFiZTdjN2VmN2M4YjNiMDY3YmIxYWY5YTQyNmVmYWM4NjI0NmU4ZDFkNzA3MTgzY2EwMGJlZDdkOWMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_dc98b7b48b784b6e9ae2a9499fb4a005",
+      "statement": "GET /admin/accounts returns only per-account pool rows with IDs, status and applicable cooldown seconds, while GET /admin/pool returns those same rows plus counts and aggregate health. Both omit tokens and /admin/pool returns HTTP 200 even when the pool is unhealthy.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L260-L327",
+          "version": "repo-lines-v1:sha256:730990504e44bd5f18d8fd26fc819da0775171ccab5d00b11652ed182dfbd163:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0NjJhYWQ2OGVlMjQzMzJiNGIwNTcyYzc0YmJmNDZlMTEyOTJiMGE2ZTcxMzQyMjE2MzgwYjVjMjM5M2ExNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA2NTMxNmEwNzU3YjBjMzI1ZTM2MmE2OWI3MjNjNjZlZDc3NTMyYmE4MGZjNTllMjk0NzM3M2Y1NWIzY2UzYjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OWJkZWZlZWFjYTYzNDBlMDI5MGRjODZlODg5Yzg5ZDVlMTg5YWE1YmE0NGI1ODViM2I3MDczNGY0YTYyZDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgwMWZiODhiOGJiZGIxMzJjYzA3ZDU3ODNmM2RhNWE2OTdlMTY1ZDAxMjZmMTIyZTljMDY3ZTBjMTlhNmFhN2QifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L334-L345",
+          "version": "repo-lines-v1:sha256:a10dee89d24500c83407f2bfc21d900c0b7bdf41481014b275f6101e3339677a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1Mjg5ZDliNWNmOWIzMGFkN2Y4OGZiMTdiMWY1ZDRlM2VkOTU2MWIyMzA0Y2Q3YTlkNjQ3NDQ3YzhkNDZkMWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJiOGNhYWQzZmU5MTQ5NGFlMjJjYjk2ZDAzNDBmNjcwMmY5YTk1MDdjMmU0YmY5MTIyODQzODcwNjBhZTQwMTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQzNDUzZGYyOTU5OWY1YWExNTZjMjg4MzI0YWQ3NzgxOWNmOWUwZmNmZWUxMTY0ZDdiMDI2ZDYzOWQwYmFhMTEifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L730-L758",
+          "version": "repo-lines-v1:sha256:742d107346327320ad8cbe05a02a15edaa84f145b54fa3bcfbc4192b877dcc06:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2MTA5MGIwOGM5MTI4Mzc0ZDE1NzQ1MzkyZTc3NTIxYzZiYWRjOWY0YTEwNTYwZmNjN2Y5NTRjNjBmODMxNjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZlMzdkYjE1YWU2MWE4OWY0ZWFhOTliZGY3NDMwODRlM2U5NzY2OTMyZDVmZmQzYzQ1YmFjNTQ0Y2VhMDM5ZTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3YTU4MDA3MGY1NTVjNGE5NWI4M2E2ZTA0NTk1NzVkODg1NGQ1YzEzODQ1MGJkNDMwZjE5NmM2NzcwNTcyYTkifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L74-L91",
+          "version": "repo-lines-v1:sha256:bfce761be8d63e020ae68fc25a8e26e3006c63fefc21cb03a925942fc9c45f78:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxN2MwYjk2NDg5ODE5ZmM0MzRhOTY5Yzk2NmJkMWQxODU5ZTI0ZDY3MzVjMGZkMGFmZjc3NjFkNTJkZDAwNDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3OGM2ZTc4NWQ5YWU3M2Y3NzEwYjdjNjNhMjllOTYxNTJmNDZkNzYxMDQ3ZTc5MGIwZmNlNWViYTZhMmQ4MTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI4NTU2M2UyNDMzYjFhZDk4OTNmMDQ3N2Q3NzA0ZWYxMzBlMjMyYTQwNDBmNGU1ZTdmODU4NzExMTJiMDc2YzYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5165f6c658a347b5a1060377aadcfb77",
+      "statement": "DELETE removes account membership and status first, then removes the in-memory credential and persists if it existed; this is local removal rather than upstream revocation and deleting an absent ID also succeeds.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L104-L114",
+          "version": "repo-lines-v1:sha256:85a5f2c9a3b19e1270ffc6e2cd22dd29387dd342c771d22b9ef30354c4681845:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0YjQyMjg4ZTBlN2ZlNjg3OGViMzYxMDhhODE5OGVjYWZhNzM0MTM2M2QwMmM3ZTNhNzMxZThkMjYyMTYxMWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxODdiNDYxMDcyMTVlMGIxNzk1MGUzZjE2NzZlMDYzZmFjMGNjOTFlM2UwMDdiNjNlNjE2Y2Y2ZDIzZmU2YjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmZDI2ZDBmNmI3MTllZjg0NGFjNzRkNjAzMGM1NzI1MDFkNjFmMDZmMGE2N2QxMGY5N2RhYTczYzY4YzU3ZTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxMTc2ZmUxMDhlYzM5MGNkNDgxYjQ4MTZlMmIxOTZjNWM1MWJkOWIyZTNiMjFlYjJhNDg4YTk4MWJkZTM5MjkifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L251-L258",
+          "version": "repo-lines-v1:sha256:f383a53dd9495fe0c4a1a78578a175150416d60ff9ced49f319add1af0d75e65:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTVlODBlY2U0YTA4MmZiYjZkMzY3YmMxMGQyMWNhNmM5MjIzZDU0NDE1MmFhYTljNmFhZDQyMjgxN2NlODE2NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg5M2Y0MGUzNzgxZWI4OTZjODJkMDQ2YTA4MDY3YTExZTM1Y2RmMmYxZGZhZjI2ZmVhOTBiOGRiNjY3NjQxMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWM3MWNmMjMxMDJlZWUzZDJiZGQ3ODA5MjhmMmFhNWRkMmU2M2I0MmUxNDY4M2U4NDk5ODQxODc3NWJkMjUzMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGNlNjU3MTEwNTBjNjUzMzY1MDkxOGIxYTRlMTYwY2VjYTczZjZiODQ1NGExNjQwNWMxMTBkMzBhZDMxY2YxOCJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L310-L332",
+          "version": "repo-lines-v1:sha256:0944cc73297b74352e4787cdee074eb9708c5494477b7981d87d9274bf7967a1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2ZTE2OTQzNzQ3MjE4ZTU5MjA2Y2M3M2EzNWU2YTYwNTJlNmFjMWViNzYzYjBmMjcyZTY4NDg5NGYxNDk4ODMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEwNGVjZmYyOGMyOGJjZjI5MGRhMzhmODJlMWVlNmI0OWVkY2Y1ZWRhMjBlYWMwZDU5NGRhOWVkOGM2OTgxYTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5NmY4Y2IwODNmYTgwMGE0ZGNkMjk2OTcyMmQ3YjkyNjg2YWRkOWViZTM2NTU0OTJmYTY3MmIxYTdjZWQyNDIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L858-L880",
+          "version": "repo-lines-v1:sha256:9689d46c77707a452dcecdfbc5e61264f5e109486600874f8e572d6d3c0e61f1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk1NWQyMDJmYzI0MmY0NTFkNjZlNDY0ZDcxZGI1ZTJkOGRiYzcwZWZkZDEyMmIwZGRiZjVkZTc3ZTA0Y2VkZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0909a0445cae44939db6ca016b8ab556",
+      "statement": "Credential persistence failure on DELETE logs a warning but still returns HTTP 200 with status removed. Old disk data can reload at startup, and a repeat DELETE alone will not rewrite it once the in-memory credential is absent.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L104-L114",
+          "version": "repo-lines-v1:sha256:85a5f2c9a3b19e1270ffc6e2cd22dd29387dd342c771d22b9ef30354c4681845:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0YjQyMjg4ZTBlN2ZlNjg3OGViMzYxMDhhODE5OGVjYWZhNzM0MTM2M2QwMmM3ZTNhNzMxZThkMjYyMTYxMWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxODdiNDYxMDcyMTVlMGIxNzk1MGUzZjE2NzZlMDYzZmFjMGNjOTFlM2UwMDdiNjNlNjE2Y2Y2ZDIzZmU2YjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmZDI2ZDBmNmI3MTllZjg0NGFjNzRkNjAzMGM1NzI1MDFkNjFmMDZmMGE2N2QxMGY5N2RhYTczYzY4YzU3ZTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxMTc2ZmUxMDhlYzM5MGNkNDgxYjQ4MTZlMmIxOTZjNWM1MWJkOWIyZTNiMjFlYjJhNDg4YTk4MWJkZTM5MjkifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L48-L68",
+          "version": "repo-lines-v1:sha256:26d422a981391a14905626094b957a854f051bef9806f03075d27d57ed9ef56d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0NDkzM2JlYmY3OGIxOGFkNjc4Mjk0MzM1NjdjYzk4MWNlYjdiM2FlOGIyZTRlNjA5NjRlOWYwNDQ4MjJmNTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRiNWU4YTEyOTlkNGNkNzQ0NWJlZmFmYmJhZWU3YTc2NTQwNzQ2ZDFmMmJmZWZlODY0MmMxYmEzZGQwODFmOTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI4ODVjMWVkZWNhODUwNjI0OTMwYjgwNWYxMjdlNjk4ZTc3ODVlYjhlMWE5YWZhN2FhMWZiMjdkZDg5MDY1OTAifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L310-L332",
+          "version": "repo-lines-v1:sha256:0944cc73297b74352e4787cdee074eb9708c5494477b7981d87d9274bf7967a1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2ZTE2OTQzNzQ3MjE4ZTU5MjA2Y2M3M2EzNWU2YTYwNTJlNmFjMWViNzYzYjBmMjcyZTY4NDg5NGYxNDk4ODMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEwNGVjZmYyOGMyOGJjZjI5MGRhMzhmODJlMWVlNmI0OWVkY2Y1ZWRhMjBlYWMwZDU5NGRhOWVkOGM2OTgxYTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5NmY4Y2IwODNmYTgwMGE0ZGNkMjk2OTcyMmQ3YjkyNjg2YWRkOWViZTM2NTU0OTJmYTY3MmIxYTdjZWQyNDIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L176-L206",
+          "version": "repo-lines-v1:sha256:72e563c71bf5b1190653ed62be3f0fa59bfa696439101e0e1edeabb9da40b458:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4ZTYxNzUxNWRkNDJlYTc5YzFjNjNiMGE1NDljN2FkZDJkMmI2MTk3OGZlNDM3N2M3YjlkNTFlZTg2MmQyNTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkZWEwZGI0ZGVkY2E3M2U2YTI0MWYyYTM1Y2RlYWEzYTM3NmE1OTlkNGFiOWFlYWMxNjg4ODY4MTAzMTZhMjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ2YWI3MjU1NzM0NzVjZDdiZWU3MmIyMGZiZDJjYTNiMzliMTMzNjMwMjgwOTEyOTRlOGVkZWQ2MzFlNzJiYTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVmODBjZTNlMTJjYjY5YzY5NWQ3OTFjOTE0NzhiZDdlZTA5MDU3MGMwZTQ3ZGZkYjI3NzdmNjFiNTYzODg2MTYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2dfde52ceae140e78f6662d31a4ed34c",
+      "statement": "Both inline and background refresh disable accounts on permanent credential rejection (invalid_grant or HTTP 401/403), but not on transient failures. Restarting with the same credential does not restore an expired grant.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/token.rs#L79-L121",
+          "version": "repo-lines-v1:sha256:d04b37c91f64f44445b2bbd9690e15c33bf4d813d7491c7c540c5ba77d71091f:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhMDFiOWEyOWJlYTQxMWE2YzU1YmI3MzdlMDc3YzA2ZTJkYzU0OWI1YzU1NWY4MWI5MTQ0YmIxODNjNjg5MGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OTBhZWJmNGE4ZWQ0NzQ2NjExYmI3NjgwODRhZmYyMGIwODc4NWE4YzExZjlmMmQ3ZTE4NjNhNDdiN2UyMTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyYmYxYzc1MjdhYmMzNzkzYWI0N2VlMTIzNzhlODMwZjhkOTYwZjIyNWNlYzgwNzAzZTM5ZWZmMjIzZGYzMGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkNGM2Y2NjOTM4Njc3NWI1N2Y5NjhkNjVjNjZkMTYzYjMzMDgzNWJkZWRmOWY2MTdkNzMxOTk4Y2JlNmI1NDYifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L179-L195",
+          "version": "repo-lines-v1:sha256:6fe885c0d0021da9d62d44103d2303ff32a7811d535286fe1ea8d5ae8fa8bf3c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExNDE3MTJmYjVmYmMxMGMwNzY1ZDllN2FiYjRlOGZkOTYyZmMxOWU0NjBiMjEyMWZlZDFkNDU3MmUyYjllMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxMGMyZjY2MmY1MDE4ODVmMWUwN2FjYmI5YmIwZmRiMjEzZDBmZDE5ODg4MjQ2OWVjN2RlNTY4MjdmNTYxYTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU4MGYxYzQ2YWY0NjZmYmZkM2EwOWQzNGViMTJmN2U2OTgyYjQ0ZWU5NjFiOWJlMDJjMGU3MDVjYTI3ODMwZTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZhYzA0NmQxM2JiMTFmZTQ2YTQ0ODM3MjZlMzhjNzRhMjllMTdkNjY4NGIwMTFmMzVmMjg4Yjc5Y2YzZjgxOGQifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L58-L67",
+          "version": "repo-lines-v1:sha256:70cb1bce3c54cb40b54886aa512929ac6d669a914386b3ee4f52216bf1ca066c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0ZThlYjE5MGEzYTc2ZDMyNjkwNTIyNGQ0NTJhYzcxOTdlZTc5NTA5YWRiM2E0OWQ4ZDMxMTY3YWQ2YzRhYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNjZmI0MmIwODM4OGQ3NDIwNGYwZjJkNjM0NmQxMDljZGFlM2Y2YThjMzMwZDAxMWI1OWViZjZlNTk0NjA2N2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1OTNkZTRjZDI4NmE3MWY5Yzg4NzEyNjUyNWZhOTIwYTdlZDI4MzI2YzdlOWJiODkxZTdjMDVjMzA5Yjg1YjMifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/refresh.rs#L84-L98",
+          "version": "repo-lines-v1:sha256:78fa33f4b668fc1e33f3149f6026ab986dad50f78aff428c2f9e461bca5b9c5c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmYWY0YTc2NTYyOTljNzU0NWM4OGIzOWRhZjVjOWZlODk2NDU3YmIyYTIxYTE4OTg0MWQ5ZDYzNTc5NjRmMTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVkMDUwOGJmMWI4ZWM0ZWYxNmZlZTkwMjgxODg3NmRmMjg5MjYwZGEzMjA4OThhMWExZTYwMzkzNWQxNGU4YTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1MjE2MDRiMzVmYzQwYWYwMGNiYTRlZWEyZmQ1ZTJjM2FmMTg2M2IzOTExODVkN2JmNGJiMDllNzJkMGM4YjMifQ"
+        },
+        {
+          "resource": "repo://docs/runbook/accounts.md#L149-L161",
+          "version": "repo-lines-v1:sha256:5d21d7862c6c3517b333554ced127a85bcba2da00c7e09a80818dd576419470a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzMGQ1OTFjMzdmZTkwY2E2MGVlMTk3MmE4MTM2YmY2NTJkZjMxZjc3NWMwNDEyY2VlZmI3YTdkMWQyOWYxZDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiOWMwNTg3OTM2MDg1M2Q4NGI4ZDc2NTYyNDk1Mjc1ZWU3YTA4NGFiMWU2ZGY1ZmUxMGI1MmJlZTY1NGMwYWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZiM2RlZmQxOGE1ZjRmODYyOTQyNzZhZWM0ZDUwMzMwNzMzNzMzZTgwNTBmYWJjZjA1OTczOTIwZWQ3NGZlZWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImExODc4NWU5ODJjMTY2NmFlMDQ4MWI5NTM4OTkyNTI2MzU5NTliNzU2YmNlMTkyN2UwMGViYzQwMThiNTViMDUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_486b0677510645fbabbb84566119a573",
+      "statement": "PKCE enrollment gives the proxy a separate refresh-token lineage from a local Claude Code login; runbook evidence puts recent PKCE grant failures near 30 days, a planning estimate rather than a guaranteed vendor lifetime or a demonstrated longevity advantage.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/accounts.md#L137-L159",
+          "version": "repo-lines-v1:sha256:bcd5df65266ae201640683eddbcf80c3f25a4e37d1457e6de9ee8d37d12c5a5e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZmMDYyOTMxOTgxOGJkYTg5NzE5ZGUxM2IzNzg2ZjY5NWY3YzkyYTNhYjk1Y2YzYzE0ZmYwMmFlYTgzMzMwN2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImExMzI4NWI3MTcyOTFkMTM0NDZjNzJiZDdmZjdmNjQ5MzE2M2I4ZjdkNjllOGQ4NDRjZjQzMjY5Yzc5ZGEyMzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJhN2NjMDVmNzlhYzY5OTJiZTIyNWEzZjQ0NDBjZjY5NmY1YmQxYmFhNDhiMjdjMjU4ZTYzNGI2MzFjMzBmMDAifQ"
+        },
+        {
+          "resource": "repo://docs/runbook/accounts.md#L15-L21",
+          "version": "repo-lines-v1:sha256:e0bf51c055199c6cd5917c34f4840d3d547b1de7f48d3351145a612653b9e25b:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODZhZWI2YTQ3ZmJmMTlkMWNiMDY3ZGE3NjE5YzM0NDA4ODQ1MGU1OWUzNGM1MzY5ZDc3MTljMmE3ZjA4MWYwZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDUwZjI5NjUyYThhN2I0MDRhOTMwYWFhZTEwODZmYzYyMGMzMzBmNWIzMmFiNTlkYmFjOTBlYWE5ZjU1MGM5MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTQ4YmQzZWJmNjJkYWEzMDQ1ZTNmYWEyY2YzMDUzMDMzYmI3ODBiZDQwMWYzZjIxMDU2Yjk3NmRjNTQ4MGZjOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTU3NjY1MzEwM2I0MTQ2YjA3ZDQ4YjA2ZTFlOWU2MjFlNDRjZjYyMDZhYzBkOThkZDAwMWFmMjE0ZDc5YmQ2ZSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_7436d064a1dd4cfdb98a040822da9ca3",
+      "statement": "The recovery runbook has operators port-forward, enroll a new grant via PKCE, confirm that account is available, remove the disabled entry by ID, and verify the /health body and a client request because runtime status and HTTP health codes alone do not validate inference.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L260-L327",
+          "version": "repo-lines-v1:sha256:730990504e44bd5f18d8fd26fc819da0775171ccab5d00b11652ed182dfbd163:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0NjJhYWQ2OGVlMjQzMzJiNGIwNTcyYzc0YmJmNDZlMTEyOTJiMGE2ZTcxMzQyMjE2MzgwYjVjMjM5M2ExNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA2NTMxNmEwNzU3YjBjMzI1ZTM2MmE2OWI3MjNjNjZlZDc3NTMyYmE4MGZjNTllMjk0NzM3M2Y1NWIzY2UzYjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OWJkZWZlZWFjYTYzNDBlMDI5MGRjODZlODg5Yzg5ZDVlMTg5YWE1YmE0NGI1ODViM2I3MDczNGY0YTYyZDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgwMWZiODhiOGJiZGIxMzJjYzA3ZDU3ODNmM2RhNWE2OTdlMTY1ZDAxMjZmMTIyZTljMDY3ZTBjMTlhNmFhN2QifQ"
+        },
+        {
+          "resource": "repo://docs/runbook/accounts.md#L155-L161",
+          "version": "repo-lines-v1:sha256:3c3ad614991c5f392602b128c7a51e6ce81e8015b56dbf6fec09772bfd6dc64e:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOGI5YzA1ODc5MzYwODUzZDg0YjhkNzY1NjI0OTUyNzVlZTdhMDg0YWIxZTZkZjVmZTEwYjUyYmVlNjU0YzBhYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTJhNjA3MWJkZGQwYWEzOTJjY2ZmNzE2YThhMThhNGNmZTU4Mzg2N2Y3NTBkYzZhYjgyMmU1N2JiYTQ4MDExNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTE4Nzg1ZTk4MmMxNjY2YWUwNDgxYjk1Mzg5OTI1MjYzNTk1OWI3NTZiY2UxOTI3ZTAwZWJjNDAxOGI1NWIwNSJ9"
+        },
+        {
+          "resource": "repo://docs/runbook/accounts.md#L5-L51",
+          "version": "repo-lines-v1:sha256:24639a8bc90bedb1ce1a3515652043054e8204b1d655b141de498f5d40f9b4f9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2MjEzM2YwNjI4MTM2Mjc0ZTJjMWE0ZTMyYjk4OWI4OGIwOGQ1MDdkNjBkOTU3MjlhNTUzYTI3NmE5MDI2NGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQzZmUxYThlN2Q1MTJhZGYxZGZhMTMzNWE4OTVjYTg5NjYyMTg1NTU3YzRmNjFiYjlhNTdiZTU4YzEwMGI1NDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4NDFhZTdjNWM1NjViNDIyMDUzOWRiZjhkNTBlZjIzZTNjZWY2NmIyMGYzNzkzMzM3YmIwOGI5YjdhNDJkZTUifQ"
+        },
+        {
+          "resource": "repo://mise.toml#L117-L128",
+          "version": "repo-lines-v1:sha256:90ac2bbb047b2bb757d74b93c397aa48ea46f5c1510bdedc04d75428f04fe5ef:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3NTliOTgzNDI2NWVmYjYxOTM1ZDU1YjExYTVlZWZiYWFiZjQyNmRjZGVmNjMyZTA2NGY1NWQzNzM2ZDg2NGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3OTY3MzVkZTYzZTU4MDgyMGEyZmM1NWE1YzM1YWIyZmE1NWMxODVlYTFjMmE2ZDk0YjY0Njg2ZTc1OWZjZWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAzNzAwOTcyZTA5OTJlM2JjOTkzNTA2ZWFjNDA0ZmZhMTZlYjdkYTkwZGRkYTViY2YzZDk3NDdjOTRjMDg5YzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhODNmMzQ4YzAzZTAwNGNjMmExZmI4NTNiNTA0MDYwZWIyMzAzODQyYmNmYzAzNjRlYTMwZGZlMjhkMjc0ZGMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L337-L361",
+          "version": "repo-lines-v1:sha256:6c3bec43444da051366cf4c960ba3ef7b48772816ceb02becc7b21321fa5653f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwMzE5YjQ1NjIwMDQxOTI1YzBmMjllZjFlNTQ5ODkzOGMxYzMwZTQ2MmNlNzA1NTEzYzVkZDFiOTI0YjExMDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwYzFmMTg4ZjE0MmVkN2E4MjQ2ODBiMjA3MTcyYzU1MTliYzYxNGE0OGZkYTdjZjE2N2VkYjhkZGY3OTk1NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5NzY1OTg1ODMzODYzZmU3NjI2YWE3NGU4ZTA3ODk0YjdhZDQ2YzQ1ZjY5YjI1M2FhNGVjOGUxYzA2Yzc1NGEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_831e0795b8f842039b511fc8b53f6581",
+      "statement": "Focused admin tests exercise URL/state shape, missing or unknown and expired state, consumption on ID mismatch, token-free listing and deletion behavior. Auth tests cover PKCE encoding, file reload, Unix permissions and concurrent writes, and token endpoint configuration and error classification, but do not substitute for a successful hosted consent and deployed client smoke check.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L203-L224",
+          "version": "repo-lines-v1:sha256:1bf2e3d82fa175829092b60cb0682daeb49f03074c3820c410643dbaf7bce902:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5YzMyZmM4MGFmOWE1N2Y0NDg1NTM1NzkxOWE1NGM0MDc4N2M1Y2U0MDE1Y2RjN2E1M2M2NTI1OWEzMTM4NDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3MGVkZDAzNDcxNmZjNDAxNzAyNmQwYmQzZGUzN2QxZDNhNWI5YjIzZWY0MGE3Y2Q5NjI4MjQ4NjE4MjM1MDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE3YTU4MDA3MGY1NTVjNGE5NWI4M2E2ZTA0NTk1NzVkODg1NGQ1YzEzODQ1MGJkNDMwZjE5NmM2NzcwNTcyYTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM1NDI2YjE2ODhmMzdiMGEwNTI3OWM1Y2ViMThkNTk2ZDVlYmY3Y2JiNjYyNzdmNWQxZTUyZWE4OTQzMGM3YzMifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L297-L366",
+          "version": "repo-lines-v1:sha256:a4cc6a98a62b8309b2e2d8c0ad53e0ddbaa0d01817474b13893057dea577c27e:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3NjgzNjA5NDczNGIwZWRhNGRkYTI3MDk3NzU2YzcwZTZjOTIzNjY2MDA0YTM0NzE3MTVjY2JmYzJlMmFhNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZkMTNkMGY0NDBiN2IzNmI4OWExMmZiMWIzMzAyNTFkOWQyNDIwY2ZhNWYxZDNmNGRlMjE1ZmRlODIyNmUxYzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-auth/src/pkce.rs#L78-L188",
+          "version": "repo-lines-v1:sha256:fa04aee22f0fa2028d6b6249e5c8fc5846f6058d189314ee0093d507e50fbbdd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTExLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlODUxODgzM2Q0OTE0NDQ0YTU0MTcyNGMwNjM2NDM2ZDYxMDVmNTI2OWIxODAwM2U2YzE0YWY0YTVmOWIwMmI3IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzMGMyZWE3NzFjMzI3NDhlNGU5OTA1NmRlZmQwYmM2NGRiMzc2NWQ0NTJmZDA3OTFjZTRjM2UwNDgzMDA2NDQ4IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+        },
+        {
+          "resource": "repo://crates/anthropic-auth/src/token.rs#L124-L273",
+          "version": "repo-lines-v1:sha256:59f1a92dc7b6aeb9a7bf5e8876069e6f73dc9dabfde562051288f031c2c8c594:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3YWFlODYwNjgxNjQyYzFiZGIxY2MzYzMzMmY2NTU3YTg2NjYzMWMxNDZhOGY2MjdiZjJiYTI0NjlmMTFmY2YwIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxODllZTMwMzA1OTczMTYwZWJhNTNhNzJiNzk0ZDc3YWFiMWM5MTY0OTRlOWY2YjgwY2U0ZTI0ODdlYjU5ZmFkIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+        },
+        {
+          "resource": "repo://mise.toml#L117-L128",
+          "version": "repo-lines-v1:sha256:90ac2bbb047b2bb757d74b93c397aa48ea46f5c1510bdedc04d75428f04fe5ef:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3NTliOTgzNDI2NWVmYjYxOTM1ZDU1YjExYTVlZWZiYWFiZjQyNmRjZGVmNjMyZTA2NGY1NWQzNzM2ZDg2NGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3OTY3MzVkZTYzZTU4MDgyMGEyZmM1NWE1YzM1YWIyZmE1NWMxODVlYTFjMmE2ZDk0YjY0Njg2ZTc1OWZjZWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAzNzAwOTcyZTA5OTJlM2JjOTkzNTA2ZWFjNDA0ZmZhMTZlYjdkYTkwZGRkYTViY2YzZDk3NDdjOTRjMDg5YzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhODNmMzQ4YzAzZTAwNGNjMmExZmI4NTNiNTA0MDYwZWIyMzAzODQyYmNmYzAzNjRlYTMwZGZlMjhkMjc0ZGMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L410-L554",
+          "version": "repo-lines-v1:sha256:181f6937b0954aa5af44ba48cb15f2ffcf1c773cda4be1c86fdea69fc4aaacc5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI3NmYzOWVhZWMzZjk5MDhjNDY5M2E2ZTEwMjgzZjhjMDg0OTMwNTUwZjQ4ODkxZTk0YTMyYmNkMzlmMDNiZmM1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3N2M0ODM5ODNkZTQwOTQyMjQyYTBlYzFkNzk3NDNhYmIxMTM5MWEyNGZkZWE5YmM5ZTE1Y2Y1MDdjZGQ5YzBlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyN2U4YWMzOGI5OTlkODRkODIyMGE1OWQ0ZmZiYTMyOGEyZmU5MGE5YTIwOTcyMzQzODBlZTE2NzMzZWZjODg4In0"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L634-L728",
+          "version": "repo-lines-v1:sha256:79709b9535dc37007512898deae6fbd81df24ac4d8b0c68f244e4b9681ed3975:eyJzZWxlY3RlZExpbmVDb3VudCI6OTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMzMTVhMzRmN2EzZjQzMDBlZjM4MzgyZDFkNGFiZDFjMWUxNjNiMTliMmUzMjA5MmY0ZWY0MGYzYjEyZjliMzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE1ZjJhYjEwODMxMmVkNjVkYmY4M2I5NDdmZTVlZjFiMGIxZDVjODBjNmU5MzI3Y2EyY2Q4ZTYyMDU2NzY0YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY3ZjU2MmI1YjIzYTdmOTc0MjFkNDBkYjcxMzYwMmYxNzMzNzBiZmVlNjIxYTg5YThkMTU2M2I3NTdkOGUxMWIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L858-L880",
+          "version": "repo-lines-v1:sha256:9689d46c77707a452dcecdfbc5e61264f5e109486600874f8e572d6d3c0e61f1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk1NWQyMDJmYzI0MmY0NTFkNjZlNDY0ZDcxZGI1ZTJkOGRiYzcwZWZkZDEyMmIwZGRiZjVkZTc3ZTA0Y2VkZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-26T08:08:48.465Z"
+  }
+}

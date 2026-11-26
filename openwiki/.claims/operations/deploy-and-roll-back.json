@@ -1,0 +1,452 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:089617b2660cb0cfe767bb81e8740899edac3b9b66a6275d7f06eb97ff7f9c1c",
+  "claims": [
+    {
+      "id": "claim_3a7bcb2cb0564a4aa3aeb1b34c13e104",
+      "statement": "Runtime CI requires formatting and Clippy checks, dependency audit, workspace tests, and a release build before the Docker job can run.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/ci.yml#L33-L79",
+          "version": "repo-lines-v1:sha256:67b046cbefc19cfddc5544f30640025f4dab7f07586cd57ba6f0b01600ef2bb2:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmMzM0MTFiZmI0Mzk4ZTlhZjRiOWI3YzllODFkODU0YmJmODI2Zjg5NWViZTM4MjJjMDYzNjQ1M2UzZTRmMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhZDNjZDY0MjEwMDg1MWFhYjE2N2NjMDA3MTVlY2E1OTUwYmZjNzZlNGNiZjgyM2Y5YThmZDgwODJhMjQ3MzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBmNzU1Y2RhZjgzMmU5M2M1YmVlMWJkZTlkZTQzMWY3NzczODk3N2NlZTgzYTBmYzM3OWRhYjE3OWRkMjZhOWYifQ"
+        },
+        {
+          "resource": "repo://mise.toml#L20-L62",
+          "version": "repo-lines-v1:sha256:1c824a93d56b2b3f1bf7e7d3ca7f909ed1f00bbf74510d015d9ca8f444154bba:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1OWRjOWNmZGYyZTk1OGY1NzE1YjYyOGU5ZTE0MzAzNDY4MWRjM2Y3YWRmMDA0YTg4NzY5MWVmNjhlNDJlOTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhNDA5MjJmYjg4MDgyNzA4ODEzMTEyYjk1YjE4NWYzNDdmYzNjMmI1NzE5OGM2ZGRjNWI3NjNkNjJhNWM2ZDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRjNzdlOTU4YzQxZWJmNzk1Y2QwYjBjYTIyYmJjZDdkN2NhZjVkNTE0MGQwZDlkZjY3ZWI4ZGUyYjI3ZDhhMzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEyYjFjYmU3NWI0MmM3ZTViYmZiODJkM2RkN2YxNTJiOGY2ODM3OTk5NmM0MjZhMWJiNzViNGRiMWQ0MDFhNTIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_04943fcef6e044efa339e6d6682a187d",
+      "statement": "The Docker job can build on pull requests without publishing; qualifying pushes to main and v-prefixed tags publish to GHCR with a commit SHA tag among the generated tags.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/ci.yml#L3-L29",
+          "version": "repo-lines-v1:sha256:26986d3f215b623b3a528c822040521003415edb649f77cfa44272c7c3796139:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5NmRjNDgxNDlmNWE4M2QxZWQ2ZGJiMzliYmM3ZTJiOTAyYWEzZDM0ZDZiZDVhZTRiMjkxYjY4ZGYwY2E3OWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFiY2I0NDM0MjI1ZDljMjU4Y2UxOTUxM2Y4MTUyYmM4YWQ5Y2MxMTMxNzM3ZjI3NWYwMzAzZThlNDIwNjMzYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdhZDNjZDY0MjEwMDg1MWFhYjE2N2NjMDA3MTVlY2E1OTUwYmZjNzZlNGNiZjgyM2Y5YThmZDgwODJhMjQ3MzYifQ"
+        },
+        {
+          "resource": "repo://.github/workflows/ci.yml#L76-L112",
+          "version": "repo-lines-v1:sha256:0a8d817a74be5bf4e1c4726adfa7417dc6a4d87869693cd6bdad7a6abd539a06:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiNGQ0ODQxMjE0ZGRlNTBmMjJiYWRmMmU2MmQzZmQ0N2FlMzY3MTU2NjYxNzFlZTRlZWVhMzVmMjY3ZjFlYWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkNTJiZTEwNDQyNDU4MjBlOWRkNzg0ZmRiNjk2Yjk2YzZkNDgxYzAwMjY4NGYwNTVhODEyYWUzNzAxMDU0NDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZkZDliNTk4MTNlMjIyNzY3OGM2MmIxZjI1OGI4ZWRlNWM1ZDgxZDI4ODc3MDhiMDE3NzdkNDQ1ZGM2NTUyY2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM4Y2RkODZmMTNjZDJmMDkwYjhhOTk2YmRkOTRkM2EzNWZiMzUzYzJmMTIzYTlhOTE2OGM4NGRmMjY4OWVlZjcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c3ed40b000be4816adf3168f04c1b8b7",
+      "statement": "After Docker succeeds on a push to main, CI sets Kustomize newTag to sha- plus the first seven characters of the source commit and, if changed, pushes a separate skip-CI commit. Kustomize replaces the base Deployment's main image tag with this CI-managed value.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/ci.yml#L114-L133",
+          "version": "repo-lines-v1:sha256:785a7bced847a84d8b4c0207a60ce6b9e718be09639b651232edf721b7006ea4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4ZTY2ZmQ1YzViOGJmNWRlNGUyOTEwYzE4NTZkNzQyNmQ5ZjAwMjA3ZjJiNDQ5ODRjODJjMDUzNWU3MTgxMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmZGRhNTRjOTZmMDkzYjdmNzlhMzBkNjM0ODNhNGQ2ZWViZjIxM2JiOGM0YzhkZTFkYmNmMTM4MGIyMTlhNDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM5MTkxOTc0MTI1ZGY5ODJkNTA4M2RkZjhiODM0N2MwMTU5MjMxOWZmZmVhZmUwOTExMTA5ZjAyNTRhMjEwZWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://docs/runbook/deployment.md#L31-L43",
+          "version": "repo-lines-v1:sha256:312abb98d35efff052bf4054b2521c95ed5cd1be3464346755138e1b81fb6aaf:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2ZjFmYTdiNTczMzdhZmJiNjY3NTRmMmVkMWU3ZWI3YzFhZmI4MzBlOWVmZWY1MGIzMzgxMDViZjk0OGJhYzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNiOGE4YWM1NGMzYzRkOGZkMDgxNzI0YzE0ODY1YzdkZjEwN2NmY2QyYjk1MDFiYjFiOTY2NGVjMDViMzQxY2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE5YjI4NmVjMzEzMzQ4YzM0MjYxYmVkZmVkYmFhNmRiMzhjMjc5MjVjMjkxMWM1ZWRhMjI4OGNhNjNiYmEwMjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNmODk1MDczNjQ1MWYzZDgxYmNkNjIzNTNhY2NkNDU3ZTM1YmI2ODViMjJkMzY2MzBiMTZkMmZmZGIyNzA2NWEifQ"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L29-L32",
+          "version": "repo-lines-v1:sha256:9a9fd32a8687e7872afc87249b0b8cb3034327e48db9e7f99d8664bf83f8bef7:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmZlN2QzOTc1Y2JhOTdiMzdhODY0YTg5Mjg4NjFmMDUyM2JjZjQ2NDE4ZmYxZWJjZTkxYzE0NGFkMTFmNDU2MCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjMxNGIxMWRhZTY5ZmUyNDU2MGFiMGYwOTNmMjk3OTBkMTg1MTZhMzIyMTA0MWQxMzVjMGRjYTMyM2VjNDU0OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWMwZjg5MDZmZDFhZmFjMTNkYjFhZThjOTk4YzFhMDE0MTljM2U0NzY1NjllN2I1MWY4Yzk1YmYzYjk3ZmEzMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOWNhZTU1ZjFmM2E4NWY2MjNmY2I2ZmE0NzE4YzRkZmIxYzFhZDdiNTAzNjE4NDFlNTUyYTNkMjBhZGEzZjFlMyJ9"
+        },
+        {
+          "resource": "repo://k8s/kustomization.yaml#L1-L6",
+          "version": "repo-lines-v1:sha256:a66fcaa99d709a55911f7fdddd42dc037fcc35ece25b7bdc2cb7275ddfa01ef5:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMThkMjMyMzFmMTI2ZjE1YjNjMzY2MTRhMzQ1ZjU4Yzg1OTA3ZDQyZjc2NWZmZGJlN2MwMWY0YTBmMmZmYjk0NyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWFjMTNhZDNmNDgwN2Y3NjZkYmUwNzU3NDFjNjUwMTc2ZDY4MjEzMWQ0ODNmNTJkNDM3MGE3ZjllZjM5M2FhMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzExMjRjMjUyNmEyM2E5MjhhYWRkY2Q1NzJjZGY5Y2ZlMjFiMzc4ZjhmNWEzOGNjYTZkZDBjOTc3NTE4NmRiNCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_3d29fbbe3ce441f489b4cb98e996d01d",
+      "statement": "Changes confined to k8s/ bypass runtime CI but trigger the manifest workflow on main pushes and pull requests targeting main; mixed Kubernetes and runtime changes can trigger both.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/ci.yml#L3-L26",
+          "version": "repo-lines-v1:sha256:9a8002b6305dc0e5fb14ae8028158194189a7ca02a7a5eb6664cd0264edfd362:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5NmRjNDgxNDlmNWE4M2QxZWQ2ZGJiMzliYmM3ZTJiOTAyYWEzZDM0ZDZiZDVhZTRiMjkxYjY4ZGYwY2E3OWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5NWVhMTc3MjBiZjY1MzI5NjA5NmI2Mjc2NTQzYmQ2NzExZDhmNzg0YjliYWRmMjA2OWJlZGFmM2Q3OTVhZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFiY2I0NDM0MjI1ZDljMjU4Y2UxOTUxM2Y4MTUyYmM4YWQ5Y2MxMTMxNzM3ZjI3NWYwMzAzZThlNDIwNjMzYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQzMmUzN2E0YWMwMjhkODc3YjJhODM4NGY2YzhkNDM3YzEwN2NkMDkzN2NkMjdjZmNmNWU0ZDNjNzIwNzY0MGUifQ"
+        },
+        {
+          "resource": "repo://.github/workflows/manifests.yml#L3-L16",
+          "version": "repo-lines-v1:sha256:ba9d1688812f77fb54f3ca4fa53b1d3f912daa6442593337c133abd8efb8bab4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5NmRjNDgxNDlmNWE4M2QxZWQ2ZGJiMzliYmM3ZTJiOTAyYWEzZDM0ZDZiZDVhZTRiMjkxYjY4ZGYwY2E3OWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlNmMzNDI4NTFhMmRlMTAzMzQ5YTcwNWIxODcyODg1OTdlYjRjZTA2ZGRmMjM0YTUwM2YwNjQxYTljNDE4NDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRjMzJkMDQ5MTRmMDc3YmRhOGUyYzgxMTRhMjAwZWRhNTJjMjQxOTg3NmM2ZjVkOTc0NThkYWY0NzVhNzJkNTQifQ"
+        },
+        {
+          "resource": "repo://docs/runbook/deployment.md#L5-L11",
+          "version": "repo-lines-v1:sha256:cf53e9569cef7992d0180058f5a1b327128e51d0e2cfbbea7346c58efcdb3a7a:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2NjOGEwMWIxODZhYTA1Njc0ZGJhNTEyZWM3OWUyZmE3M2NhZWY2MTY2MTY0MjljODIxNmUzZDRjZGUxN2M0ZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjE2ZTU1NzM4N2ZiNmI4NTVhZGY3Y2U1ZjZhZDQ3NDcxYTg5MDI4MzE4MzE0ZGQ4ZWVlNThhZGY0YWM5YjdjMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDNmZTFhOGU3ZDUxMmFkZjFkZmExMzM1YTg5NWNhODk2NjIxODU1NTdjNGY2MWJiOWE1N2JlNThjMTAwYjU0MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjkyYTg3NDQ2MWI4NzA2NTQ4NjdiNjEyNGRjMDdhZjM1ODhkODQxZWQxYjIyOTc2ZTA1ZWM4ODM1YTI5MDIzYSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ca7b3d590ed54069813e65fd5d6f7f19",
+      "statement": "The manifest workflow runs offline Kustomize rendering and kubeconform schema validation rather than building an image or deploying to a cluster.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/manifests.yml#L18-L26",
+          "version": "repo-lines-v1:sha256:7b2dbd006eb18efd9eae8323036ab69ae1b2098a356da964faab91af2dfe3d02:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzJiZGViZmRjMWNhZWQzMTBmYTE2Yzc4Y2U0MmJkNzZlM2Q3N2JjNDlmMDEwMzE3MTI3Nzg3NzAwZGM4YWM3YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDU2NTY3ODZlZDRkZTU4NWJlNzEyNWI4ZGMwMmI1NTA1MjRkMTgwZTUwNjUyZWIyMDdkYzVlOTVlZTMzMTNmNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDZjYTEyNDIwMjEzMDQ4MDgxYjBkM2NiZTg5MmIwNTM4YmZiMzc1OTM4ZDc3OTFhMmM3ZjkxNzM5ODRkYWQyZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://mise.toml#L64-L72",
+          "version": "repo-lines-v1:sha256:b526e9a7746baa0ed3be0b4f701695abdab5309627957da4d111202b8310e739:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2YyMTQ1ZWJhYTQ0NWMxOTIyYjhiYjc0YjkxOWU2ZTlmNzA3ZWYwODE3YzdkNjhjYThhODIxOGVmODY3ODIyNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWExOWM5MDNkNWFjMzY0YjBlZDczODQ1MjJlOWRjOWFiYzNiNTdkODRmY2IzYzcyNWIzZWM2NjIzMTM2YWU5MyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGJjYjVkMjllNmYxNmRiMmVjNTMzOTMzNzZmMTE5Mzc3MjY3M2RhNjQ0MzVmNjk0NTc5M2RkNzEyZDZjZjhhNiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_cf52b9f29b504701bb2596cb4dbee618",
+      "statement": "The runbook documents an externally owned ArgoCD Application watching main at k8s/ with no automated sync; the desired Git state can be OutOfSync until an operator manually promotes it.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/deployment.md#L5-L27",
+          "version": "repo-lines-v1:sha256:8d78814093e28bed2f9d9563ac78cd0f5bd6b7c592ae1673cdbe3dd1f71624c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjYzhhMDFiMTg2YWEwNTY3NGRiYTUxMmVjNzllMmZhNzNjYWVmNjE2NjE2NDI5YzgyMTZlM2Q0Y2RlMTdjNGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQzZmUxYThlN2Q1MTJhZGYxZGZhMTMzNWE4OTVjYTg5NjYyMTg1NTU3YzRmNjFiYjlhNTdiZTU4YzEwMGI1NDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE5YjI4NmVjMzEzMzQ4YzM0MjYxYmVkZmVkYmFhNmRiMzhjMjc5MjVjMjkxMWM1ZWRhMjI4OGNhNjNiYmEwMjUifQ"
+        },
+        {
+          "resource": "repo://mise.toml#L85-L87",
+          "version": "repo-lines-v1:sha256:2a4d5daa6eaa8c67fde54da5b1cb91cd5a8a483fd4905653c81e8e865bab7027:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmFmMTkwMDljNjg2ODExMzljYmFlOTY2ZTY1OTY0NDJjOGJhMDUwYjU3MjJkNWJiOTY2NDc0YTU2ODlhYmY0ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWIyZjYzMTZjZTRjNGFiYTY1MmM1NDMxNWM3YzJmNDUzOTZhODg4MDAxNGQzMWQ4ZDZhZGVjYTBkODQwNWI5MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDlhYmJhNWNjN2E5MWYyODUzZTMyYWU3M2YyNzE4MmZlZjIzMjNlNmE0ZTI4MTRjZDhmYTk1ZWY1M2RmNmRkMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiY2Y4NjJhZTRlOTFiZTc4N2RmMTdlZGI4MjZmMDNiNWM1YzRjY2RkZDg1YTlhYzdhMWFlMTMzMzBmNWI0MGQyZSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_82f4adb0631b4547ba57fad7f4afb35f",
+      "statement": "The runbook provides a direct Kustomize apply for bootstrap or intentional direct deployment, and documents that the public GHCR image can be pulled without a secret.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/deployment.md#L45-L55",
+          "version": "repo-lines-v1:sha256:90372f6035ea16c0f2d281465116aa52195fac9d7f11bd56cb695461ee511b21:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2ZDE1YTA0NDdjMmY2MmY2MjJiNjdhM2Q2Yjc3N2I0MTYyNmU1ZWEzYTk3NDk0NTBkNzY3NDliNTUxMDg2MzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjYTY4Nzg0NDZmYWVmZjBlYWY0MzA3MDdmNTY5NTE1MGFkMjU0ZmU3ZjJhYjAzOTEyZThmZWQyNzQxZTA2MWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIwNzBiNDJlM2YxZTU4YjRmNzE1OTA4NDA1MDg4M2Y2NzdjNDI5MjEzMTA3YjllODczNmFlYWU4NjM1ZjkzYjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE4ZTk5MDhlMDAzMTVlNjdjYzc2NTllOTUyNGJiZGE4YTU2NGQ4MmIxZWVjZjFiNzExYjcxOTFiYThkMTIwNWMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9f7fd71e163f45098eed9ba05f8cc963",
+      "statement": "The image builds the release proxy binary and launches it directly as UID 1000.",
+      "evidence": [
+        {
+          "resource": "repo://Dockerfile#L9-L36",
+          "version": "repo-lines-v1:sha256:3250465fecaca06171af7f67b659f1f5b1806e23dc1b9ed2b6189925cbf57077:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiMTc0MGQ1Y2ZjM2FhNGQ3OTdiNGQ1MzBkZWI5YWNlMmRiYzFhNDgxNWJkM2E1ZDVkNWRjZDMwNDU1ZWNjODkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE3YWNkMDc5NjAzNGMzYWFjOTc0NWZmZDdkZWFjZTBlN2I4MDliMmQ4NzM2MWE2ODdiZDM2NzFiMTllNzhlNzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6f3ec1d2e33b43c3833fdee71895cc16",
+      "statement": "Kustomize generates a content-hashed ConfigMap from k8s/config.toml and rewrites the Deployment's ConfigMap volume reference so a synced config change updates the pod template; the replacement process loads the file at startup from the read-only mount identified by CONFIG_PATH.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/deployment.md#L107-L115",
+          "version": "repo-lines-v1:sha256:e0d1f87abfc84d7b55e051ba22e6fdecb86ac3c2c51ef15e4618fe48b67267d0:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTFiNjQ5NTNiZmUxNjczNTNkNzJkZmExZTcwNTViNWU5Y2YyNTRkNjYxMGQ1MWY0YjZhZDI0NmFlNjA5NzdmNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjk1ZGQ4ZGQxZWY5ZDVlYmFkZDIzNmE2MzBkYWQwOGM3Y2NlMDkyMWEwMWEwZDNmYzRkMDI4NGU4NDQ0NDY4OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDg3OTgyZjcxNWRiNDYxOGQ5MWZjOGNkZjhlZjBlZDJhMDQxYmU1YTVmZDMzYzZhODA1YWU1YTQ5MzMxYmRiNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjk2NjE4YzlhZTI3MzU3OTRkNjIyZGMxYTc3ZTc4MDk0M2IzMzdjMzdmMGZiOWQ0YmY1ZDQ0Njg0YTUxYjA0NyJ9"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L39-L55",
+          "version": "repo-lines-v1:sha256:7cb5cce5f696bd84acbbf72f6e003be556fa5667a7c1dc864c1506fbb5191a06:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIyY2JkOGRjZTA3NTRjZjk5OWVkZGEyMDFjYTU5NTQzZjU1ZTNiZjY3MDZkMDBiZWFmZDY4N2VlNGViYjZmYWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1OWIxOTg0OTVjYzY2MGQ5M2I2OWQ1ZWQ1OTBmNzMyOTM0ZTcwNzBjNjc2NDA2NTQ5NGJjYmFiMjNmZWQ0OTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNiMzkxNTUyM2MyM2I1YzM1YTdjODkyYWY4ZmMyNDA3MjI0ZTE5YjMxN2Y1Y2Y5OGQ3MjA1ZGU4ZGQ1ZDY1NmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFiZWEzOWVmNjI4YTk0OTc4YmE1Njk1NTBmMTU5MDcwYWU1YjdjMDU3NjE5NGU3OWY3MWQxZGQzMTRkYjUxZTEifQ"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L92-L99",
+          "version": "repo-lines-v1:sha256:a64401fe1ea028c24b3746b39e5443d146120660cf727a3a5a7382b0af71d46f:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGY4NDE4YTdjYzE3ODM5MWY4MDRlZTc4M2MzNTdjNTVhMTY4ZDJjMWY3NmM0NTkxMTY4MDI1OGM3YmFjZjM0MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2ZhMTU3OTRjZDUyMDU2Yzk1Zjk2NDczMjZiMGUwM2NlZDRlZDVkYTcyNWQ3Zjk1ZDE1ZTU4MGQ2Y2Q1MmNjOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGVhZjgyYmM2MTBmY2NhOTI3NWU5ZmMwMGI3YjA0MDYxNDBjOGI1NmNkMDIwM2Y2YTEwYWM1YTkyMWZkNjYwOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://k8s/kustomization.yaml#L7-L18",
+          "version": "repo-lines-v1:sha256:29eba49c71ec0a301d8f63f123723c4056e3792259008c19624ab4c01fc03d3f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2YmEyOTdmMzEyN2YwZTExNjU3MDU3MmE2ZGI3NTFiMzlhYjk1YWQwNmRlYzdhOTJmNWEzYjU5ZGFlYTlhMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMGI2NmYxNTg0MjRmZGE3NTk0MWE5ZDExYzAxODRmM2YxZmIyNGRkMDI4MjJjNzc2NDcxZDIwNmZiZjE1NjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ4MDcyYjE2ZjE0Nzg3ZDA3ODQ4NDNkYTNiNGJiYjdjYTk4MmIwMzhlNGFmZmViZDEwZDBmYmExNDQ3NDlmZjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUyNWUyNjJlZjM2NmJiMmEyN2E5ZjYwOTlhNzE3OTE2ZmQwY2EyYWI5MWU5YjEyYWE2YWQ5NzA0MDY4OWIyYzgifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L107-L133",
+          "version": "repo-lines-v1:sha256:34fc6fc80026d942be4224dd8d9fdbd04d8d0fb85849303b99a8620bfbac81bf:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0MzY3NjE4N2M2MTQ2MjFkZTcwMWY4NDMwMzQzNjg3OTgzMTllZWRhNTlmMTI2NzAyNjM3MTQ3NmJiOTBhMGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0ZTQyMDhjZDZmZmI4YzRhMzU0N2IyZjU0YWRhMTk5NzhjM2YzNjVlNzhmOTUwMmVmNTE0NWNkZDJhYTg1NDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFjZTQ4ODUzNzQ5YzZkZWZkNjc0YTBlY2UxY2ZjNmRkNzQwODVhNGQyYmQ4NGQ3YzA0N2VmZGI5ZDgxMGM3MTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJjMDVhMGI3ZDc4YzYxOTY4NmQ0YmUyN2IzMGJhOWFkMDU4Mjk5MGZjZTFmM2M5ZjAwMTI2NWFiOWQwNjdhN2UifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_db65036494d44e019a478ca783d6c3b1",
+      "statement": "The one-replica Recreate Deployment takes down the old pod before bringing up its replacement on a template change, causing a gap in upstream proxy availability during which tailnet clients can receive 502s.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/deployment.md#L27-L29",
+          "version": "repo-lines-v1:sha256:f444fc15632631415678efdc421db0b3444b8af3b5cbe9af347d2b1770dfa2b0:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDdjMDZjNTYxZDVjMzI3MzQzNjg1MjY4YTQ2YjMzOTFmMzk5OGVlZTg5MGQyYmU1MWYwZDIxY2M0YTUzYWU2ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjM5NTYzMDJlZmEwMWM5NzkyMDQ0MTI3ZjBhMDI3ODExZjE2N2JkMmFhZDNiODA4OGRiNDAxN2QxZDJjMGIwOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmU1MDMyNWQwMTNjNmE5MjE5NDQ5M2ZhMGY4MDNmMzA4YWQ3YWIzNjc3ZTM2NjAxMTVkNmMwNGZmYmIzNmIzMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzMwYzIxZDVhM2JjZmFhZjZmN2NhMmRlYjU5ZGYyMGQ2MzFiOWViYzg5MjA3YWFkZThlYWRkOGE1NTgyZjliZSJ9"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L9-L18",
+          "version": "repo-lines-v1:sha256:9ead32d2c204cfda6ff28a38733fe599515971cdf4d3c893027f68a1f91867a4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdiYzMzY2I3NzM4YjVlZmI5OGZjZTU2NmYyMGRkODJmNzY1MDQzNjJmZmJhMTE5NDRiYTJlZjgyYmIwOTQxM2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2MGU0YWQ0M2RhOWIxMzUzNDMwMGIxYjkyZTJkMWEwZjI4YTAxNzdhMjZlMDMxYjFiYTMyY2U3YzE4YmVjZmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1ZGU0Yzg4Y2E5MWJkMTE2ODVmYmRjMGViY2VmOTM2NWQwMDc1MzllOTAwOGI5ZDA1NGRmMTBkMzI0NTIxZGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhM2ZiMjBiYzc1ZTIyZTdiY2I3NDRlMjExZWQyZmI1OWYzZjM4MTA4MDU5YmIxNDIyOTkwNDE3NGQ4N2EwMDkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b269ad5b390f4ac39ac2525bf8099f14",
+      "statement": "The runbook directs operators to capture the current pod's logs before sync or restart because replacement removes access to the old pod's logs through the running Deployment.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/README.md#L48-L55",
+          "version": "repo-lines-v1:sha256:d21e0bb852cd2c7220e08259d2423a46edec69938ada94ece9939a43010102ea:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmIxYTA1ZGVkMmI0Nzc3NjM5YjI4M2U2YTIyZDQ2ZmE2ZDJmMzlkNDkxZGYzOWNlMjI0ZDBkZjM2ODQxN2VkOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDQ2NDVjODA2ZTAzMzZlZmJjOWExZDk2OWMxNzVjZDY0ZDVlZWE5N2VlZTdjNGQxNzM4ZWNjZDc4YmZkYmU0NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWQ3ZmM4NTgxZGQ1YWJiMmJmZDJjMTRmYzAwMTQ5OGY4OTQyZjhkODNmNWEwMjI4YTkwYzI0NTRlNWFhZjEwOSJ9"
+        },
+        {
+          "resource": "repo://docs/runbook/deployment.md#L27-L29",
+          "version": "repo-lines-v1:sha256:f444fc15632631415678efdc421db0b3444b8af3b5cbe9af347d2b1770dfa2b0:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDdjMDZjNTYxZDVjMzI3MzQzNjg1MjY4YTQ2YjMzOTFmMzk5OGVlZTg5MGQyYmU1MWYwZDIxY2M0YTUzYWU2ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjM5NTYzMDJlZmEwMWM5NzkyMDQ0MTI3ZjBhMDI3ODExZjE2N2JkMmFhZDNiODA4OGRiNDAxN2QxZDJjMGIwOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmU1MDMyNWQwMTNjNmE5MjE5NDQ5M2ZhMGY4MDNmMzA4YWQ3YWIzNjc3ZTM2NjAxMTVkNmMwNGZmYmIzNmIzMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzMwYzIxZDVhM2JjZmFhZjZmN2NhMmRlYjU5ZGYyMGQ2MzFiOWViYzg5MjA3YWFkZThlYWRkOGE1NTgyZjliZSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e543d74b8cbb42c09db9856d70edd245",
+      "statement": "The proxy reads OAuth credentials from /data/credentials.json on a separate ReadWriteOnce PVC; normal pod replacement and Deployment undo reuse that volume's current contents rather than reverting credentials.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/accounts.md#L163-L168",
+          "version": "repo-lines-v1:sha256:db80e5d4a07a31697b992e928551742ff6de63097a7d47ed392a9ac50c6d8d60:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTMwY2JmZjUxMzY0ZWUxM2Q4YmJlNjg4MGZjZWVhYzIxNDdhZmFiNmVkZGI4Yzg1MzFiMzJiMTFhNDU3NDY1MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmE3Y2MwNWY3OWFjNjk5MmJlMjI1YTNmNDQ0MGNmNjk2ZjViZDFiYWE0OGIyN2MyNThlNjM0YjYzMWMzMGYwMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://k8s/config.toml#L16-L22",
+          "version": "repo-lines-v1:sha256:a9202b2437df2fea6d0b2e156292501a97bd3fc80349c4fb8a26070749a1aff2:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzk5NWU3MDE5NzcyYjQyZTQzMDA4YmVlZWE3YmI3NzVkZTBkODhhZjFlNDMwNWQ1ZmQ1ODM3Y2RiMWVlZDA1NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODBkZmY5NDliNmI1YmQ1MGVhMzM5ZTA0ZWIwNzBlYTkyYWVkMTRjZjI1ZDU5MzhkZWJiNDdlMWI1YWU5MDY0ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDk1YjdmNjRjODgwZDVmMmQ4OWQ1NTJlNDAyMTQ1ZTBhYzhjMWM5ZDZlZGQwMTM1NzFjYzkzZTY1Y2I5NjJhMyJ9"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L50-L55",
+          "version": "repo-lines-v1:sha256:ee4cb8ee0923ecbaf785ebb9c70486454c76fd9b510db45b1a7b784d6b019185:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzhlNzI2ZThkZWJmNjFlYjg3MmE5OGVlYTQwNzUwODE3NzRjMGY1MTQ1OGQyODM3NDlkMWE3MmI5MzZmYjg5YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDU5YjE5ODQ5NWNjNjYwZDkzYjY5ZDVlZDU5MGY3MzI5MzRlNzA3MGM2NzY0MDY1NDk0YmNiYWIyM2ZlZDQ5NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjE4MTJlMGVhMWNjYWE4NGI0MGE5OGNkNzI5YjFhODdjODJjNTNmMzYxZjllMmQwZTVjZjkxYjgwODRiNTJmNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWJlYTM5ZWY2MjhhOTQ5NzhiYTU2OTU1MGYxNTkwNzBhZTViN2MwNTc2MTk0ZTc5ZjcxZDFkZDMxNGRiNTFlMSJ9"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L92-L99",
+          "version": "repo-lines-v1:sha256:a64401fe1ea028c24b3746b39e5443d146120660cf727a3a5a7382b0af71d46f:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGY4NDE4YTdjYzE3ODM5MWY4MDRlZTc4M2MzNTdjNTVhMTY4ZDJjMWY3NmM0NTkxMTY4MDI1OGM3YmFjZjM0MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2ZhMTU3OTRjZDUyMDU2Yzk1Zjk2NDczMjZiMGUwM2NlZDRlZDVkYTcyNWQ3Zjk1ZDE1ZTU4MGQ2Y2Q1MmNjOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGVhZjgyYmM2MTBmY2NhOTI3NWU5ZmMwMGI3YjA0MDYxNDBjOGI1NmNkMDIwM2Y2YTEwYWM1YTkyMWZkNjYwOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://k8s/pvc.yaml#L1-L13",
+          "version": "repo-lines-v1:sha256:853a7fa71db6282b7a5161acbe4e2b98bff1057aa388372e49d80c620d04f17a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3NmFlMTQyNDI4ZTc1NGI2N2Q3ZDZlM2RmZGJlMWI0NDhmMGJhYzM1NWQ4ZmEyNGVjOTQ3MWUyMWQ5MGI0MzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkMWU1ZmRmY2FhYzE3MzdjOWQ1OTljYjA5MWU0YmFiZGExOWIwZTg3ZjE2NWFjNzg2Y2EwODFlY2NkYTc4YzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L179-L212",
+          "version": "repo-lines-v1:sha256:bc6fbf19de15cdb44893b5a864d85fe5fb52ea33a94e39ec804af7bc148e4fbd:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5MWU0NmY1MjU1ZDFjMmI5ODU3NDRmN2Y2ODMzZjE3NjA3M2YzNGE1NTE0MGMzMDY3YmYzNzQ3MDZkYzc2OWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlYzY2MjYzMzJiMTA5Mjk3NTc2Y2RhOGM3YzkxYmM5Y2M1YjE5NzIzODYzNGNhMjBjMjMzNTQzODZiMGI3MTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ2MjljNWM4ZWVmZDMwZmI2NWM2YWI0M2UzNWFhNWNmNTU0NDk2ODMzODY1MjA5YmI4NDExNGViNzRmOTYyZGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5OGYxN2U2ZmRlNzhiZGQ3NTdiY2VmYjAxMmJmNjk2ZWZkMWM0YWIyZGM1MGVkM2VlYjFlNjExZGM1MTk5ZWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1f6feda61d40463894add05bc990b261",
+      "statement": "On a fresh PVC without a credential file, the proxy initializes an empty credential store; an empty OAuth pool needs account enrollment before proxy traffic can be authenticated through that pool.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L46-L72",
+          "version": "repo-lines-v1:sha256:14769c7e78bdef434d9ea629ba07edf89982bc6884f2d3b77cabebf6ef9036c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMGE5ZTRhZmEzMDVjMmYzMThkNGE2NGJlOTU0YmFjNjA0OTQ4ZmEyY2FlZmViYjQ1YjgyNzVjZGJhMjVmNjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5YjE5ODJlOGRkNzQ4MTE4MTQ2YjM5YTJkMDA2MmY0MDgxZTM0Nzc5Yjg2NzVjMjM0YzRmYjEyNGRjMzkzOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMyN2RhYjg5MGYyZGVhMmIwZmNkMWE0NTFiNTNjODMwYTc3MWI0MTFlZjk5M2QxNzEyMWEyN2ZlNzM1ZDVhMWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ3MGQxMTFhYjZlNzg4YWJkMGQyOWRlYmI3Y2M4N2ZiMWMzN2M3YTg5M2U3OTY0YTVkYjQ3NThjZmRiMjBmNWIifQ"
+        },
+        {
+          "resource": "repo://docs/runbook/troubleshooting.md#L63-L69",
+          "version": "repo-lines-v1:sha256:ed4618677812ac68b34393c26fc31eb04b13386731777aae75a3457b4952a623:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmY2NWU3NjhiODdkNTEzN2ExNTA1ZTIyODIxN2VlZjExNzlmMGFmZWYyZmJiZWRjMGFlMGE4YzdlYmQ1MmZkNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmNmZmI2ZWQyODNmYWJhMmU2NzY4YzJlNGIyNWYxODhjZDRjMjVjYWU1YmUzNjljYjMyNjZmODRlNTFlNDQ0OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDZjNGRjMTE3M2I3YTA2NWJhODcxNWQ2MjAxODdiNGExMGMzMmJkMGM3NWM0ZDZkYjlhNjM1MmFhZWRiODExOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2I3NGViNmFjYWJjYzVlMGQ3YTFjMWE0ZGJiNDdkMTUzZmI4MTUwYTkwYTI5OWVjNmE0ZDliYjhhNWJiOWRlZiJ9"
+        },
+        {
+          "resource": "repo://k8s/config.toml#L16-L25",
+          "version": "repo-lines-v1:sha256:0e7cf2c1e2665c02b4c3773e0ebfec835199dc8687d4dc3e75a5c457b01275c2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5OTVlNzAxOTc3MmI0MmU0MzAwOGJlZWVhN2JiNzc1ZGUwZDg4YWYxZTQzMDVkNWZkNTgzN2NkYjFlZWQwNTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3NWE5YWZiY2YyNDU1YjY3MTdjNGE4N2EwMThkMTViODUyMDkyMDI0YWQ1ZTg1YTRlOWQ5OTJhNTNhYWZjZWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgwZGZmOTQ5YjZiNWJkNTBlYTMzOWUwNGViMDcwZWE5MmFlZDE0Y2YyNWQ1OTM4ZGViYjQ3ZTFiNWFlOTA2NGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L179-L212",
+          "version": "repo-lines-v1:sha256:bc6fbf19de15cdb44893b5a864d85fe5fb52ea33a94e39ec804af7bc148e4fbd:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5MWU0NmY1MjU1ZDFjMmI5ODU3NDRmN2Y2ODMzZjE3NjA3M2YzNGE1NTE0MGMzMDY3YmYzNzQ3MDZkYzc2OWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlYzY2MjYzMzJiMTA5Mjk3NTc2Y2RhOGM3YzkxYmM5Y2M1YjE5NzIzODYzNGNhMjBjMjMzNTQzODZiMGI3MTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ2MjljNWM4ZWVmZDMwZmI2NWM2YWI0M2UzNWFhNWNmNTU0NDk2ODMzODY1MjA5YmI4NDExNGViNzRmOTYyZGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5OGYxN2U2ZmRlNzhiZGQ3NTdiY2VmYjAxMmJmNjk2ZWZkMWM0YWIyZGM1MGVkM2VlYjFlNjExZGM1MTk5ZWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a0d5c837763a4507bf920cbc8d4e91d1",
+      "statement": "Pending OAuth PKCE enrollment state resides in the proxy process, so it is lost on pod replacement and is not shared across replicas.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/accounts.md#L163-L168",
+          "version": "repo-lines-v1:sha256:db80e5d4a07a31697b992e928551742ff6de63097a7d47ed392a9ac50c6d8d60:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTMwY2JmZjUxMzY0ZWUxM2Q4YmJlNjg4MGZjZWVhYzIxNDdhZmFiNmVkZGI4Yzg1MzFiMzJiMTFhNDU3NDY1MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmE3Y2MwNWY3OWFjNjk5MmJlMjI1YTNmNDQ0MGNmNjk2ZjViZDFiYWE0OGIyN2MyNThlNjM0YjYzMWMzMGYwMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L108-L118",
+          "version": "repo-lines-v1:sha256:2d00c65e5ac9aa94ea285a8902f9ec1af273f92abbfc3e092777c7ea43df05e5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgxOTlmNjhkMjNiZTRmNGY4OTBjNjIyMTczNDNhNzRjODViZjZhNzA4ZDQwNjI3MjMzNmNkYjlhYjc3ODM0ZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYyYjAyZjM4OTY3YTE1ZjE5YWUxYmQyYTRiNWE0YmRmYjk0ODViYTE1ZGNhMTNkMzNmYzJlZjI4NWE4Y2I0NmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzZDgwMTZiZTdhZTdjZjNlMmE3OWFhNzc1ZDY4MjRlMDdjMWM4NzUwNDkxZTQ0MzU5NWEyYTI2YzJiZjA5YmQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L192-L206",
+          "version": "repo-lines-v1:sha256:591eec734ca01cc3b7176ca8b2f38952b047ef33e760648954b3e7b6207e7588:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEwYzdiYjE3MjIwMjVlNDcxZTQ4MGEwZWZiZDUxZTcyYjlmN2ZkZWU4NTk0MjRlZDVkZjEwYTA4Y2I2NmM3NGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhZTk1MTBlMTUxZDkxOWQ2ODA3NDA2OTY4OGQwMGVlMGQyZjZlNzA5NGJhY2I4YTgwODU3MWY5NDMxODRjNzIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L29-L59",
+          "version": "repo-lines-v1:sha256:14c752b47c6b1e1dc63464cb71af26dd134c37ebfcee935cd7eb9c9c4c858acc:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2YzRkMGI2MDE1NTQyMDM0MzExMjg5MTAzZjk2MTc3NTdiZmU0MzgyMzVjMjNmNGZjNTI4NDZhZDZmNjkwNDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3Zjc4MjVkMWRiODM2Y2Y4N2JjNTI2Mjk1N2QzOGZjZTg4YjE1MGZjYWRlZmRjNzBjMzgwOWFmZDM4MTQ1YzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5afd46f9b8d24807a1e14f6e766fe35c",
+      "statement": "SIGTERM starts a graceful drain of the main HTTP server with a five-second wait; on timeout the proxy logs a warning and continues shutdown, including tracer-provider shutdown when enabled. The Kubernetes pod grace period is six seconds and increasing it alone does not lengthen the application drain, so long requests or streams may not finish.",
+      "evidence": [
+        {
+          "resource": "repo://k8s/deployment.yaml#L23-L29",
+          "version": "repo-lines-v1:sha256:f97dd5200e446dfe21e74b83e3496a51a7d5e6705bef4840d9902508bdb26a9a:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWU2NDdhM2Y3ZDE0MjEyYzY5M2NiNDkyZTVlZjA3Njg2Nzc2N2RjNDUzOTk4NDljMjdkYWMyZDk2MDg4ZDYwMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmZlN2QzOTc1Y2JhOTdiMzdhODY0YTg5Mjg4NjFmMDUyM2JjZjQ2NDE4ZmYxZWJjZTkxYzE0NGFkMTFmNDU2MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDQxOTE4N2IxYTFiMWEwOWJkNjIzMzlmY2IxZTU0OWUwOTk0MDEwZjNkNTI3MGU2NWUyMDFhMzI3NzQ4NGY0NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGFhMmRiMmY2ZDg4ZjgxMDExMGQ4Y2QzMTIyZDk4NjUwYjE5MjM0NTMxODllMTFiNTUzZGU1Nzg1MmNhOGU4NCJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L273-L335",
+          "version": "repo-lines-v1:sha256:f9ffe27cf2ee64b62c33bf006c03246e73eb7d59bd9ee890ed86a4115dff3e29:eyJzZWxlY3RlZExpbmVDb3VudCI6NjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4ZGZmNDZkZjNlNDk4ZjNkNmU1NTdjNTczMGI5ZDRmNWNhOWQ2MWFjODQyNzM1ZWIwZjM0MTNhZjMzMzhkZTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk0MGRkY2JhYzA1NDMwMTg2N2FjZjRjNTAzYjAxZTE4NTFjNWQ0ZDVlM2ZkNGMyNDEzMDc2OTY0ZmNjODAwNDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdkNzlmNDA0ZDdiYmY2YzZmMTBhNzIzOTM5NDZkMDNjOWUyZmZlOTJmOThjYjdmNGM3MWY3NzIzNTg3ODIzNTQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L385-L405",
+          "version": "repo-lines-v1:sha256:cd2c2488c07beba43e1b481d7dfc86586629ed7d65fcaf6c9bfc0f8cea1543fb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1NmRlYWQzMTQ3Zjc2OTc0MDQ1MmVhM2U0NTg3YjBhOGJlYzlmYzJjM2QyYmMwNGU3OTYzZTUwNjU2ZjkzYWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkZjE5ZmFmNGFkM2YyNDUwMjA4NmM4Mjk2ZjBlZjM1MDU0MjcyMDI0NmFmNDVmNWQ2MjFkNmRlNTBlZGVhNDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyOGZkMWRlMmJjMjA2NThlMjE2YjU4MmE0MGFlOTNlNWNhNzUyMGE5OGI4N2UwYmQzOTc2YTlkOWNlMWQ5NTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZjYTI2OWUwYzI1MjY4OGM5ZjJhY2ZkOGY0NTZhZmZlNTExZGJlMjE1ZDcxM2RiNGJkNDU4MTQzZDMxYjY4YWMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/service.rs#L98-L101",
+          "version": "repo-lines-v1:sha256:159e521275fe7ff74a395c7b2919d922b6c44a8b69f24bd1bb1c8b6da86f1f76:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDhlMzk1MjNjODU4NjA5MzgwMGFkYzE2M2ZiM2YzZDhhNGJkYTlhM2EyYmIzYjRjMTdkNDg2YWM1YmQxYTJiOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOGJjZTg4YThlMTQyODkyZjFlYTA2ODliNzQ0ZDAxNjQxNTFhNjM2OGVhZTA3ZjYwYmY2MmIzYjAyZTliODMzNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTViODFjMDBjYTY0NDdjNjM1MTVhMWU3YjhlYzM0ZWMwMjY5YTBjYTg4YmVkNTUxZmY1ZTUxZWI2MjQwN2QyOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGNjOGYzMzlhMTUyZWMyN2UzZTg4NTA3NGNmNDcxZTEyZGY5YzYxMjMwMDE0YzgwNmZkNTI0ZjJiNDk2NTdkOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_008e1b986bb44e0987ea3d29380f85a4",
+      "statement": "Startup, liveness, and readiness probes all use HTTP /health on the proxy's port 8080. Startup gates the other probes; liveness failures can trigger restarts and readiness failures remove the pod from Service traffic.",
+      "evidence": [
+        {
+          "resource": "repo://k8s/deployment.yaml#L32-L36",
+          "version": "repo-lines-v1:sha256:499da28945a471b09b1091698ec226dac17e451a12315703c1534037bd9a701c:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjMxNGIxMWRhZTY5ZmUyNDU2MGFiMGYwOTNmMjk3OTBkMTg1MTZhMzIyMTA0MWQxMzVjMGRjYTMyM2VjNDU0OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTU3MDJhYzRiMTBmZDZmMGNkMmI3YjAyYjIyMWFlNGU3MzQzMmQ3Yzk0MDQwNTUyM2QzZWM5YmMxOGQ5NzE2YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmI1MDMxOTRmYTNlNTZiNGU2ZDc2MTU5MjI0MjJmMmZjYmEyZjI3ZWZjMDAwZmM3MjQ4NzRhZjI5OWMzOTQ4ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODNhNzM0YTZjYWVlZWQyNjBmOTEzYjMyNGYxZDNkOTUyOTNjNGEyYmZiOTBhYzIwNDJhNDEzNzYxODAyZWZjNSJ9"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L56-L73",
+          "version": "repo-lines-v1:sha256:9cffe753931c720f68d572087bbba83583eaafe36ee8d1c4f882533577dde942:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0ZWEyZjYyYTNmYWY0NjZjMjY2NmZlNjBjNDA5ZjY1ZTQ2ZTA0OTZkNDVjMjEyNjhjYmM2NmE0MDA5MjdiODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1M2ZkMzFiYmRkNmYxZDlmNDBlZDg5Yjc5MDBjOTk5YjU1Y2EzOTA2NjA5OGI2MWE1ZWYzYWUzYTA5ZDEwN2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhOTY2ZjliMjVkMzZjYTMyNDNmMjAxNDgyMTg2M2U0YjIxNzE2YTUyMjNmMzc5NmRjNjJiNTI4Yjk3MWFjNjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZiMjk0ODZlMDcxODg3YzgzZmYwMDUxNDVkNTAyYzk5YjIxZmRmNGNkM2E5NjAwOTQ1OGVkMmEwNzM3ODE5NWUifQ"
+        },
+        {
+          "resource": "repo://k8s/service.yaml#L10-L16",
+          "version": "repo-lines-v1:sha256:631e66f5aaea51a495e36f469d827481dbfa07651fb8ab6669bd1822e6849466:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzM3ZjhiYjUwODMxOTJlODNjNzZmMGRmZDhjZTI1MDk0MTAzNWU5OGMwMDk1MGYwYjkyZmM0NTk5MGQ1YWNhOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDdkNTYzMzNlZDA0M2FhNjk3ZjllNjZmZmM2N2Y5ZTRkZmNiYmQzNDJjNzEyMDY2NzhlYzYyMGY1YzhkZTgyNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOWIxMGI2NDU4Mjc5YmZlZTU2NzdhOTc5NWI2OGI3NWQyYzBjZTg3N2ViNWU3Yzg5NzQyNTExMGQyM2EyZGY0YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_2d8f6fa5e9394942b00c58caa4ab305e",
+      "statement": "The health route bypasses the proxy concurrency limiter and returns HTTP 200 with provider status and optional pool details in JSON even when the OAuth pool reports unhealthy; HTTP probe success is not proof that a real authenticated request will work.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/monitoring.md#L21-L57",
+          "version": "repo-lines-v1:sha256:f08c8453113b052a5eb9d8aa62365887dd7d031cec2caf5ce009011d07d38f4f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2M2VkZDc5NTMzMmM2NjNiNzA0ZDQ0MmFmYTk4YjNiMjlkNGU4NzQ0ZjYzZmYwNzU1OTY5MjViODgxZjY5NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZGZmMGIxOGRiYmY3NjVlMjU4OTFmYWQzODFiMDQ5M2IyNTk2MzZjNGJjYjJmN2FiMTIwMTM4M2VkN2ZkYjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYwMGI1ODhlNmM5ZDlhMDMyNWE1MzQzYmIyOGJjYzY2YTAyZGQ1MmM5MGJlZGQ2OTM3NzdmNjQzM2UxZjZjOWIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L337-L362",
+          "version": "repo-lines-v1:sha256:6ce8772a66f10a61c3beae8db52ef40f4b5ce6b609f73e43037c856a5f5f9244:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwMzE5YjQ1NjIwMDQxOTI1YzBmMjllZjFlNTQ5ODkzOGMxYzMwZTQ2MmNlNzA1NTEzYzVkZDFiOTI0YjExMDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNhZTgwNjU4ZDU5NDhhN2E5OWRjYjllODIzY2IxMWFlZGE4MTQ1NmUyY2M3OWMzMzkyZmU0OGRiNDJmMWI2ZGUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L53-L69",
+          "version": "repo-lines-v1:sha256:0b13971bfe555b508c97bd666d3f797d5030c84ff9e2c10fb0a8f95117687911:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBmYjQ5OWVhZjRjMGM5NzFjYWQ5ZGZkZjNkNjMzZWJmMTA5OGEyMWQ3MWNkMmNkY2VmNzZlNmZjNzFmZWI2YzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmOTk3ZTdiOWI4MTgwZDZkNzhjNDk5OTI4MmU2NTBkZjQ2MGM5NzI4ZmRmOGI5YjdhOTE2ZThmZjM4MTIwYjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlkYjNjYzhlZmM4MTM3MjE2OWRkODA1YmE2YTZkZTBiNmQxNWM5ZThlNDZjZGE5MDE5ZDdlZWNkNDAyYzkwNmQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L176-L190",
+          "version": "repo-lines-v1:sha256:958e9cdc9a15800c8658ff66512690c59925c1d6f56285a8ed641b0cc5824c20:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4MzM5ZmM0ZTJiNjIyYjY2NmNhNTU5NDc1MDdkNTFmNGZmNjczMDU5NGI1OGJkNjYyMjMwMzY0YjAyNDVkNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViOWEwOGJjMjlmNmViZWJlOWE1ZjAxOTAzZDk4NDVkYmNiNTg0MmE0NTVmMDdkNWY0MDAyZGFjMzJhNWM2MDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ5ZDYwMTM4NDk4NGFlMzcxMGM4ZjIyNjJkZjkwOWI2MWM3ZDIwMDE5YzM3ODhjMmZiMmI2ZGFmZmE2OGExZGYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2e69bdb37d5344948b057ecbbd6ea924",
+      "statement": "ArgoCD Healthy does not establish that the intended Git revision was synced; promotion verification checks the operation result and revision, then the Deployment rollout and replacement pod rather than treating the template's intended image as a running container.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/deployment.md#L11-L29",
+          "version": "repo-lines-v1:sha256:ad82d0e78599fbeecdd169d41cec7993447f32acb65b3e889a42309db87089e0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxNmU1NTczODdmYjZiODU1YWRmN2NlNWY2YWQ0NzQ3MWE4OTAyODMxODMxNGRkOGVlZTU4YWRmNGFjOWI3YzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzOTU2MzAyZWZhMDFjOTc5MjA0NDEyN2YwYTAyNzgxMWYxNjdiZDJhYWQzYjgwODhkYjQwMTdkMWQyYzBiMDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmNTFlNmJlYmI3ZjUzODQ5ZWI0NDgxZmFjZTUzZGNhMTQwMDQyODcwMDM5M2M4NTk5NWUzOTMyMGJlOWIwY2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMzMGMyMWQ1YTNiY2ZhYWY2ZjdjYTJkZWI1OWRmMjBkNjMxYjllYmM4OTIwN2FhZGU4ZWFkZDhhNTU4MmY5YmUifQ"
+        },
+        {
+          "resource": "repo://docs/runbook/deployment.md#L57-L77",
+          "version": "repo-lines-v1:sha256:96e3150a8469ddfd544cf5db0b32aabf9399ae8df65201d1bbb8151b0a954e53:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkZTJmNTMyOGVlNmU4MDUwZThhYWZkOGRjODY5YTA2OWNkOTU4NGVkYWFmNTRmZTU4OWQ3M2MzYjdkY2Q3OTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxZmZjYWJkYWM4ODA4M2EyM2Q1YjJlYTY4NDJlYzY0NzhkNDlhMzEwZmJmODg1YTQzOTE4ZDE3Y2IxOGNlMWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQwMDFjZmZlNTBjMDdmNmNjYWQxNGM1NzAyMTgwZjBiNTBlM2YxMGM5ODgxYmFiYzkzY2IzMjNhNmI4NjA3YTMifQ"
+        },
+        {
+          "resource": "repo://mise.toml#L84-L98",
+          "version": "repo-lines-v1:sha256:f4ad425fd7850caaff1a00b25fd87ff88688924dc982f9a06440bea5c2351848:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5ZmY5MDk3ZjExZjVhNjdmZmY3MGRiZWM3YmZhODdkZjdmMjE4N2VlNWMwMjlhMmM5MGQ2YzIwOGJmYmJlZTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwMWEyMjRhMTNiNDM4YmE4NDk0NWQzMDFjYzg1MTkxNDAzYzkzMjU3YWZlZTVmYTM0NzQzMGYzZTIxYjZkMDYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQzNjI4Y2E3NzQ4ZTNlMjQ2NzgxZTQwOTlmNjgxMzhkMzg5ZDFmYzA1MjNmMjc1ZDA1YTNmNmY2MzIwNzk2ODciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2YjI0ZmZmNDYyYTk5ZjY1OGFlY2FmZTcwMTIzMzQ1ZDcyN2FhNzk4YjY1Zjc3MTA4MzBiNDczYTJjZDk5ZjMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_54a596583cc94c8e8edf1cd6762198b5",
+      "statement": "The tailnet HTTPS request path uses the Tailscale Ingress and the proxy ClusterIP Service on port 80 targeting container port 8080; the admin ClusterIP Service on port 9090 is separate and not exercised by that path.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/deployment.md#L79-L100",
+          "version": "repo-lines-v1:sha256:850b41eca21061e510059ed067b758e8688ff4e3028625b2e21a8a2461bc7d3b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiYTMxZjUxNjFmZWE0ZjgzMWM0MGU5NTFiY2RkMTM1YTA3YjM2ZDQwNWUyMTdhNWUzMDEyM2Q2MTAyNDI1MmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1ZGZhNzBkZDk4MDZkNDVhODgwMDNjMzFmNTQ0NTE0YTFkM2ZjZDRkNzMyZmNmZDBjM2I2NDU0ODU0NGI3NTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJhMWRiYTZmNGQ0OWYyMzU4MDI5M2FiMmQwNmRjMWU0YzE0NmU3MGQ3MzljZTlkYTNjNzU0NzQwZTg2M2QzMjAifQ"
+        },
+        {
+          "resource": "repo://k8s/admin-service.yaml#L1-L16",
+          "version": "repo-lines-v1:sha256:4cd6caebadb7203898d9ecd156df98f1a8de21c69b9cbdd3a6212dde85dfd33e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3NmFlMTQyNDI4ZTc1NGI2N2Q3ZDZlM2RmZGJlMWI0NDhmMGJhYzM1NWQ4ZmEyNGVjOTQ3MWUyMWQ5MGI0MzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3ZDU2MzMzZWQwNDNhYTY5N2Y5ZTY2ZmZjNjdmOWU0ZGZjYmJkMzQyYzcxMjA2Njc4ZWM2MjBmNWM4ZGU4MjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L29-L38",
+          "version": "repo-lines-v1:sha256:3067b4a28ccc043a848bd303a6126d55535a052c842181304017c0552e7852b1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmZTdkMzk3NWNiYTk3YjM3YTg2NGE4OTI4ODYxZjA1MjNiY2Y0NjQxOGZmMWViY2U5MWMxNDRhZDExZjQ1NjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM4YzI1YzFkMjE2Mzg2OWM3YWJjZDNkY2JlNjIwNTY5ZTBhMThiNDIwMjQyZDM4ZWVkZDQwZjgwOTM3Y2EwZTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFjMGY4OTA2ZmQxYWZhYzEzZGIxYWU4Yzk5OGMxYTAxNDE5YzNlNDc2NTY5ZTdiNTFmOGM5NWJmM2I5N2ZhMzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2OGIxOTNkNDIyMGRkMGJiOTM2MmVmYWViYjVhZTI4Zjc5M2ZiYzVlNzFjOTYyNTBiOTEyZjM4Yzk1ZTQ0YjkifQ"
+        },
+        {
+          "resource": "repo://k8s/ingress.yaml#L1-L20",
+          "version": "repo-lines-v1:sha256:56a43b309f9cd088e952de45f9ea1e34bb7da3407fb38b45fda9baa7dcdb7d14:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3Mzg0NDQ0OGIwNWY0NGIwYzY3MmM3MWY3MzljYjNmMGU2OGZmZjYwZjZkYTdhZTQwMmRiNzU5MDMwMjBjNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlMzNiMzhjZjQ2NzBhZThjZjY4ZWFhMWI0ZGEwMGQzODc4YjVmY2U1OWQyNTg5ZjRkNDU4YWU0ZDViZjBkZTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://k8s/service.yaml#L1-L16",
+          "version": "repo-lines-v1:sha256:a14a4895167f98b69a4ff073d04268c59d88fa5d4aadef48366ad445681f9964:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3NmFlMTQyNDI4ZTc1NGI2N2Q3ZDZlM2RmZGJlMWI0NDhmMGJhYzM1NWQ4ZmEyNGVjOTQ3MWUyMWQ5MGI0MzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3ZDU2MzMzZWQwNDNhYTY5N2Y5ZTY2ZmZjNjdmOWU0ZGZjYmJkMzQyYzcxMjA2Njc4ZWM2MjBmNWM4ZGU4MjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a3528b198ddd46a282a1353fc2ab2de0",
+      "statement": "The operator-side live:validate task compares origin/main's Kustomize tag with the Deployment template image and reports the last ArgoCD sync revision and time; tag drift warns without failing the task by itself.",
+      "evidence": [
+        {
+          "resource": "repo://mise.toml#L74-L98",
+          "version": "repo-lines-v1:sha256:ece414eea3f290bbaf1eebd889c865e8d5ea86f8b12f6b515f273fcf55ed3554:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwMWEyMjRhMTNiNDM4YmE4NDk0NWQzMDFjYzg1MTkxNDAzYzkzMjU3YWZlZTVmYTM0NzQzMGYzZTIxYjZkMDYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhmNWI0OGM4YzgxNzkwMDJlOTJmY2Y0Yjk3MDE1ZjQ3N2Y3NDg0MDk2MTAwZWRkY2ZlODZhZjA2ZjFkN2FhOTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2YjI0ZmZmNDYyYTk5ZjY1OGFlY2FmZTcwMTIzMzQ1ZDcyN2FhNzk4YjY1Zjc3MTA4MzBiNDczYTJjZDk5ZjMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e374c31b19844bbbb357322713806e69",
+      "statement": "Live validation uses cluster and tailnet access to inspect deployed objects, check HTTP health, execute a Pi smoke request, and check for recent OAuth proxy spans in Phoenix; these are not verified by offline CI.",
+      "evidence": [
+        {
+          "resource": "repo://mise.toml#L64-L76",
+          "version": "repo-lines-v1:sha256:e3789d8ab21e4ea321b190905cead028553686211305eca9536516bc2df4d108:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlOTA2YTgxNzA5NWVjNjBiYTBmNzRiNjU0ZGRiYTI3N2RlNTdmNjkyMzE3NjdkZmQ4MWY0NGFhMTMxZmM2NTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFhMTljOTAzZDVhYzM2NGIwZWQ3Mzg0NTIyZTlkYzlhYmMzYjU3ZDg0ZmNiM2M3MjViM2VjNjYyMzEzNmFlOTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkMzcyNDQ0OTUzMDI0ODZhZmFjM2ViM2ExODZkMmJhZGQwYjE1YzMwOTJhNWJjMjE3OWNlOWJlYzQ3MDY5NjYifQ"
+        },
+        {
+          "resource": "repo://mise.toml#L99-L134",
+          "version": "repo-lines-v1:sha256:298b273893288448f9ff50cccce6f95737f63610be42d6709f0c737ddc7b4733:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhNzllNGRiYWJmMWRhNDFjY2FmNmVkZTY0Y2JjMTlmZjgxOTRmNzgwYjQ4MTM1MmE4Y2E0OTUyMDExZmJhODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwOWJkNmMwYzBkZGM2ZGNlNjE4MDQ2M2VmMjM4ZTc0YzZlZDVlYTEyYjM4ZTZmYmM0OTUzNDA3YWRlOTBiZGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBkYWYwNzJjOTI4YzYzYzNlYzIxYTg1ZmNjNmQyMGExMDgxZjM4MjM0ODc5ZjhiMDdiNjE2NGUzOGMyY2JiOGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEyNTAwMWEyYjhmYjQxMzg0NGQ5YjA3MjkzNjQ2ZTFmOWFmN2EwMDVhYjkxZmQ3ZTVlMjRjYzMyY2RjN2I5M2YifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e8e8f7a754a54f16b5bb52eaa849100e",
+      "statement": "Focused offline tests cover health and metrics responsiveness when the proxy concurrency slot is occupied and credential persistence across a disk reload; they do not provision a Kubernetes PVC or exercise the deployed tailnet path.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L201-L218",
+          "version": "repo-lines-v1:sha256:bf8cf4061a0845dc1610310c1eec9982208ada7c5d24f0200cdc18aaecacda2d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3NWU5ZWY2NDE2Mjg0MTE0ZTNmYTc4YzMzODJkNjRhYWI0YmE0OGQ1ZTJlMzY4M2I3ZTQzNmJlNzg2OGI1YmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUyNzgwYzU5MTFmMTUxY2NhY2YzMmE2NzQ3ZmI2Y2NlMWY0NWZkYjUyYTg4ZmNmYzBlZDE0YzYzN2UxMDQ4NDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5Zjg0NTJkNjNkMWU0OTZkYjk3ZWU1M2MzZjczY2FiZjI1OTIzOWM1Y2Q1ZjdlNzYyNTBkOTg2YmMzNWEyZDIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L2191-L2263",
+          "version": "repo-lines-v1:sha256:8ea60e12092b182d8498636e77357ef8e80f1ef36579af2e6acfdd79af8ac1c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxY2M0MDY4N2QyNDRlOWRhZjkxY2VkNDY1MjMyNjU2OWE0ZmI2ZGZjODFkMDNmYmU3MjNhNWVhM2NjYmU5ZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxY2M0MDY4N2QyNDRlOWRhZjkxY2VkNDY1MjMyNjU2OWE0ZmI2ZGZjODFkMDNmYmU3MjNhNWVhM2NjYmU5ZGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYyZDgyOGEwMzdhYzFjODE1MzViMWQ1NTAwODMyMzIzYmZiYjg2NmEzYTNmODdlN2E2OGMxM2EyYmFlNTZmZmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjNzVlNWY2MWVhNTkwOWJiNjQyYzJmYTMyNTdiZTA4MjI5OTgxNTYzZWIzMjk0ZTk3NzBjNzc5YjQxMjBiZGYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f316994bf48b42d58f8761a81169c5e5",
+      "statement": "A durable rollback reverts the offending Git change and manually syncs the corrected desired state; a code revert gets a newly built and pinned image, whereas a change confined to Kubernetes manifests takes the manifest validation path without an image rebuild.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/ci.yml#L114-L133",
+          "version": "repo-lines-v1:sha256:785a7bced847a84d8b4c0207a60ce6b9e718be09639b651232edf721b7006ea4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4ZTY2ZmQ1YzViOGJmNWRlNGUyOTEwYzE4NTZkNzQyNmQ5ZjAwMjA3ZjJiNDQ5ODRjODJjMDUzNWU3MTgxMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmZGRhNTRjOTZmMDkzYjdmNzlhMzBkNjM0ODNhNGQ2ZWViZjIxM2JiOGM0YzhkZTFkYmNmMTM4MGIyMTlhNDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM5MTkxOTc0MTI1ZGY5ODJkNTA4M2RkZjhiODM0N2MwMTU5MjMxOWZmZmVhZmUwOTExMTA5ZjAyNTRhMjEwZWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://.github/workflows/ci.yml#L3-L15",
+          "version": "repo-lines-v1:sha256:d53d10f97ed342bf9858d8565cccc80db430827a2befaaf5293b6eb9340cee67:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5NmRjNDgxNDlmNWE4M2QxZWQ2ZGJiMzliYmM3ZTJiOTAyYWEzZDM0ZDZiZDVhZTRiMjkxYjY4ZGYwY2E3OWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5ZmM3OGMwYmNjZjNjOGRlZTllNTc4NzUwZjMxMTU0Mjk5ZDQxYWVlMjJhNWJiNGYzZGRiYjE2YmI2NjBiMTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFiY2I0NDM0MjI1ZDljMjU4Y2UxOTUxM2Y4MTUyYmM4YWQ5Y2MxMTMxNzM3ZjI3NWYwMzAzZThlNDIwNjMzYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZlZTA4NjQxZDVmMzY5MTliYzk4ZGVjM2IwNDc5NjNmYzVhZTZiZDgzZTZhYjRhY2JlYTRiMDBlMDY1ZDlkZDEifQ"
+        },
+        {
+          "resource": "repo://.github/workflows/manifests.yml#L3-L26",
+          "version": "repo-lines-v1:sha256:7de83fb54c0da2b36eb8d2ef25a36c772d494d1825abb419c2e0046cc652b188:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5NmRjNDgxNDlmNWE4M2QxZWQ2ZGJiMzliYmM3ZTJiOTAyYWEzZDM0ZDZiZDVhZTRiMjkxYjY4ZGYwY2E3OWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1NjU2Nzg2ZWQ0ZGU1ODViZTcxMjViOGRjMDJiNTUwNTI0ZDE4MGU1MDY1MmViMjA3ZGM1ZTk1ZWUzMzEzZjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlNmMzNDI4NTFhMmRlMTAzMzQ5YTcwNWIxODcyODg1OTdlYjRjZTA2ZGRmMjM0YTUwM2YwNjQxYTljNDE4NDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://docs/runbook/deployment.md#L117-L133",
+          "version": "repo-lines-v1:sha256:a8234c0de3c649cc6313d06e76070baf5847c9eb3fd7e36fa266989505416a25:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkZTJmNTMyOGVlNmU4MDUwZThhYWZkOGRjODY5YTA2OWNkOTU4NGVkYWFmNTRmZTU4OWQ3M2MzYjdkY2Q3OTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlMGNmNTllNDcyNzExZmNhM2JmZTY4ZjkyYWYwODJiZWEyNWNmMTBhOWNiM2U1YjMzYzE5MDVlZjA5MTU3OTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljYzc1ZDljZmIxMDk5MTMyN2Y0ZDM4MDYyOTU1NTM5NDU1MGU4N2IwYzFiZDFmOGY0YzIwZWExZjhhOWU1OTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b7b2abf4067a4264a4b9666ca795c3f3",
+      "statement": "Emergency Kubernetes rollout undo restores an available Deployment pod template, not Git or separately managed resources. A previous generated ConfigMap must still exist if that template references it, and a later manual sync can overwrite the undo with the desired state in main.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/deployment.md#L117-L133",
+          "version": "repo-lines-v1:sha256:a8234c0de3c649cc6313d06e76070baf5847c9eb3fd7e36fa266989505416a25:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkZTJmNTMyOGVlNmU4MDUwZThhYWZkOGRjODY5YTA2OWNkOTU4NGVkYWFmNTRmZTU4OWQ3M2MzYjdkY2Q3OTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlMGNmNTllNDcyNzExZmNhM2JmZTY4ZjkyYWYwODJiZWEyNWNmMTBhOWNiM2U1YjMzYzE5MDVlZjA5MTU3OTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljYzc1ZDljZmIxMDk5MTMyN2Y0ZDM4MDYyOTU1NTM5NDU1MGU4N2IwYzFiZDFmOGY0YzIwZWExZjhhOWU1OTEifQ"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L92-L99",
+          "version": "repo-lines-v1:sha256:a64401fe1ea028c24b3746b39e5443d146120660cf727a3a5a7382b0af71d46f:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGY4NDE4YTdjYzE3ODM5MWY4MDRlZTc4M2MzNTdjNTVhMTY4ZDJjMWY3NmM0NTkxMTY4MDI1OGM3YmFjZjM0MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2ZhMTU3OTRjZDUyMDU2Yzk1Zjk2NDczMjZiMGUwM2NlZDRlZDVkYTcyNWQ3Zjk1ZDE1ZTU4MGQ2Y2Q1MmNjOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGVhZjgyYmM2MTBmY2NhOTI3NWU5ZmMwMGI3YjA0MDYxNDBjOGI1NmNkMDIwM2Y2YTEwYWM1YTkyMWZkNjYwOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://k8s/kustomization.yaml#L8-L21",
+          "version": "repo-lines-v1:sha256:6bffb48ffff824e104dceea5cb657fbac53cbbe470689669ef4a36c7f5c081ff:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiYzE3YWZjMjYzMTg1M2E3NzQ3MTJhOTcwOWU0OGRmOWYwYWUwOTI4OGVmMDViZjE2YTUwNzE4ZjQ0OGRiM2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1NDAxOWE5OGZiYTUwZDBiMTM2MTBkM2JiNzZjOWIzZWRkYjMwOTE3M2VmZTVkMTI4Y2Q0OTE4MDA0MTBlOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlYjM1NzgyZjk5NDc3YTE5OTlhMTE3YmMzOTM1NTdkOTRjNTdmNzg4ZGQ3MjYyMTA0ZDA2NjE1ZGE0ODdkNWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_154c0a53f5f2482a9edef6a8cb766ca0",
+      "statement": "Rolling back or restarting the proxy does not repair an expired OAuth credential stored on the persistent volume; pool failures caused by rejected refresh grants require account recovery rather than pod replacement.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runbook/accounts.md#L156-L168",
+          "version": "repo-lines-v1:sha256:a9bf78123f25ee5afb4b2e660fec4b7198593bca21ade3c36cf02e9d08a867e8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3ZWJjOTMyZTIwZGQxZTQwMmExMTAwYjJlMTVkNzQ3MmNkNTU5YmIxY2ExZjFjZWUwYWQ0ZjIyODU3MWZkOGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI5NmM4MDhmMTBkNzhjZGY0MTRiNGM3ZjAwODJlZjZiYzMyNzlmNDE3ZWNkY2E0OGQ2Yjk2YmU0NDE5NDA3ODIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://docs/runbook/troubleshooting.md#L63-L88",
+          "version": "repo-lines-v1:sha256:b75a48d0f9bf55c8de8d8cbb8a5217be796335bb3c6dfd202c4c6bc1fd65b8d3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmNjVlNzY4Yjg3ZDUxMzdhMTUwNWUyMjgyMTdlZWYxMTc5ZjBhZmVmMmZiYmVkYzBhZTBhOGM3ZWJkNTJmZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwNTExNDBkYzM3YzZkMjAzNTJlYjI5OTk0YzRiNzFkZmI4MmE4OWFiM2U5N2Y0NDZkYmZkY2Y1MWUyZDMyNWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ2YzRkYzExNzNiN2EwNjViYTg3MTVkNjIwMTg3YjRhMTBjMzJiZDBjNzVjNGQ2ZGI5YTYzNTJhYWVkYjgxMTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRjMjRlOGI1ZWE5OTM0ZDNjNjA3NTFmN2IyNzA2OTQ5YTk3NjQ4N2E2ODgyNzg3ZjQ3NjQ0YjBiNmZhM2E2NjIifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-26T08:08:48.465Z"
+  }
+}

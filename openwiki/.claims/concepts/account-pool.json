@@ -1,0 +1,534 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:776ff4a8655157908865c84c4f91b20e1d1084a96d0180b5892360f515cefa50",
+  "claims": [
+    {
+      "id": "claim_d67dc70fdd6f498ca6b0d1489c58485b",
+      "statement": "Only OAuth mode constructs the account pool; its provider selects an account during request preparation, strips client Authorization and x-api-key, injects the selected token as Authorization: Bearer, and returns the account ID for inference error attribution.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L95-L102",
+          "version": "repo-lines-v1:sha256:527d9caa1ca06bcbc57183dc745043419fae47dcda72d44d6d2539f5b9414f0b:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDAxODUzYjdiYjMwYjVlODNlNGIzZWE0ZjVjZjNmOGNmMTc0NTg0YmU4Mjg4ZjZiOGU2NTc4NmMxOTEwY2NmYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjUzNDE2NzlhMjg5MWY2YzkzMzFkYWYyOTg3N2RhOWU5MGM0ZGYxOGU3ZjM0ZmEyYjViNjJiMDIyYjc3ZDE3MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTczM2VjYWQ4YjhjNmJlYTZlNTcxMjU3Mzk4MWZmYWQyNTM3N2IxMGYzYTQ1YzJkNWUwZGNmMzZkYzMxNzM3ZSJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L160-L228",
+          "version": "repo-lines-v1:sha256:ccf13b41342320517fa96a69efdbf3cef1c3c31c73b388e254c11226112f0737:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0YTNjZTQ2NGQ0YWZiMGI1Yjk5OTgwNTJjZDNiNmRkNGFkMTRhOTAyMzQwZmYxYmFjYjQ3NTIyNDJhZGFiMzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwNDhkNzAxZjgwNzFjNTZmYjAyZDUwOGY1YjhkNmJkNzdhMjY3M2Q2YzUyNjZlMzM3OGUxYjZhNTY5NTljOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0MmRlNThkYjcxMWM1YzE5YmE5NmQyZmM2NmM2MDZhZTI1YTQ4NzI4MjM0ODAzYjU5ZDhlMzM2ZTE4ZTg1YTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU0NjIxMDc1NDRhM2UxYmU0MmZkZjg3NmQwY2E0OWU1MWVhN2QzOWFkZDI2OWYxOWVmMmUwNGQ5ODU5ZjEwMzEifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L101-L164",
+          "version": "repo-lines-v1:sha256:7d46e042b851e53847cd5cf6f8a39b19e60489850f06f22a67ff6a38aef74c98:eyJzZWxlY3RlZExpbmVDb3VudCI6NjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNiM2JkZTVlZDI3NzFhM2M2NGZjNWU5Y2YzZWM1MTlhNzhhOWQxZjE0YjQzOWQ4ZTFjYzU3YTc5NDBlNjFiMjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzNmViMDI1MWE4ZTRiMzU0ZWQ3NTQyMzk3ZWNmMzY3OGJkM2FkNDFlMzU5MWYwNTkwOWVlMjMzYWNhM2I5NmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwMTAyN2EzM2NkN2E4NWY2OWJlZGE3NjMwN2YwMmViYmQzNTM1ZjQxNGY1NjUwZGUwN2U3MGY4MGUwZmJkN2MifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L307-L381",
+          "version": "repo-lines-v1:sha256:0452749a80d1b277f3ce058cd21c899953c27e309c3b2366aba4577b23cbc270:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhM2Q3NzgxNTFiMDUxYWQ5ZWNmNmQ1MWYxNDk3NzNlNzg3MGUxNzZhY2EyZjQ2OWQ0NWY0ZDI3YmM3NzBiN2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE0MTEwOWVmYmE0MTA0YmEwY2MwYzBmYTRjNWE0NGMzZWM1NWU3MTBkYjI0OWFiODQ5MjdjNjkyODhmNDQ5MDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM5NjlkOTY1MzNiNjYxMmY2YmY2MTA5MDc5ZGZmMmMxODYyZmE4MmY4ZWFhZjgxZDU3YWFmODdhYjdkZjFkYTQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_68d7ab63568e48aaba32f07faf8accc0",
+      "statement": "The credential JSON maps account IDs to type, access and refresh tokens, and an absolute Unix expiration in milliseconds; enrollment and refresh compute it from a clock reading plus the OAuth expires_in seconds multiplied by 1000.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L16-L55",
+          "version": "repo-lines-v1:sha256:8d15053bdc13764616fc11d636b10167549e4e728b853eb7c906e58a86c4dcd4:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjMWVhNjgxZjEzZjgwYmMxM2RiOWQ2MmMyZjQxZWIyNTY5MzU3YjBjYmM2NTU4M2ZhNDg1ZWM5MDhmOWQ2MGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQwNDg0NGRkMjIwYjFhMzhlYjg2NzU4YjA0MWFiN2NiOWVhOGUzZTg5M2FkYWU1NTAyY2ExNWM0ZmY1OGIxM2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkwNTAxNjc5NjM4MDkzODljYTAwZDg4ZDJiMzQxMmM1ODJkNDZkOGFhOGMwYjBiOTg2YjY2MTUwZDE2MjQ2NzEifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L172-L191",
+          "version": "repo-lines-v1:sha256:f4627508645c9dfd4b39b79946f78cede0c4fdbf301b3bf857a4daa529472eab:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2NWQ4NjM5MjZmZGEwMGRiYWNmZGNjZmI5YzhlZjkwMjJkMjEwOGRhMGQ5OGYxNmRiNGJmNDg1YzcwYWM3ZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyM2EyZDU5NmY5NTVhOGYxNzhhYThkOTdlYTVjMWFkMmFkNDllNGFlMTVjOGM2OTg4ODNhNTk5NzhhNGVjMWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjExOTMyNDNkYzU2MGIzMjViOWM4ZDkyOGZmZjU0MmJmNWQ3M2JkNWUzYjk1NjI3NmE2YTkzNGFiYzIxMmQ4MWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY4Mzc3YjQzOGY3Y2U0NGQ5OWEzODMyMWMwZjZlNTJjYjQwYjQ0MTgxYmY3MjkwZGE0N2E4NmJhODMxOTYyMzYifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/refresh.rs#L43-L74",
+          "version": "repo-lines-v1:sha256:2a641c3fe2defecf3d187bd46efe86313ac2f44c33aaaee0c7a746de1b90889c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZmYTA3MWQ5Nzk1NTc0MjgxMGQ1NGI1MTdlMzdiYjE4NzAxNTE4YjQyM2EyY2ZhYzlmOTI0ZTY1ODU5ZWRhMWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkNDcwZmFjOWRiZWRjNzBmZjBiZWMyZTBmOWEyODIyZTU4NDBlMjcxMWE4NDlhMmVhN2FkMzlhMzE4MjgzMDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTkzYmFhZjVlODg0ODZkYzgwZDkxODhhNjRkNGZiNzY1Y2EyMjQ3ZTAzNzdmNmNhNDliMjMxNjFjYjlmMzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkNzk5MTNjMmMyMGJiOThmZDM5ZjI4YTI4MjIzNTFiN2RjZmE1NjU4M2M0MjhlMmMyZjQ2M2VjM2ExNGFkNjQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L254-L267",
+          "version": "repo-lines-v1:sha256:ad2481812518d93068a8de1bb553ef7501a9cfcc1bec8d5015fcbf47a3d7842d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NDkyN2ZmYmE5MjM3YTUzNjhkM2QwYzQzNTBlNGM0OTc3ODUyZDg2MGI3MjQ1NTliM2NkYjAwY2MzOTFmZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzN2U3NGE3NDZmM2U0ZmE5OGQ3Y2I5OGRiMDdkMzBiZmY2NWNlZjY3NmYxN2FiMWVhNDkzYWM0ODQ5MDY4MTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjMmVhZGE1NTY5Mjk2MTdlZjJmNTQ5ZWUxZjgyNzNjMWNmMDc0YmMzNzRlNDE0MjNhYjIxMDFlM2U3MTMyY2UifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4014f8c3b50b428699782bb9db98756e",
+      "statement": "The shipped single-replica Recreate deployment mounts the ReadWriteOnce credential PVC at /data and is configured to use /data/credentials.json, so a replacement pod using the same PVC and path reloads the persisted credentials. CREDENTIAL_FILE can override the effective path.",
+      "evidence": [
+        {
+          "resource": "repo://k8s/config.toml#L16-L21",
+          "version": "repo-lines-v1:sha256:a45d633395172d48d53d2720ec3d61a1cab24e212981b47d19e27d0c766686c6:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzk5NWU3MDE5NzcyYjQyZTQzMDA4YmVlZWE3YmI3NzVkZTBkODhhZjFlNDMwNWQ1ZmQ1ODM3Y2RiMWVlZDA1NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTY3MzNhMmZmZjFmNGU4MzQ0MGI2ZTU4OTYxNmVhYWM1MTY3NzQ5ZjlkYjYyMGVkMTVlYjQ0ZDdiMTNjOTBiZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODBkZmY5NDliNmI1YmQ1MGVhMzM5ZTA0ZWIwNzBlYTkyYWVkMTRjZjI1ZDU5MzhkZWJiNDdlMWI1YWU5MDY0ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODIyYWYzY2E4ZTAwNmNiOWI4NTdkYTBmMWEwZDQ2NzUyYWZmMTU5YzYwNzAxZDExZmY4ZmFkNjk4MWM2MzQyMCJ9"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L55-L60",
+          "version": "repo-lines-v1:sha256:599b04a61bfc2510a4c8039bbeeec1cf3adfe8efabfc113852bdc7676d2dcb38:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDU5YjE5ODQ5NWNjNjYwZDkzYjY5ZDVlZDU5MGY3MzI5MzRlNzA3MGM2NzY0MDY1NDk0YmNiYWIyM2ZlZDQ5NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjAzY2Y5M2ExZjQxZWQzNDQzYjRlN2U2MGQyYmZiMzFkOTVmN2FhOTEyZDM0ODlkMjdjNzlmZjNlZWI1ZDYxYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjEwYjA5ZmQyYjEzYWQ3MDNkM2JiODFiZjBkYWU5NmRjYTY1YzRkNDE2MmU0ZWZlNDRkOGVhM2FmYTA4MTdhZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTYxN2Y1NDE1YmJiODYzZTM1N2JmNzBiMzgyYWYxZWRiNDJjNTVkOTE5OTcyODQ5MTBmMGMzMDdjZWE1MDUwNSJ9"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L8-L12",
+          "version": "repo-lines-v1:sha256:5c0891badac651e98f43fec30d87c5404f83252d5fa14faec9445b18a2e3155a:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWU5MWU1MWNlNTM4ZWYxMjBlZTIwY2JkZjk0MTU4YmFjZTFjYzExNzkwNmY4NjRmZWQyZDk0ZTM3MTEwY2IyNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzM3ZjhiYjUwODMxOTJlODNjNzZmMGRmZDhjZTI1MDk0MTAzNWU5OGMwMDk1MGYwYjkyZmM0NTk5MGQ1YWNhOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWVjYjE3MzE5OWQxMmFlOGE5OTZkOTk4OWM3NGI4ZTExYzIzOGJlOWQ3NjkwZmFjZDIyNWY2ZjBmMmVmMzQwMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjAyY2ViYWM2MTg1ZDIyZTI4MmUxNWNkZWJkNDg3NTBhMmJkZjYxYmIxNzQ1NTQ1NjM2N2M2MTVlZDdkZTU2YyJ9"
+        },
+        {
+          "resource": "repo://k8s/deployment.yaml#L93-L99",
+          "version": "repo-lines-v1:sha256:c2c02348f8c3446c1f65f51f8490fdf853b0deb72ab1a26715a335b0203f498e:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTA2YmQxNDAxMDkzMjgxMDFkMGU5YzFhOGE5Y2Q1NmY4YmZhOGI3ZjJkNzczZDk5NGZkZmIwYzk0Y2YyYTUwZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2ZhMTU3OTRjZDUyMDU2Yzk1Zjk2NDczMjZiMGUwM2NlZDRlZDVkYTcyNWQ3Zjk1ZDE1ZTU4MGQ2Y2Q1MmNjOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTRmMDE1NGJlMjkzOTQ2M2IzNjhlMjhkOWFjYWVhYTRhZTJhYjBiYmZkNGI4Y2E4MGFmNWYxN2ZjODdjY2UzMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://k8s/pvc.yaml",
+          "version": "repo-file-v1:sha256:853a7fa71db6282b7a5161acbe4e2b98bff1057aa388372e49d80c620d04f17a"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/config.rs#L104-L114",
+          "version": "repo-lines-v1:sha256:9f99794f085332ba5a63c8a37fe10a5a7e410e22da445f46db8fe2b40d5d6771:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxYTZkMTU0OThiM2FmZWMxMGM5MmQ1N2YzZmIyZGZjM2E0ODViZmM2OTc0NjA3MGY5M2I5ZWI2M2E4MjBiMjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFkZGQxNzFlNWJmMTE3NTQwNzFkNGY2ZDE2NGM3NGU2ZTI2YTA4ZjAzMTQyN2E5NTAxOGI5NGVkNzZmZjkxNjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzZGExMTczY2Q0YWEyNWRjY2VhZTY5Y2FjYTA0MjdhZDgzNTVkNDI4MTljNThjZDJiZDNlMWZhOWMyZmE4YjMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L174-L193",
+          "version": "repo-lines-v1:sha256:2ecb571271a10dd7f6377ea42191cd5a6c480f38ad939c49c994394ff5fcf979:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJhYzJiYzc1YjdhMWI4N2QwZjFlMjJjMGMyNDVmYmM5MzZiNmVkYzAyYzI2NjQ4OWMxMzliYWMxNjJhMjIwNzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmOWMyNDE5OTUyOTdhMDkwMzY1ODI3ODBlYWI2Zjk3NWZiMGZkYmIwNTY3NTY5ODNkMzAyZTZmYTliZDE4M2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY3ZDU4MTUzNWJmZGFjMTBmOGIzZWZmNDZjNDg5ZWYyNTFjNzk1NDkzMWFmNjZhZTI4NjEwNzFjNWU4ZWQ1MmUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_af05ca04fb7442b5b4be33c6f2ab3126",
+      "statement": "Startup uses the explicit providers list when nonempty and all stored IDs otherwise; it recreates every member as Available and resets the round-robin cursor, so cooldown and disablement do not survive pod replacement.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L23-L30",
+          "version": "repo-lines-v1:sha256:60dde0c8e328bb0db5a43f5b00766f1f2ba323151f1ab9c39fe7a1983022f5f0:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTZlMjBmYmE5YTMwNWJiNTgxNjgwYTJjNTkxNDJhNDBkMzc1NDFjMDc1ZjVjMjhlOTViZTFkM2JjMjliYjg3OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFmNzU3YTcxNjE3ZDFmYjliYmNhZmZkZTJlMWZiMWM5ZGEwNWEwMWViZDdmYTIyNDc0YzRjMWMzZTYwM2VlZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjZjZDg5OWI2MDUxODBjZGI3ZGU4ZWQyYTEwYTExNzY5MTI5ZTVkMTZjOGQ5MzJiMDhkMThlMmY1ZDAwMzRhNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzU0M2MxOTk1ZTUxZTk5NmJhYzM0N2ZlZWI2OGFhYjM3OGRhYWQ3ODliNzhjMWRiZDkzM2VjZjIwYmYxOTM2YiJ9"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L79-L102",
+          "version": "repo-lines-v1:sha256:d7530d95d361154df52ec86097caae61c2751bd11953ec9e91ea6b756cebd82d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzNDY1OTM2YTNlNDg4NjhlMTA3ODM4Njg0MTJhMGIyOWEwODU0ZDA4MzU3MWNjOWI0YTRjOGU4Yjk3MjY0YTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3YzExOTA1ZWMwNzA3NmYxZDYzNzI0ZjIxOGE5ZWUxY2M4ZjY3M2MwZDY1ZTYyMTQ5ZTcyNTkzYmE0NjU2NDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM5ODFlNzk0ZWZkYzYyOTk4NGU5MjRkYzliOTczNjg0NzBiMjJiZWI0MjBlZTVjOTZhYzA0YjFiY2Y4MDgzMjUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L174-L207",
+          "version": "repo-lines-v1:sha256:7e012b8745c03369838c8c8d3e2647d393aff5f64d8cbb816999f029059470e9:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkNTIzYzhkYzliZDM1ZTg5MjQwOTc5MGRkYjY2NDM4NmZkYmM0Nzg0NmE1MjNjOTQxYzY1NmFhOTgwOGUxYzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmOWMyNDE5OTUyOTdhMDkwMzY1ODI3ODBlYWI2Zjk3NWZiMGZkYmIwNTY3NTY5ODNkMzAyZTZmYTliZDE4M2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0ZTlhZDdkMDRmZmFkNmQwNDUxYzZhZDk1Y2FhNWE1MzdlMTRhZDg5OWYwNGVhMGExMjBiZWY3MzhlOGVlYmEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f48010ecb2e54994812b3ab0283fca11",
+      "statement": "Explicit providers specify startup membership, not a live allowlist: admin enrollment can add an unlisted member that will not rejoin at restart, and deleting an ID still listed in configuration does not stop startup from listing it even without credentials.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L260-L279",
+          "version": "repo-lines-v1:sha256:fa6ed86a2db458566686dd0512a7cc9a67dc9525584b6060dc8d9a03daa6dcad:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0NjJhYWQ2OGVlMjQzMzJiNGIwNTcyYzc0YmJmNDZlMTEyOTJiMGE2ZTcxMzQyMjE2MzgwYjVjMjM5M2ExNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OWJkZWZlZWFjYTYzNDBlMDI5MGRjODZlODg5Yzg5ZDVlMTg5YWE1YmE0NGI1ODViM2I3MDczNGY0YTYyZDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE2NDM3NDExYWE4ZDkzNTI2N2MzZTY3ZjAwOGQyYzU3ZWJjMmRjM2I1ZGRjZTc4NzY4NDViYzVjNDE2NTBhOGQifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L79-L102",
+          "version": "repo-lines-v1:sha256:d7530d95d361154df52ec86097caae61c2751bd11953ec9e91ea6b756cebd82d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzNDY1OTM2YTNlNDg4NjhlMTA3ODM4Njg0MTJhMGIyOWEwODU0ZDA4MzU3MWNjOWI0YTRjOGU4Yjk3MjY0YTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3YzExOTA1ZWMwNzA3NmYxZDYzNzI0ZjIxOGE5ZWUxY2M4ZjY3M2MwZDY1ZTYyMTQ5ZTcyNTkzYmE0NjU2NDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM5ODFlNzk0ZWZkYzYyOTk4NGU5MjRkYzliOTczNjg0NzBiMjJiZWI0MjBlZTVjOTZhYzA0YjFiY2Y4MDgzMjUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L269-L323",
+          "version": "repo-lines-v1:sha256:78c65b067d3b20f056ce35b0afcee239b8026760ad831be0366b32c7ef9be9d7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZmZjE0NjViODEyMzFiMjllYTJkMzRiMjdjZmQ5YWM0OTFjNjIyNTRkOWY1YzIyZjkxZGM1MGEwYzlmN2RmODEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI5YWVmYWJlZGRmYzQ3YTI3YzU5ZjU4ODJiZjE5NDYzZWUwMGQ4MDhmYmFlYTYwNzBkMzcyMDMxOWI0M2Q4YjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU0NjFmNWYxMzZhNmZiYThmZThjMTk1MTAyM2NjMTRkNjA2N2RhZjUwYTEwNDNlNmY4OTc3MTAzZTE2YzU1M2QifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L186-L205",
+          "version": "repo-lines-v1:sha256:6807562fba967e19c44b7c8648b1b26bc2d3129c6f6f5360e2507d0e15a52b87:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmNjUwMjU5NDg4MGRjY2FlZWEzMDMyN2ZmNzFhNWY0NjdkOTg3ODE0MjlkZDIzMDVhOTkxZTg1ZjdmYzI5ODYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2OTcyMTQ1NWUyOTI0MjY5MjU2OTdlZTc5YzExYzdjYmNhMDkzY2Y0MDU4ZWJmZjc2YmNlNDAyZGY4YTJlNTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjMGRlYjY4MTk2MDk5MzlhYzhjODgzNTI4OTMyOWQ1M2ExY2M4OWNmYjc3ZDQ2MGFiMGUyY2I3NmJmNjg4MDQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7d8a9a2cfc734ee494c8457b082c983d",
+      "statement": "Pending enrollment PKCE state is process-local, keyed by OAuth state, subject to a ten-minute age check and consumed before code exchange; a replacement pod cannot complete an old pending enrollment.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L105-L123",
+          "version": "repo-lines-v1:sha256:09ff628d4fe652c761bbe5e5023dced413f538427a245772d33e1d3618171cae:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlMzVmNTgyYTQwYTliN2QyNWFhMjU3MzljMjNhMzhkNjE1OTIwN2M2ODFmODVhZDY3YzBlNzA1ZjdmMzM3YTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA4MzkyNTA0NTY3YzEzZWQ1MTAwYTQ0YjEzZjY0Nzg3YTg4YWEzZWM0MjQ4MTZkZjc1ZWQzZTlmNzRjYzI5ZDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIyZjUyNThjMmViOWQzMmU1YzlkOTk5ZDlhYTQ4MWZhMTA2YTM0MGMyNzdhYTJhNTE3OWE0OGY5ZWE3ZDcyMDQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L186-L238",
+          "version": "repo-lines-v1:sha256:fcd63960d3280bdda86806b1a84638b66c493bfabdcaa8bd7e69bea4de7e0c98:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjNmFhNWZjOWFlYzdhYzg3NTNkMGNmNWMxZjQxMDBiNWIxMzRmZDA4ZTY0ZjJiODY1NjA3ZDc3YmU1ODdjMGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NTgxNjE4NTA2MDZlNzdmYmViNTM1YTI2ZjA1YmNiZDFkOTRhZDdiMjY1ZDhjODZhZjNjOGMwMWY2MTY5M2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxODk4NzQyYTdiYTE4NTg3YTc3NDA0ZDMzODA0OTE2YTRlMTM4YmMxM2E3MzA1ZThkMGUzODU5NDIwOWNjMjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjYTYwNmU4ZWU4NDJjZmE4YTg2YzZhYjVjZGYzYzQxZTFhNTI4MDg2MDQyNWIyZWVlYWI3ZTFhYmJjMGFkMzYifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L28-L60",
+          "version": "repo-lines-v1:sha256:fc574b3fc06da88cdb6564b555f608b6871335f2cdbc96b8dec224d634afd89c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI0ZTUwZWRmNjI3MWRjZDUyOTc3MjFhMDBlMjRlOThmZWExZGNlMjEzZjIxZGFjNjFiNmViM2I1OTgyYTQ3NzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIzZDQ4ZTViMTg0M2Q1YWYxZWM5YmU3MmIzMDBjNDZkM2MyMmFjMTYwMjYwMzE5MTMzYjQ1NzhiNDY4NzRiMjQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d6493c6456c64cc3bf09948178b7f95a",
+      "statement": "A missing credential file is created as empty JSON; with the shipped empty providers list, the resulting pool has no selectable accounts and is unhealthy. Failure to read or parse an existing file fails startup rather than clearing it.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L43-L68",
+          "version": "repo-lines-v1:sha256:a62bf42566a0cbebced5977f27f4e05cb1835451ebce493816783acbf2a2fd2d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjE5NGQzMmNjYmM0NTRkYmFjZjU1MTdlMmJiNzY4MWQ5ZTM5OTFhYzlkNTY3NDYxMTU4MDA2NmZmMGU1MDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZkNTg5MWY2YzEwNjcyZGZmOWRkMGNlYzQzOTgyNzY5Y2M4M2EzODcwNmQ1OWMwZDQxM2I2N2U5ZGY4ZTY3NzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI4ODVjMWVkZWNhODUwNjI0OTMwYjgwNWYxMjdlNjk4ZTc3ODVlYjhlMWE5YWZhN2FhMWZiMjdkZDg5MDY1OTAifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L114-L121",
+          "version": "repo-lines-v1:sha256:342de313421e747b890574c84db924d4ac60084802d6459f1ed95376ce19b2ef:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjZkYjVhOWNiNjU2NmQ5YWFhNWU1Mzk0OWQ1ZWI3NDY2YjFlM2Q3MjgwYzdkMDFlZjQxMzZhZjhlNTY1MDRmOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGU3YTlkYjM3NTBjZWVmODRjNzM4MTlhYzU3NzE0MzllZjE0YjIzODNmOWRlYmFkNzE3NTAyYzQzNGZmNWVjYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzdkNWU3NzZjYzk1MjgzMGJjYzZiZDVjM2NkOGZkODk2NTM2NzY0MDkzZTgyYzNlYjY1YmU4MWMzMGViODU5ZSJ9"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L337-L352",
+          "version": "repo-lines-v1:sha256:6f3938d391c65bc44572ce5051c83f00e119f2ea0e67b4d0d172847fb7590b89:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1NTkwMTMyNWI3MmMzYmI2ODY0ZmQwZDM0YWQ4NzdjZTFmYzEzMjg5YTAxNjYxN2NmMzJlNmQyMmRlMWI4NGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5YjE5ODJlOGRkNzQ4MTE4MTQ2YjM5YTJkMDA2MmY0MDgxZTM0Nzc5Yjg2NzVjMjM0YzRmYjEyNGRjMzkzOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZWRkNjNkNDMwNGEyOTcyMTY2Nzg1MjdkYTdjNDI1MDc1YjBiMTE5NTViNTNmOGNkOWZiZjIwZDA3MDQ2OTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwNzZmZmJlZDQwYjUyOTVmMzA0YTYwMDk0NDRjZjdlZTc1ODZmOWNkNTQ3Mzg1NjI1MDc1NDRmMDkxYzg5MGQifQ"
+        },
+        {
+          "resource": "repo://k8s/config.toml#L16-L21",
+          "version": "repo-lines-v1:sha256:a45d633395172d48d53d2720ec3d61a1cab24e212981b47d19e27d0c766686c6:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzk5NWU3MDE5NzcyYjQyZTQzMDA4YmVlZWE3YmI3NzVkZTBkODhhZjFlNDMwNWQ1ZmQ1ODM3Y2RiMWVlZDA1NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTY3MzNhMmZmZjFmNGU4MzQ0MGI2ZTU4OTYxNmVhYWM1MTY3NzQ5ZjlkYjYyMGVkMTVlYjQ0ZDdiMTNjOTBiZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODBkZmY5NDliNmI1YmQ1MGVhMzM5ZTA0ZWIwNzBlYTkyYWVkMTRjZjI1ZDU5MzhkZWJiNDdlMWI1YWU5MDY0ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODIyYWYzY2E4ZTAwNmNiOWI4NTdkYTBmMWEwZDQ2NzUyYWZmMTU5YzYwNzAxZDExZmY4ZmFkNjk4MWM2MzQyMCJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L174-L205",
+          "version": "repo-lines-v1:sha256:36c465b819c841e5eec4525db0d3b65b7463d34da93281394dd474c53aa23851:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmNjUwMjU5NDg4MGRjY2FlZWEzMDMyN2ZmNzFhNWY0NjdkOTg3ODE0MjlkZDIzMDVhOTkxZTg1ZjdmYzI5ODYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmOWMyNDE5OTUyOTdhMDkwMzY1ODI3ODBlYWI2Zjk3NWZiMGZkYmIwNTY3NTY5ODNkMzAyZTZmYTliZDE4M2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjMGRlYjY4MTk2MDk5MzlhYzhjODgzNTI4OTMyOWQ1M2ExY2M4OWNmYjc3ZDQ2MGFiMGUyY2I3NmJmNjg4MDQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cf454ff5c05a4e7db1ab11ae9f837c2b",
+      "statement": "Each nonempty selection advances the atomic round-robin start once, scans at most one lap, skips disabled, missing-status and still-cooling members, lazily promotes elapsed cooldowns, and disables and skips an eligible member whose credential is missing.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L106-L170",
+          "version": "repo-lines-v1:sha256:c9e1d0fc870fd17dce6cfbbf991d337a38f018ff05ead16ed817622326e5ad92:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0NDkzM2JlYmY3OGIxOGFkNjc4Mjk0MzM1NjdjYzk4MWNlYjdiM2FlOGIyZTRlNjA5NjRlOWYwNDQ4MjJmNTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkM2YyZWNhNjZlYTMxY2ViMTViMDdkN2U0Zjg5NTM3NDkxZjJiNDA1YmQxYzM4YjZlZTUyNDQ3ZGU1MmNiZGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5ODFlNzk0ZWZkYzYyOTk4NGU5MjRkYzliOTczNjg0NzBiMjJiZWI0MjBlZTVjOTZhYzA0YjFiY2Y4MDgzMjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiMmU2ZmUwMTYyZDZhMGQzMjExMjgxOTZhYzVjYjFhYWU3MGJmMWM4NjAxOTFkZDc1OWRhNzU2ZGI2ZjdkMzgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8f3283c4d254488d978df2ac6c780e1d",
+      "statement": "If selection cannot supply a token it returns PoolExhausted with status counts; the provider passes the error up and the proxy responds HTTP 503.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L114-L121",
+          "version": "repo-lines-v1:sha256:342de313421e747b890574c84db924d4ac60084802d6459f1ed95376ce19b2ef:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjZkYjVhOWNiNjU2NmQ5YWFhNWU1Mzk0OWQ1ZWI3NDY2YjFlM2Q3MjgwYzdkMDFlZjQxMzZhZjhlNTY1MDRmOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGU3YTlkYjM3NTBjZWVmODRjNzM4MTlhYzU3NzE0MzllZjE0YjIzODNmOWRlYmFkNzE3NTAyYzQzNGZmNWVjYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzdkNWU3NzZjYzk1MjgzMGJjYzZiZDVjM2NkOGZkODk2NTM2NzY0MDkzZTgyYzNlYjY1YmU4MWMzMGViODU5ZSJ9"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L215-L230",
+          "version": "repo-lines-v1:sha256:d51cbb8de868d5af10a69b60c7eb2136e6020f1e3e62565a5acce6d607779b6b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkYjMzOWMxN2Q0Y2M1NGU3MGM0ZmNmZWNiNjExYmI5ZTdkMzYzZjI1YjE4ZTA5MjNhMWQzMDZjYzk1OTI0ZTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4YjhkNGVlY2FmNGQ2NzA3NWRlZDRiMzZhNjA1ZDhiZTU4OTBjNWVlZjQ3M2MzNGMxOWI1NWQxNmMyM2UyYmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhYjNhMDE1MDJiZWI1MTgyZjlhYjJkNjI0NzVjMWViYWRkNWE0NGEyMmU2ZDJiMjhlZDkzOWZiYzdmNjBmNmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNkMzY2MDIzM2Q1ZWQ2NDBhNWRiZTc0OWQ4YWI0MTQzM2QzMjNlZmE1NWY3ZDgwZTE3YmZmNDU0MzFkNjgzZmYifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L379-L426",
+          "version": "repo-lines-v1:sha256:c80617724252c68baa37280c8ae5f744e3d81521c7f9c33177f65befaeb2623a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlOTY5ZTg4MjRjMDIwMzQ5MzAzNWFiMjRkY2Q1OGZkMDE5YjczNWE5NWFmMjg3ZWQyODJkY2Q5MGI1NjFlZmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3YTkzZGQ3MGM2ZWZiMTVjM2MyNGJkYzFkZTM1NDc2ZjMyZWU1Y2M1ZDMzMjczOGZlZWU3YTk4MDAyMTQxNWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiYzk4ZDZiMGRjNDkyYzUwMTZkZjEwODA1YTNhNTRlYjljMTg0YTVhNjEzN2U3ZjRiZWNmYTBjMjIwNTUwZDAifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L101-L114",
+          "version": "repo-lines-v1:sha256:a024d368bf32d6e6d0957e8e12bd71072f72731ece8eb0bdb58441b0fc91a8c0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcyNGExMTNkNWFhYTU2ZGI4MTIzZjg0MjU0OTllMmNhNDg0YTAwNzc5MTRkNjhiY2IxNGU5ZDhkMzE3ZTU3OWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzNmViMDI1MWE4ZTRiMzU0ZWQ3NTQyMzk3ZWNmMzY3OGJkM2FkNDFlMzU5MWYwNTkwOWVlMjMzYWNhM2I5NmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjNDM4OGE1MmVhZDdmN2MzNWNjMzhkNGQxMWFjMTM1ZjUyZDdlNzgxYjk2OWViYjBkOTU4ZDcyZjg5NzJjZjIifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L307-L325",
+          "version": "repo-lines-v1:sha256:2c6af1ba8495fb64e5baef62eb6cd3add2b3a3d216354f6c8eee9ce600503137:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0ZWNhNGQwMTVhZDY1ZGE2ZjBmMWRlNDM4OTVmNGU4ZTU0YTAyZmU4NzliYzFjODVlMmJkOGM1MmNjNjhhOGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE0MTEwOWVmYmE0MTA0YmEwY2MwYzBmYTRjNWE0NGMzZWM1NWU3MTBkYjI0OWFiODQ5MjdjNjkyODhmNDQ5MDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNlOTc2MmNiZTA0MGVlMjQ0NjU3YjI3Y2NhZTcwNGIwODQ4MGIwZTFjYTFmMTU1MjEyNWQ3ZjI1MGU3MzdlY2QifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3e1d9229653e4729949fc677174bb911",
+      "statement": "Health summarizes recorded status, reporting healthy for a nonempty all-available pool, degraded for a partly available pool, and unhealthy for no available members. An elapsed cooldown can still appear as cooling_down with zero seconds until selection visits it; exhaustion counts treat elapsed cooldowns as available without promoting them. Health does not validate credentials.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L126-L143",
+          "version": "repo-lines-v1:sha256:f2473f9624f3fa22c8f81b6247289ddb7a0ce4fe0e6d3a733ba78a9ba6380e7e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjMTg4NDJmMDQ4YTllMGY0ZTViODdjNWM2NDhiZWZjNTA3ZjViNzJhNjZjZDhmMjc2N2FlMmQ3MmM1MmI5NGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkYjMzOWMxN2Q0Y2M1NGU3MGM0ZmNmZWNiNjExYmI5ZTdkMzYzZjI1YjE4ZTA5MjNhMWQzMDZjYzk1OTI0ZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFmNDAzY2FjMWQ5NzlkMGI3N2Y4ZjRlYzg1MTRjNWU2YjEzNDkxODkwMzdiMTdmOTAwNmY0ODU5NjI2YjAxYTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY1MWRiZWM4NWVjMDNjY2M3ZGIwNTIxNzBkMmQ1NjczZjg5NjZjZWQ4NWY4YzNjZDZjNzQ4YjdlY2FhNTZlMjkifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L281-L354",
+          "version": "repo-lines-v1:sha256:46d0ac03e6c57f35d952f2bb530e38f0169f6602c293a3d3d7e61b43e4014581:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyMTZiMmU2N2M4NDVmNTI0MjYzMWRhZjU3ODIxZDAwNjJkNTM4ZTliYjMzNTEzNDlhNDA2ZjQ2MTQ5NDJhMzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkMjBhOTE4YjYyZWJhMzIxODExMDJkNDUyOGZkZjkyYmM4NjM3MzM2ZmM0NjA3ZDk1OTk1MmJkM2RhOTEyMzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4YTViMWYyMWQ0ODUyZDcyODI0YWI2MjJjOGNkYjcxYTM4NDIxM2MwMDQ1NDBmZjEyMjA3OTU1NjQyZjViNzIifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L379-L402",
+          "version": "repo-lines-v1:sha256:81d76bd13b69fbddf05240dc1057ca63b21a70d9113dbef955a67372feca81e4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlOTY5ZTg4MjRjMDIwMzQ5MzAzNWFiMjRkY2Q1OGZkMDE5YjczNWE5NWFmMjg3ZWQyODJkY2Q5MGI1NjFlZmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3YTkzZGQ3MGM2ZWZiMTVjM2MyNGJkYzFkZTM1NDc2ZjMyZWU1Y2M1ZDMzMjczOGZlZWU3YTk4MDAyMTQxNWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1MmI3MmU4MjgyNmI4YzhkOTI5ZjBhZDdkYWUyZmZiNGFjYTAyYmRiMjM2MGJiMmY3NTYxOTM0NjQwNzZhMGQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9ceca2e4af654e8f90813d3f91956584",
+      "statement": "The public /health handler returns HTTP 200 even for unhealthy pool status in the body; /admin/pool returns the same pool summary.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L325-L335",
+          "version": "repo-lines-v1:sha256:b2e7d167bd2b8bd4739b15808b3bff98092d0c3b54e6594748d2c9bb99caa974:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0YjExMmFjNGZiM2MxYWRhMzZjZWJiNTIyNTcwNjdjNzYzNTE2OTI4NGFlODliOTY3Y2VlNmQ5Y2EyMTA3NWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5NmY4Y2IwODNmYTgwMGE0ZGNkMjk2OTcyMmQ3YjkyNjg2YWRkOWViZTM2NTU0OTJmYTY3MmIxYTdjZWQyNDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQxMzYwZTc4OTM3Mjc0OTA3NjlhYzM4ZTYxMjRhNzZhMGIyOGZkZGJiZjFlYTM1ZDJiOTk4MDYzMjNiMWZjODUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L326-L352",
+          "version": "repo-lines-v1:sha256:da355e689e450eabfeb46223ceff6b32e3db178c2189c73d861167a294ad5e06:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBmNDNhMjI3NGM3YTkzNzAwYWY2ZjBkZGIxMDZjZTExMTJkMmIwYWQyYTYzZDA4NTliNGZkYmZkM2I4YWI2NGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEwZWYyN2RmNTEzZmIzNGRmZTVlMWNmM2JiMWE1NThjM2QxOWQ3ZDYyYjRhYjIyNWE4YjdhYTA1N2RhYjk5MGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4NjY1NmE5MTc0ZTBlZDZjNWIzZTUzYzFkOTMwYjAwZmRmNTc2NmQxZDNkMThlM2MxYWQ4MjIzZjBjYTY3MGMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L177-L190",
+          "version": "repo-lines-v1:sha256:c9a8b6dfedb43c7b2aa26ff80b76ef88c67e69e9253fc200654aa80f4c76caa3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1NTEzOTY2NjU4NzcyZDRiNjBjZDFhZTA5M2U3ZWFmYzY5NmU2YzY5MTExOTA0ZGM0MzNjMTg5ZjlmN2RkM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzNDZkZTA3ZTUyNTg2MGJjNmUzZDU5ZjZiYzBiNzFjOTFjNTZmY2I2MzNlZjdmZmE3NTgzMzYwZjRhY2VkNDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ5ZDYwMTM4NDk4NGFlMzcxMGM4ZjIyNjJkZjkwOWI2MWM3ZDIwMDE5YzM3ODhjMmZiMmI2ZGFmZmE2OGExZGYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c2618f6d913d4edd91c03d05c775f641",
+      "statement": "Only an inference 429 containing a known case-insensitive quota phrase is classified as QuotaExceeded; it sets a local cooldown using cooldown_secs (7200 as shipped), not an upstream reset time, and can trigger a new account selection and resend. A generic inference 429 is returned without a cooldown or retry.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L232-L258",
+          "version": "repo-lines-v1:sha256:7de46ae71b5baf22b8f540fcd401ecc1a5690f9c6fcb118519f9751cdf10b664:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIwMjA4MGU1MzJjMWNhYTU0YTMwNWJhZWU1NGExZDA0MjZlNTdkZmFmMjJhODUwZjE0YzRlMjUwODViMzBlYzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjZTY1NzExMDUwYzY1MzM2NTA5MThiMWE0ZTE2MGNlY2E3M2Y2Yjg0NTRhMTY0MDVjMTEwZDMwYWQzMWNmMTgifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/quota.rs#L10-L48",
+          "version": "repo-lines-v1:sha256:b28bf6aed30ed5bd2a5a424bd22fe375e1877c4a3c04a2b16e7718a2bbb56cab:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxMWU4YjYyZTMzYmM0ODQxYzg2YTUyYmJmZDQyNGFlNDFlMGJiZWE4MjQyMmQxMGUwZDIwYjlmMzA1ZmI0MGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQzZjg0MDZlM2M0YWVkMzVjZDIxNjU5NDcyNGI0ZmY3NjgxZmVhYTI4MjI2YzQyOGFiYThiNDNiNDkwMjIxNWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiYzk4ZDZiMGRjNDkyYzUwMTZkZjEwODA1YTNhNTRlYjljMTg0YTVhNjEzN2U3ZjRiZWNmYTBjMjIwNTUwZDAifQ"
+        },
+        {
+          "resource": "repo://k8s/config.toml#L16-L21",
+          "version": "repo-lines-v1:sha256:a45d633395172d48d53d2720ec3d61a1cab24e212981b47d19e27d0c766686c6:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzk5NWU3MDE5NzcyYjQyZTQzMDA4YmVlZWE3YmI3NzVkZTBkODhhZjFlNDMwNWQ1ZmQ1ODM3Y2RiMWVlZDA1NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTY3MzNhMmZmZjFmNGU4MzQ0MGI2ZTU4OTYxNmVhYWM1MTY3NzQ5ZjlkYjYyMGVkMTVlYjQ0ZDdiMTNjOTBiZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODBkZmY5NDliNmI1YmQ1MGVhMzM5ZTA0ZWIwNzBlYTkyYWVkMTRjZjI1ZDU5MzhkZWJiNDdlMWI1YWU5MDY0ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODIyYWYzY2E4ZTAwNmNiOWI4NTdkYTBmMWEwZDQ2NzUyYWZmMTU5YzYwNzAxZDExZmY4ZmFkNjk4MWM2MzQyMCJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L369-L440",
+          "version": "repo-lines-v1:sha256:502b2c5d45e756f626490cf3e85af48a11f02301ac97b0ac0d35e136ed0d2bbe:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyMDc5MjY0NzZjMTBiMDRlZTEwYjBmMzJjNDlkMzE2YjQ3NmY5NDgzMWVlOTdlYjBkYjM0ZTQ1M2FhZjRjMjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhhYjIwMjFlYmNlYWViY2JjMGM0N2FjYzUwNjhjMjYzNmY3YmYyZGZiZjA1YTNmNWQ0N2FjNzE0Y2Q1YzRkMjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVmY2JhMDgwMGI4OGNmOWI1YWQxYTY5MDNjMzg0NWRjMWI5MGRlYjU1YzkyODMyYThhZDlmMGU5OTU5Yjc5NmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhiNmFlZjZjZmEyZDgwNzg2MzIzNTg4M2YwZTRhMTdiMzUyZmFjNTNjOWFkM2U5ZjU0MmYxOTEyYjQ1ZmVkM2MifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L526-L548",
+          "version": "repo-lines-v1:sha256:872ba6634a03632b891eb499093ef42bad8d30711d0cc18458b7104632adab8c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2Mjg2NTM4YzEzYWEzYTkwN2QyYzlkOWY1ZmIxYmEyYmQ0NTI1ZjI5YmFkZjU0N2RkZDk0NDg5MDRkM2U1MGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhZDEyMzVhNTA1YzAxMGNmMWE3ZWYxYzdjNzU4M2E1OWMxNWMxMWU5ZTFhNmE3NmVhMjYxZTE3MTljNWEwNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0ZjdmMjAyNTczMDEzMTFkNTljMWE1ODRlZTk4MGE4ZWM5MDMxOTBjNDEwOTY2NWNjMzA5YjVjZWM3NTE2ZmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFkMGJhNWFlZWMyYjk5N2UxZDc5N2M2NjAxNTMyMWQ2YzIzMGU2YzYxYTY3MWU4ODllMDkxZGI5YTdjMzllMTAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4c20cdb73e90478e8fd0b2aa5d4e2779",
+      "statement": "Inference 401/403 is permanent: the proxy reports it to disable the account and immediately returns the upstream error without failing over for that request.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L250-L258",
+          "version": "repo-lines-v1:sha256:b9b0043ec84774d34989fd818575a4792f2bec2c7b737107f4d3cd26a3dc5d06:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjFiNzI3ZmFlNTFlMmU0YTY4ODM0N2VjNGJkNjQxZjA3YjQ3MjI5ZDc5YTM1MWU3ODVjNmU0NjA0Yjg1Y2QwOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg5M2Y0MGUzNzgxZWI4OTZjODJkMDQ2YTA4MDY3YTExZTM1Y2RmMmYxZGZhZjI2ZmVhOTBiOGRiNjY3NjQxMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDBmM2E1N2YyM2E3NWE4ZjU5ZWMzYjI0ODA2ZTg3YjRhNzFmZGZmZGYzOWFjOWRmZDdjNjE0ZjUzZThlODFkOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGNlNjU3MTEwNTBjNjUzMzY1MDkxOGIxYTRlMTYwY2VjYTczZjZiODQ1NGExNjQwNWMxMTBkMzBhZDMxY2YxOCJ9"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/quota.rs#L38-L48",
+          "version": "repo-lines-v1:sha256:bb5c21b4c330e2d575d5d16e354a6fe0e96321c35b614a211bce507ab9d861c5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiODU3MjQ3YmEwNjE2ZWNiYzMyMTU0NTU5ZDQ5MmEyMTY0NWZhMjVkNjUxMjg5ZWI1YmExOWFhNTJmZWU4MzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyYzJiZDAyZWYwYjQ3MTE4NzdmZjJmMGQyNmMxNzM2NDc4M2U1ZDRjN2E1NzI0NDhhMDdhM2M3Yzk0ZjU3ZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiYzk4ZDZiMGRjNDkyYzUwMTZkZjEwODA1YTNhNTRlYjljMTg0YTVhNjEzN2U3ZjRiZWNmYTBjMjIwNTUwZDAifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/provider_impl.rs#L161-L175",
+          "version": "repo-lines-v1:sha256:76267094803245d221b7d26a275cee2780b9cf3e17d886c8a82bc529787d463e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmYjUzNTNhYjQ2NzRjMzE2ZGQ0MmZhNGFiZmVhZmZiZGM4N2M5MWRhMDQzN2Q3N2Y4MmQ4ZDI3ZTVmYTRjMTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFhNDI2OTBiYWJlODFjNWJmMWE3NGIwNDYxZWQwNjEzMGRlMzJlMzlkMzZmNTI0MjA2YjU2ZWYzNTQ5MjViN2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU4MjFlZmIyNDFjNGE5OTdiMjVhNmVhMzViNDEyMGFmOWE1YjJhMjkyMWZkYjEyNzM1NmY3MjA2YmJiNTlkYzUifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L398-L418",
+          "version": "repo-lines-v1:sha256:9e50645b5cdb6d305119d320e35547ddcd00b3abe0754b2d1dcbb5bd9921225c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhM2Q3NzgxNTFiMDUxYWQ5ZWNmNmQ1MWYxNDk3NzNlNzg3MGUxNzZhY2EyZjQ2OWQ0NWY0ZDI3YmM3NzBiN2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhhYjIwMjFlYmNlYWViY2JjMGM0N2FjYzUwNjhjMjYzNmY3YmYyZGZiZjA1YTNmNWQ0N2FjNzE0Y2Q1YzRkMjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjYTZhZDNjNzg0YjIyODZjYzg5MDdlYjY0NDljNDY2YzM4MmVmZDgwNGM4NjZmMDg2NzlmYzJkNThiMTJhY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2OGRkNzA2ZTNhNTA3ZGY2MGUwOWI2NjI3MWU4NzUwZGQzYzQ0MmU2MjU1N2YxMzI5ZGQwNWIwMTQ3NmE0YzQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6fcf8aa7560a48d185b1a5546da39a40",
+      "statement": "The quota-failover inference-attempt budget is startup membership size with a minimum of one and is not resized by live membership changes. A quota response on the last allowed attempt is returned, but failure to select on a further allowed attempt gives HTTP 503.",
+      "evidence": [
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L281-L323",
+          "version": "repo-lines-v1:sha256:d059bab2bcf28b84eebcf33ae4bd49863adebd59acbc534f9b9789cd950879f1:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyZTJlMzExNGEzOThjNjNmZGM5YTIxNThiNTIxYzY0NDcwNmU3OWRhOGQ5YzIyMGY1YmE3NmZlMmYzOTRiZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU0NjFmNWYxMzZhNmZiYThmZThjMTk1MTAyM2NjMTRkNjA2N2RhZjUwYTEwNDNlNmY4OTc3MTAzZTE2YzU1M2QifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L186-L195",
+          "version": "repo-lines-v1:sha256:fadccb98d1f76446497aff122ed891d463cd34091bb7b2e1705a03327641c605:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2OTcyMTQ1NWUyOTI0MjY5MjU2OTdlZTc5YzExYzdjYmNhMDkzY2Y0MDU4ZWJmZjc2YmNlNDAyZGY4YTJlNTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5ZmZmZmE1ZWQ0Y2IyMDdiYTQyNGQzNzg0MjJlYmE3MTk4ZmJiY2RmMzljZWQwNzcyYjk2MmY3OTIzNjk0ZjMifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L224-L240",
+          "version": "repo-lines-v1:sha256:75886fde5221543ce01facc6a676b14fe94ed53267923d03ee73dda7bf695391:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmOTMyNzQyYmM1Yjc1ZTJhNDAzNjg2NDUwZmEwMTJjYTJlOWQ2ODg0MjY1ZDZlZDk2NGU0Zjg4ZDc4ZDE3NGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhZmIxYTdlNTFlNTQyMTdhN2M1MThiN2IwYjk2NDRjMjc4YzNiMjVkOGJmNzAyY2ZlMjc4MzAxOGI1NGUzNTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1NzMyNmUwMjYxOGZjMDk5NWU3YjIyNzdiYTdkOTQ1YzMzODI1YTk3NDBkNWZiOTEyN2U3MTE2MzRjYTBjOTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEzN2U3NGE3NDZmM2U0ZmE5OGQ3Y2I5OGRiMDdkMzBiZmY2NWNlZjY3NmYxN2FiMWVhNDkzYWM0ODQ5MDY4MTQifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L293-L325",
+          "version": "repo-lines-v1:sha256:ed6a9b369cbea31f0e1b1a72088fa402a9268edf2a1701025b547abd4b1a9174:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzMDNmM2YyZTQ2ZDA4YzZiN2E1MjVmYmUzMDIxNDlmZjVjN2YwNzk3MzFkMDg1ZWQ0YzdiYTBhOWQ2ZTc4YzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0ZWNhNGQwMTVhZDY1ZGE2ZjBmMWRlNDM4OTVmNGU4ZTU0YTAyZmU4NzliYzFjODVlMmJkOGM1MmNjNjhhOGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJhOTlmODU1Y2VhZDk3YzMyNTFmY2Y3NmRlOTQzOTIzZjZiNjgxZDg5OGExNmIzZTU4MDNlMzJhMTBiN2UxODciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNlOTc2MmNiZTA0MGVlMjQ0NjU3YjI3Y2NhZTcwNGIwODQ4MGIwZTFjYTFmMTU1MjEyNWQ3ZjI1MGU3MzdlY2QifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/proxy.rs#L526-L548",
+          "version": "repo-lines-v1:sha256:872ba6634a03632b891eb499093ef42bad8d30711d0cc18458b7104632adab8c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2Mjg2NTM4YzEzYWEzYTkwN2QyYzlkOWY1ZmIxYmEyYmQ0NTI1ZjI5YmFkZjU0N2RkZDk0NDg5MDRkM2U1MGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhZDEyMzVhNTA1YzAxMGNmMWE3ZWYxYzdjNzU4M2E1OWMxNWMxMWU5ZTFhNmE3NmVhMjYxZTE3MTljNWEwNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0ZjdmMjAyNTczMDEzMTFkNTljMWE1ODRlZTk4MGE4ZWM5MDMxOTBjNDEwOTY2NWNjMzA5YjVjZWM3NTE2ZmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFkMGJhNWFlZWMyYjk5N2UxZDc5N2M2NjAxNTMyMWQ2YzIzMGU2YzYxYTY3MWU4ODllMDkxZGI5YTdjMzllMTAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8705b17b0a994e22ba9fcd89578609e3",
+      "statement": "Inline and background refresh both submit a refresh_token grant to the OAuth token endpoint, not the inference upstream. Inference quota classification is not used for refresh responses.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/constants.rs#L10-L16",
+          "version": "repo-lines-v1:sha256:4bf57ea91f5013da22722d0bfc54e85b77b1f7889dffb3a7b83e29aecfe8459d:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWIzN2M0YzRjODJmYmFlMDljMTZlYWU5NjViMGI2MWMzMWMxMDNlZTkwNGY3NzYzYzRlNmRkM2Y3OTg1YTA5YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjljNTViNGI5ZDc3NGNjOTE5ZDBmMWQ0M2Q2ZTM1ZjgwODU0NTRiM2NjMzIzZjI2OTM0NmMwN2FjZWJiYTNlYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjhkOTg1NTEwOGFlZDJhM2NlYWNkODRmYzY1YjAxYTIzZmM4NWUyMWU4NjI1M2VjYmQ1YzMzMWFlZWE4MzQ0NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2QzY2E2MDAxNTExZmZlMzA2MzlkMzQ4ZjFmZjliM2ZiNWQ2ODI1MzdjMjI4ZmVjMmNiYmZmNmYzNzgzZjI2YSJ9"
+        },
+        {
+          "resource": "repo://crates/anthropic-auth/src/token.rs#L65-L123",
+          "version": "repo-lines-v1:sha256:42ee4a839ffefe289709c84ccb53b8d9b6f4320af0f7cd4a30af555bda6df7ac:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyMmIxN2ZjZGNmMGZkNTE4NjZjYTU2NWZlYWEwY2U4MGFhYzE2ZDViN2E0YjhhNjA5YjRlMGVjNGNhMTYwZDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE3MGY0Y2U3ODRmMmIyMWI1MTc1MDYxYTBmZjc5YzRhNzNiZjQ4OGUxYzBkNmVjY2Y1NGEzMDU5MTE0ZTQ5YjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUzYzMyMmRhYmU4ZTRkMThhYTNkNGQ3N2JiMWQxOTMxMGJjZTY1ZDVmMjEwOGJhNTdiMDdjNjg3ZDZiNjVhMzIifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L172-L184",
+          "version": "repo-lines-v1:sha256:a22a4565730e81096f44fbeb13e4c2a868bf098e914602433bba8a4a590eea13:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2NWQ4NjM5MjZmZGEwMGRiYWNmZGNjZmI5YzhlZjkwMjJkMjEwOGRhMGQ5OGYxNmRiNGJmNDg1YzcwYWM3ZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczOGVhM2Y2NmRkNzY1YTdjNDhhNzRjYjFiNjJiMDZkMWEyNTEzMzBjNTlmZTQ0YTFmMGFhNjBjOGNiNjA1YTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjExOTMyNDNkYzU2MGIzMjViOWM4ZDkyOGZmZjU0MmJmNWQ3M2JkNWUzYjk1NjI3NmE2YTkzNGFiYzIxMmQ4MWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFiYmU2NDMzZTJkNTJjYTk0ZjMxMTc4NmU3M2EwOGJjZGUxZWZjZjFjOWFkZjE0NTRjZGJmMzNmMWUzOTVjODQifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/refresh.rs#L53-L67",
+          "version": "repo-lines-v1:sha256:890c5e80e4960e11594ba2d233a80ac6cc83c0ce6edb0452ce1e056f36b00c51:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjMTBmYWZjYzVmM2VmYmI4MDg3MGY2N2QzMjBjYzdiODdmZjc2Y2U3ZmQxZGZiMDEzNWNiMDEzMzg0MmE5ZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzlmOGE4ZjNjZTNlYzdiMTk3ZDQwODk1ZjkwMDc5MjQ5NmJiOWU4MzAyNzc0YjdmMWRhOTNkNGY5YWNhN2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkZWI2M2VmYjEyMjNkYzYyZGFkMzc0YTE2YjYyYTliZGNmOTQ1YmY0YTA0ZjFhODkyNTk2ZmY2ODFlOWYxNjMifQ"
+        },
+        {
+          "resource": "repo://k8s/config.toml#L1-L5",
+          "version": "repo-lines-v1:sha256:93e0e778d5d35bd2da2720082d0a3aaa37c4ebd4ddba17b689d4e52084dd9050:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjUzNDFmZGYxMzBmNTFlY2EzMDljY2FjNzE4M2M5ODAyODFiOGQwODMyOGI4YTJhZGE2ZmIwZWU0NzNhYTVlNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGU2MWVhYzgyMmI1MzljNGU1ZmU4YmRmMTYxNDNjMTM2OGEyOThhNWM2NmM5OWQzNWQ5MWM4ODIwM2UxZmM0ZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOWE1YWE5ZjJmZTQxNTJhNGMyNDczMDBlOTM0YTFjZWU3OWI3M2RkMzNiMjQ0NzI3YmM2YjljNjg1ZWE5MzdlMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_9e270ee933b14066ad502ff4775b45a1",
+      "statement": "Request-time selection waits for refresh when a selectable candidate is expired or within a hard-coded 60 seconds of expiry; it returns the new token on success or skips the candidate on failure without falling back to the old access token.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L146-L224",
+          "version": "repo-lines-v1:sha256:a9f539fe9c9aa51db6e2c56d1df953994cc7255daed13395346adbb8f33b86a7:eyJzZWxlY3RlZExpbmVDb3VudCI6NzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJhYzJiYzc1YjdhMWI4N2QwZjFlMjJjMGMyNDVmYmM5MzZiNmVkYzAyYzI2NjQ4OWMxMzliYWMxNjJhMjIwNzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNhOTIzNGI5MjJjMzY1OWE5NjRmYmEwZjllNTFiYjM4MzM4NGY2YzM5Yzk5MWFlMWE4NjQ5MGUwMGU0NGQ2NWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE3ODA2NjYyMjFkOGI4ZDRiOGJlNWYyYzVlMGJkNWU3OWQ1ZDNkNzdiOTE5OTE4YzZmZmEwMTkwODM1M2JhMTQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_94968ffc369543049d7af804336e36d6",
+      "statement": "The background task skips its immediate first tick and scans a snapshot of current pool membership, including disabled and cooling members but not credential-only IDs; it skips missing credentials and those beyond the refresh threshold. The shipped check interval is 300 seconds and threshold is 900 seconds.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L355-L368",
+          "version": "repo-lines-v1:sha256:159486c47b4997ccd57581937e43cf9f3b92bf150e8ff25c1e3851f532fcf0bf:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzMjk0ZDNlODIxOGYxOGMwMzJmZDdhZWNiNzQ4ODI4MjgyZDhjOTBlOTdmYzhlZDg4YzdhZjY2MzM2NzkzMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViOWEwOGJjMjlmNmViZWJlOWE1ZjAxOTAzZDk4NDVkYmNiNTg0MmE0NTVmMDdkNWY0MDAyZGFjMzJhNWM2MDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2MDc4YWYwN2Q1YTM1MmI3YWEzNDQzNjhiZDliZTg1M2Q4ODExNjg0YjYwODAyNDAzNGU1NWZjZTIzZDhlMjMifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/refresh.rs#L19-L65",
+          "version": "repo-lines-v1:sha256:4ca592d503ca7a26e71779ab415d586c803e33fda7acf8dd3525a8571c4b84c4:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlYjA4YmYwNWJkMjk0Y2YyYTk3YjMzY2M5NWQ1MTAzZjM1NzMxYjQ3Yzk2MDJjYzU1OWUyZmE4ZjI5YjIxZDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE2NDE2YWVjMzFlYTZiYTA2NzgwNTNhNjEwODU3OGRiMWVmNmJjOWU0MjkxMjRiMzdkMmZmMGQxNjY3YjliNTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyZjMwNGU3MDQyMzhlZTVjZjRiOGQ2OTI3YTI0YTk1MDBlZTNmZDFmODY1OTgzZTNlZDA0OWRjYzg4YmY5YTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImViZGY0MjlkNmIxMjM1ZWQyYmNmNTRmNTM5ZmE3NTdiYjM3MDEyZDYzMWU0ZDNmNzc3ZGM3MGU3NGYwMjM1NDYifQ"
+        },
+        {
+          "resource": "repo://k8s/config.toml#L16-L21",
+          "version": "repo-lines-v1:sha256:a45d633395172d48d53d2720ec3d61a1cab24e212981b47d19e27d0c766686c6:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzk5NWU3MDE5NzcyYjQyZTQzMDA4YmVlZWE3YmI3NzVkZTBkODhhZjFlNDMwNWQ1ZmQ1ODM3Y2RiMWVlZDA1NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTY3MzNhMmZmZjFmNGU4MzQ0MGI2ZTU4OTYxNmVhYWM1MTY3NzQ5ZjlkYjYyMGVkMTVlYjQ0ZDdiMTNjOTBiZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODBkZmY5NDliNmI1YmQ1MGVhMzM5ZTA0ZWIwNzBlYTkyYWVkMTRjZjI1ZDU5MzhkZWJiNDdlMWI1YWU5MDY0ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODIyYWYzY2E4ZTAwNmNiOWI4NTdkYTBmMWEwZDQ2NzUyYWZmMTU5YzYwNzAxZDExZmY4ZmFkNjk4MWM2MzQyMCJ9"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L200-L212",
+          "version": "repo-lines-v1:sha256:1ece65a10c07945c41dfd8f7656b741f029432d0983ad099634686d0074f7cfc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzYjA1OTc4OTYyMWM0YjJhYTk2NTk3ZGJkNTQ0MWY1MjEwNmU0OWY1YmZiN2FiZjVlNzdjODlhNDQ0M2VjMDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlYzY2MjYzMzJiMTA5Mjk3NTc2Y2RhOGM3YzkxYmM5Y2M1YjE5NzIzODYzNGNhMjBjMjMzNTQzODZiMGI3MTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAzNDhlZWY3YTcxNzMzNzU2MTMxMjZhMTU0M2E1ODg0NGU5YjI2Y2M5OGM2NjlkNGI1YTRhMjA4ZmY0NDE5ZGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5OGYxN2U2ZmRlNzhiZGQ3NTdiY2VmYjAxMmJmNjk2ZWZkMWM0YWIyZGM1MGVkM2VlYjFlNjExZGM1MTk5ZWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c9d34fda4bfa4acb9b1b205e8b37bfce",
+      "statement": "For refresh, HTTP 401/403 or a top-level JSON error of invalid_grant on a non-success response is permanent and disables the account in both paths; other refresh failures leave status unchanged, including transport errors, ordinary 429/5xx, and malformed success responses. Inline failures advance the scan and background failures can be retried on later cycles.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/token.rs#L65-L123",
+          "version": "repo-lines-v1:sha256:42ee4a839ffefe289709c84ccb53b8d9b6f4320af0f7cd4a30af555bda6df7ac:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyMmIxN2ZjZGNmMGZkNTE4NjZjYTU2NWZlYWEwY2U4MGFhYzE2ZDViN2E0YjhhNjA5YjRlMGVjNGNhMTYwZDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE3MGY0Y2U3ODRmMmIyMWI1MTc1MDYxYTBmZjc5YzRhNzNiZjQ4OGUxYzBkNmVjY2Y1NGEzMDU5MTE0ZTQ5YjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUzYzMyMmRhYmU4ZTRkMThhYTNkNGQ3N2JiMWQxOTMxMGJjZTY1ZDVmMjEwOGJhNTdiMDdjNjg3ZDZiNjVhMzIifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L200-L218",
+          "version": "repo-lines-v1:sha256:04c01297933ee95b14ef61808d798dbd8a20461a4c396f97d71c9ba475929aa2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkYjMzOWMxN2Q0Y2M1NGU3MGM0ZmNmZWNiNjExYmI5ZTdkMzYzZjI1YjE4ZTA5MjNhMWQzMDZjYzk1OTI0ZTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdmZjZjNDg1N2ZjOWYzNmQ2MzEwM2U3MGNjNzhkZDA0YjViZTUzMWZkZTY2ZGZiZDNkYTM3MmQ4YmM3NDk5NTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNlNjhjMjIwODk4NTM5NDVhNTAyOWQ0Y2YxNDU1ZmVlNTUzODE1ZjkyN2NmNzhmNTA3YjkwMjRhMGNkOTYyZWIifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L67-L76",
+          "version": "repo-lines-v1:sha256:e7825c1ae15ecced173b2e2cdeb075703c41ca9857a5ba5861b0325ae544c44f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzNDQ1MDQ1MmQyMmY3Mzc3ODVkYTc4OGZiZmIwZTQwYTk5MzM3ODk4ODAwY2M0YmE3Yjg5MDQwYjQ1NDY2MDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE1MzE3OGRkYTM0MDYzNTAyYjk5ZTdhZGYwNzA5NDU4N2VhNDAwNzQyYTFiNzlkN2Y2MWQxZTUzNWEyMDZiYjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJhNjM2Zjg3MjI1MDE0MjdlOWJjMzdjM2IxN2JlZjEzODYwNTFlMDE3Mzg2YmQ2NmYwMmEyYmIwZTlhM2JjODAifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/refresh.rs#L80-L96",
+          "version": "repo-lines-v1:sha256:66739c02f7682a80aabc12643a7f9550bb4f3c5ef16aaaa5b4d67ae6ed58d48a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ2NTY3ZjFkYTQwYWYzOWE1ZjMxODdmZDlkYzUwYzM1YTg0YjBjMDRkYzM2NjBlYzI3Zjc2ZDQyMDYxM2UzMTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MjJjNDJjZDE5YzZkMDNkODA4YzQ1MjcyMDU1MjgyNWI3ZWExYzViNDkxYjIxODUxMWNhYzc0MTVjZjlkOWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlYmEzNjZhMzcxN2I5MDc3ZWQwZTIwZDhjYTA5NmRmOGM5OTM4MWFiYjExOTg1MjAyOTQ0MjI5OGJjOTg1OGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI0YTM2NWE5MGVjMTFlOTA0MzI3NTJjZjkzNzZlYzVlZDM2YjgwYmE1ZThlNjg1NGZjZjk4OTcwZDMwNDQ0NjkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d7f3ed6af6ad4e2b8dab15fe0041223c",
+      "statement": "Both refresh paths update access, returned refresh token and expiry together; successful background refresh does not reactivate a disabled member or cancel a cooldown.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L114-L134",
+          "version": "repo-lines-v1:sha256:9b84059cd821c1637badda9f2b0fb6dff7dd53769e2abd043673c3ad3f1bf85a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxODdiNDYxMDcyMTVlMGIxNzk1MGUzZjE2NzZlMDYzZmFjMGNjOTFlM2UwMDdiNjNlNjE2Y2Y2ZDIzZmU2YjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjMDkwNjM0NDdlNWIwODczNTczOTZhYjcwYTRhMzQyYTQ3YmNiOWUyZmMzODBkN2JlYzMwY2M1YmQ4YjkwMmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVjOGZmNTdjMTFjNTczOWYzZmZmNWQ4OGUyNjA0YjZmMjM5YWQ5MjMzNzI4ZTQ0NDU2ZTRjOWQwZmM0MWZjNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg1YWViMmJkZjcyNWVmZDdhODViOGJiY2UwYmRjMjdlOTU2YjFkNmU3YzZlYjk2YzY5NjA5ZGVmYmE4MzBlYzkifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L178-L200",
+          "version": "repo-lines-v1:sha256:3856f32c2037e2c4377e79e922c38641c92195d1cad0cbb7cd4fb446d0040bfe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhMDY5ZWE4ODAzMWMyYmY4NWRjOGIyMTg2MTBkYjZmYjhhNTA3YzljZGIzNDI1MDJkMjU3YTg1ZGFkYjU2MmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkYjMzOWMxN2Q0Y2M1NGU3MGM0ZmNmZWNiNjExYmI5ZTdkMzYzZjI1YjE4ZTA5MjNhMWQzMDZjYzk1OTI0ZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc5MTFiY2QyZTNjODVmMTQ5MThiNjY5MGU4NDMxZGY4M2I0ZTJhNmIxMDgxZjdiYTcxNGU0NTBmYzgyMDc3YzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY2ZTg0MzViNTFhNmYzOTYzMjA2OWQ2OWQ3NGUwYzg5ODRmNmU4MWE3NzY0NGUyNTZkZDg5MWU1ZGRlNjYzZTkifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/refresh.rs#L65-L88",
+          "version": "repo-lines-v1:sha256:6c44b89af5a9d9550070de1e2729c260cd2033b22d74b4f117b26a20920ec0fd:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE2NDE2YWVjMzFlYTZiYTA2NzgwNTNhNjEwODU3OGRiMWVmNmJjOWU0MjkxMjRiMzdkMmZmMGQxNjY3YjliNTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBhZjA1OTk4OGUyYTUyMzlhZjQ5MzNlZjg5MzZjMmQ3YTM0NTk0YzliZDI2N2VjMjNmZmYwNDQ3ZjcwZmM2NmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI2Yzc3MzUxYmRlODhmYTFiMjBjYTcwZjgzM2JkMTRiZmNlYjkzMDdjZGNlNTYyZDZjMmI4ODIyNmNhNzgxYWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwOTc2YzYzMTE0ZmNhMGE1MjZkN2JmZDk2OGQ0YzM4MTI3YzcxNzU4ZTU1MzAyMjM2MjM3YTM2YWNjOTM1OTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_137705de9c47405f94aa3f9716b2550a",
+      "statement": "One CredentialStore mutex protects in-process snapshots, mutations and writes; the full JSON is written to a same-directory temporary file, chmodded to 0600 on Unix, and renamed atomically. This is neither cross-process coordination nor serialization of refresh HTTP requests, which can use the same refresh token concurrently.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L147-L179",
+          "version": "repo-lines-v1:sha256:132ecf3ef86ea6bd9ca174ca99af8692fd638685937af9c0897ff2462d12dcac:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwZDViMTNmY2E4Nzg3MGExMGYwMDkxNDVhYzI3OTNhY2Y4YzI1ZjZiMTAyMTZlZTI3MTc3M2Y2Njg2N2Y3MWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJhNGE5MGU3ZGQzZDkzNTA5NDZiMDZhNTVjNmViMDZiNzc3OGUxZGQzZTY0MmQyNDE5MWM5NzJkNDk3ODY4ZTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNiYWRiYzY0YzIwYWJhMDUyY2IzYjJlNDliNTM2ODBmMjZkNzYwNWZjYWU1NzI2NGNmOWJiOWYwMjRiMjIwYmMifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L32-L134",
+          "version": "repo-lines-v1:sha256:dec50d3d79422835d971de95803885ea78665e60facdc56a5b1c3072d7942a9a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwOGRjMDE5NGVkMWIyNzBlZmY1YTUzZTk1NTM5OWZhNzY2YzVhNTczNGM3MjZjYjVlN2RkZGVkNjQyZDUxMjE5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4YzA5MDYzNDQ3ZTViMDg3MzU3Mzk2YWI3MGE0YTM0MmE0N2JjYjllMmZjMzgwZDdiZWMzMGNjNWJkOGI5MDJhIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxYTU2MjJiYjQwYWRkYmI3Yjg4MmE1YTYzOTgxNDg2Mjk3MmJiYmVhZTVhYmQ3NDkwZTVlMTc1MzQ4OGNjNGQ3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4NWFlYjJiZGY3MjVlZmQ3YTg1YjhiYmNlMGJkYzI3ZTk1NmIxZDZlN2M2ZWI5NmM2OTYwOWRlZmJhODMwZWM5In0"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L156-L194",
+          "version": "repo-lines-v1:sha256:c7815e82b4493799a5c9b943279481903bf6b86d5fa9a4bcda720101a1d9e667:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5NTBmZmNmMGE1ZTQ5YjVlZTA0MTFhNTUwNDdhMzcxMDZkMzFmZDIxMmM4ZWQ2OGRmNjQzZWU0MzY0NWI5MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3YTVmZmEzZTA5NWRmMDViNmIzMzMzODcxYWJhMWMxYjNlMjVhYjNkYmYxZDQ5MmYxNTRjMmNjMmIxMjJmNTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxNGMzNDA4OWJiY2FjMzgwOTQ5MmRkNzY3YTUwYmUzMjc3ODBjZDdiYzQ5MDE2YzQ4MmU5NDZhNjVlMzA3NzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3OGQyMDhjMzQ0N2RlNWNkOTdjZDQxMTc3ZjY0NTdlNmRlNTEyMzNjZGRkNzU0NWI3YjI5ODZkYjM3ZWNhNmQifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/refresh.rs#L53-L78",
+          "version": "repo-lines-v1:sha256:90d95f2cf81f4cd0e3302cf6f680b9a698ff7d3475e0f9ad20bdf2e6897e1cb7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjMTBmYWZjYzVmM2VmYmI4MDg3MGY2N2QzMjBjYzdiODdmZjc2Y2U3ZmQxZGZiMDEzNWNiMDEzMzg0MmE5ZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzZTE1MzdkZTM2NzY2NWMzMmZiNzI2NTAxMThiN2NmOGNiM2ZhMDI4MDY2NmU0MTVhM2NmMzYzZmFmZjQwMTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzlmOGE4ZjNjZTNlYzdiMTk3ZDQwODk1ZjkwMDc5MjQ5NmJiOWU4MzAyNzc0YjdmMWRhOTNkNGY5YWNhN2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxMzUwNjBkNjViOTU3ZDM4OWYwMWJhNzFjZGU0MTk3YjZmOTA5ZjhlYWU3ZDdmZjIzNGMxOTRmM2FiODZlZWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c113f454b8514e8abc31d9f73dc94643",
+      "statement": "Credential mutations precede persistence with no rollback. A failed refresh write can leave rotated tokens in memory and older tokens on disk; inline selection still returns the new access token, and background refresh warns about persistence but still increments its success counter.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L95-L134",
+          "version": "repo-lines-v1:sha256:9e077ea3a0c05f917d9611746583b03f7a15496fddbc61d87a8e3a97a863709d:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjMDkwNjM0NDdlNWIwODczNTczOTZhYjcwYTRhMzQyYTQ3YmNiOWUyZmMzODBkN2JlYzMwY2M1YmQ4YjkwMmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA0Nzc4YTY5MDZiMDgyYzUyZTViMGFlZTI5MGIyNjhiYjY0NWY2MDVhMDA4YmRhNzNhZTdjYmI3OGU3N2VjMzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg1YWViMmJkZjcyNWVmZDdhODViOGJiY2UwYmRjMjdlOTU2YjFkNmU3YzZlYjk2YzY5NjA5ZGVmYmE4MzBlYzkifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L182-L200",
+          "version": "repo-lines-v1:sha256:7da7382a0fe481660b33bdf5c694cec35f7e4007c42f8ccdb4aed8cd61962962:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmZDg3MzdmMWU5NTY5Zjk3MzQ3YjIzYjk2YzRkMDE4YWQ4MTM0ZWMzN2M1NTk1MzBkZmM1N2ZlYTI2ZGIyMGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkYjMzOWMxN2Q0Y2M1NGU3MGM0ZmNmZWNiNjExYmI5ZTdkMzYzZjI1YjE4ZTA5MjNhMWQzMDZjYzk1OTI0ZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2MWE3NjVkOWJlYmViNWJkYTM3ZWU4YjliYjk0MGJlNThjYjVlODZkYmY2MWViM2I1NjI0MTJkZDA0YTU4YjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY2ZTg0MzViNTFhNmYzOTYzMjA2OWQ2OWQ3NGUwYzg5ODRmNmU4MWE3NzY0NGUyNTZkZDg5MWU1ZGRlNjYzZTkifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/refresh.rs#L65-L84",
+          "version": "repo-lines-v1:sha256:5e089181857ab3c23ed2d9284a10ce9d5f558167a5edb3a80d9e1b02183d5167:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE2NDE2YWVjMzFlYTZiYTA2NzgwNTNhNjEwODU3OGRiMWVmNmJjOWU0MjkxMjRiMzdkMmZmMGQxNjY3YjliNTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmYWY0YTc2NTYyOTljNzU0NWM4OGIzOWRhZjVjOWZlODk2NDU3YmIyYTIxYTE4OTg0MWQ5ZDYzNTc5NjRmMTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI2Yzc3MzUxYmRlODhmYTFiMjBjYTcwZjgzM2JkMTRiZmNlYjkzMDdjZGNlNTYyZDZjMmI4ODIyNmNhNzgxYWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRlM2FlYjBjN2YzMTBkMWViNGNiNWVlODI3ZTZmOTkxM2M1NDg5OGZkYWQ4NjYxNzIyMzgwYTMyYmY2MzIxOWIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c9320596067241be901cc71699219a16",
+      "statement": "Enrollment attempts to save the credential before adding the member and returns an error without adding it to the pool if persistence fails; adding a member sets or resets its runtime status to Available.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L260-L271",
+          "version": "repo-lines-v1:sha256:f3f70b39c42654aff6e99e5647acf26e758d3e0bd4313685a36716f858c1f48d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0NjJhYWQ2OGVlMjQzMzJiNGIwNTcyYzc0YmJmNDZlMTEyOTJiMGE2ZTcxMzQyMjE2MzgwYjVjMjM5M2ExNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OWJkZWZlZWFjYTYzNDBlMDI5MGRjODZlODg5Yzg5ZDVlMTg5YWE1YmE0NGI1ODViM2I3MDczNGY0YTYyZDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkzNGY2ZmRmYzc3MGVmOTcyZmExZDA1YzVjYjI5ZGEzNjkzNmYzY2M0MDkyY2ZkZTQwMzgyMjJiYTc0ZTM4ZmEifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L254-L296",
+          "version": "repo-lines-v1:sha256:5972307424a4a4dc837264c3a8d2a3e88cb6dd18acaa2243c4613c142ba70784:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NDkyN2ZmYmE5MjM3YTUzNjhkM2QwYzQzNTBlNGM0OTc3ODUyZDg2MGI3MjQ1NTliM2NkYjAwY2MzOTFmZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkZTg3ZmQyOGZmNzk4NTgwYTI4ZjVlOWViNmM1OGZmOWFmMTc2ZjZkOTRkZjc3NzBmZDZhOWM5MjYwMGE3ODkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzN2U3NGE3NDZmM2U0ZmE5OGQ3Y2I5OGRiMDdkMzBiZmY2NWNlZjY3NmYxN2FiMWVhNDkzYWM0ODQ5MDY4MTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5NmY4Y2IwODNmYTgwMGE0ZGNkMjk2OTcyMmQ3YjkyNjg2YWRkOWViZTM2NTU0OTJmYTY3MmIxYTdjZWQyNDIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8dda4a1de59747ef963070a0bbe4dcb7",
+      "statement": "Admin deletion removes the runtime member first and returns removal success even if the credential removal write fails; if startup membership comes from stored IDs, a credential left on disk can restore the deleted member on restart.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L103-L112",
+          "version": "repo-lines-v1:sha256:9483cd496d8fa57958c37806680ff13f0c2ae1b51ea3c2dbddeff81f011cf865:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljNzdmOWM2MWE1NmViNDBmYzg3ODBkMDcwMGFlNDBlMmIyMWMyNzBmNzAzZjkzNGI5ODEzZGEwZjA3ZTUxMDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdjMDgyMTAyMzYzYmM0ZjM5Mzk3ZThjMjQyZjVmNTI4MmE2OWVlNWViYjdkOTkwMjUzZGFjMTMwMzc0ZmM5Y2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwOWYwNWM2NjIxNmRlNmNiY2UyMjM3ZDY3YTg3OGIzYzQwZGIxZmZiNzZiMjVlYzc3ZjNlZDZkZDVhZjU2NzgifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/admin.rs#L300-L323",
+          "version": "repo-lines-v1:sha256:979b4f76672e74390ccdbb0599e7604495411405702e517dfa7deb33796e2413:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhhMmQ3Zjk1YWE2ZjU4NTA0MGQ2Njg3OTgyZGIyODk4N2JiNGI4NjczZmNhZDE1NjgxZmVlMWEwODdlYTBjNjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5NmY4Y2IwODNmYTgwMGE0ZGNkMjk2OTcyMmQ3YjkyNjg2YWRkOWViZTM2NTU0OTJmYTY3MmIxYTdjZWQyNDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU0NjFmNWYxMzZhNmZiYThmZThjMTk1MTAyM2NjMTRkNjA2N2RhZjUwYTEwNDNlNmY4OTc3MTAzZTE2YzU1M2QifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L174-L193",
+          "version": "repo-lines-v1:sha256:2ecb571271a10dd7f6377ea42191cd5a6c480f38ad939c49c994394ff5fcf979:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJhYzJiYzc1YjdhMWI4N2QwZjFlMjJjMGMyNDVmYmM5MzZiNmVkYzAyYzI2NjQ4OWMxMzliYWMxNjJhMjIwNzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmOWMyNDE5OTUyOTdhMDkwMzY1ODI3ODBlYWI2Zjk3NWZiMGZkYmIwNTY3NTY5ODNkMzAyZTZmYTliZDE4M2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY3ZDU4MTUzNWJmZGFjMTBmOGIzZWZmNDZjNDg5ZWYyNTFjNzk1NDkzMWFmNjZhZTI4NjEwNzFjNWU4ZWQ1MmUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c17b05d85b24430383c18b11e9f2f153",
+      "statement": "Pool regression tests check rotation order, skip rules and lazy cooldown expiry; the expired-token test uses the real token endpoint and verifies fallback to a different member without requiring a permanent-failure outcome.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L465-L556",
+          "version": "repo-lines-v1:sha256:b6484e5291da954024d8b555a2d5d9747c22853aa9a188854f4f45df4df8460d:eyJzZWxlY3RlZExpbmVDb3VudCI6OTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxY2M0MDY4N2QyNDRlOWRhZjkxY2VkNDY1MjMyNjU2OWE0ZmI2ZGZjODFkMDNmYmU3MjNhNWVhM2NjYmU5ZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0Y2E4NzBlZTc0MmNjZGE5MDYxZmRjM2VmMWIwNTJkMWJmODMyYTM3NjRjMTMxNzEzNmZlMzkyZmZkOWM3YTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBlNDI5MTU5YThiZjdlNTVhOTBkOTk4ZDI3ZTllMWVlZDY5OWM2ZGQ3MTE3OTRmYzg4MGU0NmQ3ZDY3ZTA2MWIifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/pool.rs#L795-L874",
+          "version": "repo-lines-v1:sha256:efa2d57c21b631ac027bb7bac86b4c2be7373255e8c519a95e19586fb06b22b6:eyJzZWxlY3RlZExpbmVDb3VudCI6ODAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxY2M0MDY4N2QyNDRlOWRhZjkxY2VkNDY1MjMyNjU2OWE0ZmI2ZGZjODFkMDNmYmU3MjNhNWVhM2NjYmU5ZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM3OTQyODIyYjljNzAxNmFhNGMzMmE4YWY5ZDZjYWZhMzIwOTEyMWVkOWY2Y2NlZDBjOGQzMTBlODRmYTYwNTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_39a7868c810d42d987af7bc6d84ff7f3",
+      "statement": "Classifier unit tests distinguish inference quota and token refresh errors, and local mock-upstream proxy tests assert quota failover followed by success and immediate return of inference 401 without a second call.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/token.rs#L125-L207",
+          "version": "repo-lines-v1:sha256:3459027257937432ec840862dea6e97648e2badc78e3d98c385a1df279352062:eyJzZWxlY3RlZExpbmVDb3VudCI6ODMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRkODU3MTUyYjJlMmE2YjE0ZjU4MGRmNzMxYjNhMWE1MDExOTcxYzQ1OGQ4NGQ0ODJjM2FlNjI4YTNiOTAyYjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkNjJhOWY5MmEzYmViZDY1NWQzNjFjZTQ4YzhmMmU4YTE5MmNmODQxOGNmOWU5ZWNjYzQ4OGVkYjQyNDdhODgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNkNGM2Y2NjOTM4Njc3NWI1N2Y5NjhkNjVjNjZkMTYzYjMzMDgzNWJkZWRmOWY2MTdkNzMxOTk4Y2JlNmI1NDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ5MjYwZjAxZjFjZjZlYzFiNWI5Nzc2NmRjYWVhYTNmMTJiYTNkNWZjN2IxNDBjZjc0NWVkNjBlNWRkNmM5YjUifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-pool/src/quota.rs#L51-L124",
+          "version": "repo-lines-v1:sha256:16e02bc0b9be1c064befbdb1d9d86a723848ed126c28e53fc71183a30f4ad9f3:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlMGFmM2ZkNGE0YzNhMWQ0N2M3ZjQ3MGVkMGQ4NmQ5MGQ5ZGUyMTBhNWViMTQ1NWZiZDk0NDgyYTQ3NjViNzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE1MjE2MDRiMzVmYzQwYWYwMGNiYTRlZWEyZmQ1ZTJjM2FmMTg2M2IzOTExODVkN2JmNGJiMDllNzJkMGM4YjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY5ZjQ1NjZjMjNhNDk1YjFlODAxMGFmOWZlNWFiZTQ1ZDE3MDMzZmYzNGIwNTFmMmQ2M2JkY2NmY2FlY2NkMTAifQ"
+        },
+        {
+          "resource": "repo://services/oauth-proxy/src/main.rs#L3188-L3325",
+          "version": "repo-lines-v1:sha256:4b161ea214680afd90d1c6daaa9fed8a612ed5231e8d9b08cba864444fecdf1a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5MWNjNDA2ODdkMjQ0ZTlkYWY5MWNlZDQ2NTIzMjY1NjlhNGZiNmRmYzgxZDAzZmJlNzIzYTVlYTNjY2JlOWRmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJmMmQ4MjhhMDM3YWMxYzgxNTM1YjFkNTUwMDgzMjMyM2JmYmI4NjZhM2EzZjg3ZTdhNjhjMTNhMmJhZTU2ZmZmIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyNTdiNjI1MTlkZTJhN2JiNTEzMzEzODYzNTczYmY2NThlMDU2MTIwZGMzZTNmMjI0NTJlNGE5ZGEzNzQ1NmM4In0"
+        }
+      ]
+    },
+    {
+      "id": "claim_4ea3272e62124c9da0996b3dd02a8f16",
+      "statement": "Store tests cover missing-file creation, save/load round-trip and concurrent JSON writes using a single shared store, not refresh HTTP serialization.",
+      "evidence": [
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L194-L233",
+          "version": "repo-lines-v1:sha256:b6e231cc68ab9df6580b6835875bb7ca8c4e04a3f5f5f5a08fb3bdf7a848602d:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgxNzg4NzIwMTkwMTQ5ZTU4ZmM4ZmM0OWUyM2Y3MjRkYjVkNTgxY2M2MmMyZTdiN2M0YTVlOTIyODZmNDk1YWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4MzI2MTViMDNiNGYzMDgyNDA5NGQ4ZWY1YzkzYmM0YjBjNmE4MGM4OGMzNTc2YjFlNWYyNTNlZjAxNzUxYjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwNTRjNDA4MjJiMjcxZDUyZWQ4NTNlNjY1ZmE0ZjU4MjlkM2MxYjBmY2JkN2IyNjRhODNhZjcwOWRmOTdkYzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEzZjM3ODQ4MGZmMmVkNTQwZWYzMGZmMDIyOThiZWU1YTc0NzYxOWI0YWVhZmQ5NWE2NjVlNGQ3Njc5NWE1YmEifQ"
+        },
+        {
+          "resource": "repo://crates/anthropic-auth/src/credentials.rs#L336-L365",
+          "version": "repo-lines-v1:sha256:e0e8a9200d74397df7d3c03a551b3e8ddfb4dacdafe1dbc29ab58bc67c41efde:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxY2M0MDY4N2QyNDRlOWRhZjkxY2VkNDY1MjMyNjU2OWE0ZmI2ZGZjODFkMDNmYmU3MjNhNWVhM2NjYmU5ZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3M2I4NDM4OWRiNmU2NWEwNzIwMmY1MzA0MjA3MjVmOWZjNzc0ZWEwNTVlYjA1OGY3ZTAxMmViMWE1MmUxNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.9.0",
+    "at": "2026-11-26T08:08:48.465Z"
+  }
+}
