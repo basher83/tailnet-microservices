@@ -1,0 +1,40 @@
+{
+  "cli_version": "0.13.4",
+  "checkpoint_id": "ee6b20b64732",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/openwiki-update.yml"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ee/6b20b64732/0/metadata.json",
+      "transcript": "/ee/6b20b64732/0/full.jsonl",
+      "compact_transcript": "/ee/6b20b64732/0/transcript.jsonl",
+      "content_hash": "/ee/6b20b64732/0/content_hash.txt",
+      "prompt": "/ee/6b20b64732/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 863,
+    "cache_read_tokens": 245766,
+    "output_tokens": 1037,
+    "api_call_count": 4
+  },
+  "redaction": {
+    "replacements": 2,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 2,
+      "key_context": 0,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}
