@@ -1,0 +1,77 @@
+<pasted_content id="c9d5">
+Create a draft PR that adds an agentic workflow using these instructions:
+- https://raw.githubusercontent.com/github/gh-aw/main/.github/aw/create-agentic-workflow.md
+- https://raw.githubusercontent.com/github/gh-aw/main/.github/aw/triggers.md
+
+The purpose of the workflow is: Investigate a failed GitHub Actions run and report a root cause with remediation steps
+
+First, analyze this repository so the workflow is optimized for it:
+- Read the README, AGENTS.md (and any CONTRIBUTING or docs files) to understand the project purpose and conventions
+- Identify the languages, package managers, build/test/lint commands and CI setup actually used
+- Note repository conventions such as labels, issue/PR templates and branch naming
+- Use those findings to tailor the workflow prompt, tools, and instructions to this repository
+
+## Intent
+Reduce time spent diagnosing CI failures
+
+Requirements:
+- Name: ci-failure-triage
+- Engine: copilot
+- Triggers: on a fuzzy daily/weekly schedule
+- Allowed outputs: create new issues
+- Choose an appropriate kebab-case filename for the new .github/workflows/*.md file
+- Add cache-memory tool for persistent memory across runs
+- Use this schedule and per-run scope: every friday morning covering the past week
+- Persist this context in cache-memory between runs, and read it back at the start of each run: Which issues have already been triaged, and failure count trends week over week?
+- Include explicit boundary constraints in the workflow prompt, for example: Diagnostic only — report the root cause and next steps, do not attempt to fix the failure directly
+- Additional intent for this workflow, provided by the user: Reduce time spent diagnosing CI failures
+- Derive a single measurable "operational value" statement from that intent — one sentence describing the concrete outcome a successful run must deliver — and register it as the workflow grader: add it as the first entry of an `evals:` frontmatter block with `id: operational_value` and a question that asks whether the agent output demonstrates that value was delivered
+- Add BinEval evaluations for the intent: 2-4 further `evals:` questions that each verify one observable property of the intent, phrased as falsifiable YES/NO questions answerable from the agent output alone (no compound questions, unique ids, YES means success)
+- Reflect the intent in the workflow prompt itself so the agent optimizes for it at run time
+- Keep a `safe-outputs:` block in the workflow so the evals judge can read `agent_output.json`
+- Follow the workflow-specific guidance, for example: Scope `workflows:` to the named CI workflow(s) and gate execution with `if:` on `github.event.workflow_run.conclusion` so only failing runs are analyzed; Derive a stable failure key (workflow + job + failing step or error signature) before writing anything; Search for an existing open incident by that key before creating a new issue; Call noop when the monitored run concludes success, the failure self-recovered on rerun, or an open incident already exists for the same key
+
+The workflow should be saved as a new Markdown file in .github/workflows/.
+Create a pull request with the generated agentic workflow files.
+
+## Suggested workflow file
+
+Use this generated draft as a starting point for the new `.github/workflows/*.md` file, adapting it to the repository as needed:
+
+```markdown
+---
+name: ci-failure-triage
+description: Investigate a failed GitHub Actions run and report a root cause with remediation steps
+on:
+  schedule: daily on weekdays
+  skip-if-match: 'is:issue is:open "gh-aw-workflow-id: ci-failure-triage" in:body'
+permissions:
+  actions: read
+  contents: read
+  issues: read
+engine: copilot
+tools:
+  github:
+    toolsets: [repos, issues, actions]
+  cache-memory:
+safe-outputs:
+  create-issue:
+    max: 1
+    expires: 7
+timeout-minutes: 30
+---
+
+Let the agent generate the detailed ci failure triage prompt for this repository...
+```
+</pasted_content id="c9d5">
+
+---
+
+<!-- reply 1 -->
+> The memory may not survive a week. GitHub deletes caches that go 7 days unused, and a weekly run is right at that limit. If it's lost, the open-issue search still prevents duplicate issues, but the week-over-week counts start over.
+
+show me the proof don't just tell me about it
+
+---
+
+ok well lets make it under once every 7 days then. that seems like the most logical answer here
