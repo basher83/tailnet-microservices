@@ -3,7 +3,13 @@ name: ci-failure-triage
 description: Investigate a failed GitHub Actions run and report a root cause with remediation steps
 intent: Reduce the maintainer's time spent diagnosing CI failures by turning each distinct, unrecovered weekly CI failure into one deduplicated, evidence-backed diagnosis.
 on:
-  schedule: weekly on friday around 9:00
+  # Two runs a week keep the gap between runs at 4 days or less, so the
+  # cache-memory entry is always accessed well inside GitHub's 7-day eviction
+  # window, even if one run fails before saving. Friday is the weekly report;
+  # Tuesday catches new failures mid-week.
+  schedule:
+    - cron: weekly on friday around 9:00
+    - cron: weekly on tuesday around 9:00
 permissions:
   actions: read
   contents: read
@@ -31,7 +37,9 @@ steps:
       mkdir -p "$out"
       since="$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)"
       now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-      echo "{\"window_start\":\"$since\",\"window_end\":\"$now\"}" > "$out/window.json"
+      # Friday runs record the weekly trend entry; any other day is a mid-week run.
+      if [ "$(date -u +%u)" = "5" ]; then kind=weekly; else kind=midweek; fi
+      echo "{\"window_start\":\"$since\",\"window_end\":\"$now\",\"run_kind\":\"$kind\"}" > "$out/window.json"
       : > "$out/runs.jsonl"
       for wf in ci.yml manifests.yml; do
         gh run list --repo "$REPO" --workflow "$wf" --created ">=$since" --limit 200 \
@@ -94,7 +102,16 @@ remediation steps, so nobody has to open the Actions logs to understand it. Sile
 ## Scope and evidence window
 
 - **Window:** the last 7 full days ending at workflow start (UTC). The exact
-  bounds are in `/tmp/gh-aw/agent/window.json`.
+  bounds are in `/tmp/gh-aw/agent/window.json`. Mid-week runs use the same
+  rolling 7-day window. The overlap with the previous run is intentional, and the
+  open-issue check in step 4 keeps it from producing duplicates.
+- **Run kind:** `run_kind` in `window.json` is `weekly` on Fridays and `midweek`
+  on any other day (the Tuesday schedule and manual dispatches). Both kinds
+  triage failures the same way. Only a `weekly` run writes a trend entry (step 7).
+- **Trend comparison:** "this week" is the current 7-day window. "Last week" is
+  the most recent entry in memory's `weekly` list whose `week` differs from this
+  window's ISO week. On a `midweek` run, label the comparison as
+  `last 7 days vs. week ending <date>`, because the two windows overlap.
 - **Monitored workflows only:** `CI` (`.github/workflows/ci.yml`) and
   `Kubernetes Manifests` (`.github/workflows/manifests.yml`). Ignore every other
   workflow, including this one and `OpenWiki Update`.
@@ -247,8 +264,9 @@ state to `/tmp/gh-aw/cache-memory/ci-failure-triage/state.json`:
 - Add or update `triaged` entries for every key you saw. For newly created issues
   the number is not known yet, so set `issue_number` to `null`; a later run fills
   it in from the open-issue search.
-- Append this week's entry to `weekly` (ISO week of the window end) and keep only
-  the most recent 12 entries.
+- On a `weekly` run only: write this week's entry to `weekly` (ISO week of the
+  window end), replacing any existing entry for the same week, and keep only the
+  most recent 12 entries. On a `midweek` run, leave `weekly` unchanged.
 - Drop `triaged` entries not seen in the last 12 weeks.
 
 ### 8. Output summary
