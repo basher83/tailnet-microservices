@@ -212,6 +212,22 @@ ci-triage:<workflow>:<job>:<step>:<error-signature>
 Group runs by key. For each key record the run count, affected branches, first
 and last occurrence, and one representative run URL.
 
+Then classify each key into exactly one class, and write one sentence of evidence
+for it:
+
+| Class | Signal | Confirm by |
+|---|---|---|
+| **Bug** | Fails the same way on every run with the same input | Every run of the job on that SHA fails at the same error or assertion |
+| **Flaky** | Timing, ordering, network, or shared-state failure that varies between runs | A green run of the same job on the same SHA, or the error differs between runs |
+| **Environment** | Tool or runner change, missing secret, registry or network outage, cache, disk, or memory | Fails before project code runs, or matches a `latest`-pinned tool release (`cargo-audit`, `kubeconform`, Rust stable) or a new RustSec advisory with no change to `Cargo.lock` |
+| **Pipeline** | The workflow definition is wrong: path filter, permissions, step order, YAML, or the `Update K8s Tag` push | The failing line is in `.github/workflows/*.yml` or `mise.toml`, not in crate code |
+
+Compare against the base branch before attributing a failure to a change. If the
+same key also fails on `main` in the window, call it pre-existing and say so: a
+Renovate or Dependabot PR failing for that reason is not caused by the PR. If a
+key cannot be classified from the evidence, label it `Unclassified` and say what
+evidence is missing. Do not guess.
+
 ### 4. Check for an existing incident
 
 For each key, search open issues in this repository for the exact key string
@@ -219,12 +235,21 @@ For each key, search open issues in this repository for the exact key string
 Also check `triaged` in memory. If an open issue already covers the key, do not
 create another one. Record it as already tracked.
 
+If no open issue matches, search closed issues for the same key:
+
+- **Closed as not planned** (`is:issue is:closed reason:"not planned" in:body "<key>"`):
+  the maintainer has decided not to act on it, for example an accepted advisory
+  or a known tooling quirk. Do not create an issue. Record the key as declined,
+  with the issue number.
+- **Closed as completed**, but the failure is back in this window: treat it as a
+  regression. Create a new issue and link the closed one in **Root cause**.
+
 ### 5. Decide
 
 - If the window has zero failing runs, every failure self-recovered, or every
-  remaining key already has an open issue: call `noop` with a one-paragraph
+  remaining key is already tracked or declined: call `noop` with a one-paragraph
   message giving the window bounds, this week's versus last week's failing-run
-  counts, and the already-tracked keys with their issue numbers.
+  counts, and the tracked and declined keys with their issue numbers.
 - If logs could not be retrieved for a failure, do not guess a root cause. Call
   `report_incomplete` naming the run and what was unavailable, unless other keys
   can still be reported.
@@ -237,7 +262,9 @@ create another one. Record it as already tracked.
 Title: `<workflow> / <job>: <concise root cause>` (the `[ci-triage] ` prefix is
 added automatically). Body sections, in order:
 
-1. **Summary**: one or two sentences naming the root cause.
+1. **Summary**: one or two sentences naming the root cause, then a line
+   `Class: <Bug|Flaky|Environment|Pipeline|Unclassified>, because <evidence>`,
+   and whether the failure is pre-existing on `main`.
 2. **Evidence**: the failing step and a fenced excerpt of the decisive log lines
    (30 lines at most, secrets redacted), with links to the representative run
    and job.
@@ -272,5 +299,6 @@ state to `/tmp/gh-aw/cache-memory/ci-failure-triage/state.json`:
 ### 8. Output summary
 
 End with a short plain-text summary listing: the window, total and failing run
-counts for this week and last week, each key with its disposition (new issue,
-already tracked, self-recovered, or skipped) and the action taken.
+counts for this week and last week, and each key with its class, its disposition
+(new issue, regression, already tracked, declined, self-recovered, or skipped),
+and the action taken.
