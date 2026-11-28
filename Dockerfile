@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     && cp target/release/anthropic-oauth-proxy /anthropic-oauth-proxy
 
 # ---------- runtime ----------
-FROM debian:bookworm-slim@sha256:67b30a61dc87758f0caf819646104f29ecbda97d920aaf5edc834128ac8493d3
+FROM debian:bookworm-slim@sha256:e67eeead736ff7bbe258ef088bff683635c561b1fcfefad0806c1df4ab49ce0e
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
