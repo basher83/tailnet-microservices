@@ -1,0 +1,41 @@
+{
+  "cli_version": "0.13.4",
+  "checkpoint_id": "ada28a182fab",
+  "strategy": "manual-commit",
+  "branch": "claude/agentic-ci-failure-triage-613dcc",
+  "checkpoints_count": 11,
+  "files_touched": [
+    ".github/aw/providers.json",
+    ".github/workflows/ci-failure-triage.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ad/a28a182fab/0/metadata.json",
+      "transcript": "/ad/a28a182fab/0/full.jsonl",
+      "compact_transcript": "/ad/a28a182fab/0/transcript.jsonl",
+      "content_hash": "/ad/a28a182fab/0/content_hash.txt",
+      "prompt": "/ad/a28a182fab/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 178,
+    "cache_creation_tokens": 354106,
+    "cache_read_tokens": 22138074,
+    "output_tokens": 57801,
+    "api_call_count": 78
+  },
+  "redaction": {
+    "replacements": 46,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 31,
+      "key_context": 15,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

@@ -1,0 +1,237 @@
+<pasted_content id="c9d5">
+Create a draft PR that adds an agentic workflow using these instructions:
+- https://raw.githubusercontent.com/github/gh-aw/main/.github/aw/create-agentic-workflow.md
+- https://raw.githubusercontent.com/github/gh-aw/main/.github/aw/triggers.md
+
+The purpose of the workflow is: Investigate a failed GitHub Actions run and report a root cause with remediation steps
+
+First, analyze this repository so the workflow is optimized for it:
+- Read the README, AGENTS.md (and any CONTRIBUTING or docs files) to understand the project purpose and conventions
+- Identify the languages, package managers, build/test/lint commands and CI setup actually used
+- Note repository conventions such as labels, issue/PR templates and branch naming
+- Use those findings to tailor the workflow prompt, tools, and instructions to this repository
+
+## Intent
+Reduce time spent diagnosing CI failures
+
+Requirements:
+- Name: ci-failure-triage
+- Engine: copilot
+- Triggers: on a fuzzy daily/weekly schedule
+- Allowed outputs: create new issues
+- Choose an appropriate kebab-case filename for the new .github/workflows/*.md file
+- Add cache-memory tool for persistent memory across runs
+- Use this schedule and per-run scope: every friday morning covering the past week
+- Persist this context in cache-memory between runs, and read it back at the start of each run: Which issues have already been triaged, and failure count trends week over week?
+- Include explicit boundary constraints in the workflow prompt, for example: Diagnostic only — report the root cause and next steps, do not attempt to fix the failure directly
+- Additional intent for this workflow, provided by the user: Reduce time spent diagnosing CI failures
+- Derive a single measurable "operational value" statement from that intent — one sentence describing the concrete outcome a successful run must deliver — and register it as the workflow grader: add it as the first entry of an `evals:` frontmatter block with `id: operational_value` and a question that asks whether the agent output demonstrates that value was delivered
+- Add BinEval evaluations for the intent: 2-4 further `evals:` questions that each verify one observable property of the intent, phrased as falsifiable YES/NO questions answerable from the agent output alone (no compound questions, unique ids, YES means success)
+- Reflect the intent in the workflow prompt itself so the agent optimizes for it at run time
+- Keep a `safe-outputs:` block in the workflow so the evals judge can read `agent_output.json`
+- Follow the workflow-specific guidance, for example: Scope `workflows:` to the named CI workflow(s) and gate execution with `if:` on `github.event.workflow_run.conclusion` so only failing runs are analyzed; Derive a stable failure key (workflow + job + failing step or error signature) before writing anything; Search for an existing open incident by that key before creating a new issue; Call noop when the monitored run concludes success, the failure self-recovered on rerun, or an open incident already exists for the same key
+
+The workflow should be saved as a new Markdown file in .github/workflows/.
+Create a pull request with the generated agentic workflow files.
+
+## Suggested workflow file
+
+Use this generated draft as a starting point for the new `.github/workflows/*.md` file, adapting it to the repository as needed:
+
+```markdown
+---
+name: ci-failure-triage
+description: Investigate a failed GitHub Actions run and report a root cause with remediation steps
+on:
+  schedule: daily on weekdays
+  skip-if-match: 'is:issue is:open "gh-aw-workflow-id: ci-failure-triage" in:body'
+permissions:
+  actions: read
+  contents: read
+  issues: read
+engine: copilot
+tools:
+  github:
+    toolsets: [repos, issues, actions]
+  cache-memory:
+safe-outputs:
+  create-issue:
+    max: 1
+    expires: 7
+timeout-minutes: 30
+---
+
+Let the agent generate the detailed ci failure triage prompt for this repository...
+```
+</pasted_content id="c9d5">
+
+---
+
+<!-- reply 1 -->
+> The memory may not survive a week. GitHub deletes caches that go 7 days unused, and a weekly run is right at that limit. If it's lost, the open-issue search still prevents duplicate issues, but the week-over-week counts start over.
+
+show me the proof don't just tell me about it
+
+---
+
+ok well lets make it under once every 7 days then. that seems like the most logical answer here
+
+---
+
+review https://raw.githubusercontent.com/github/awesome-copilot/93fc8b9ee3ef56b9b5e7261e6ce92d314cb2c1cf/.github/skills/agentic-workflows/SKILL.md and look for similar aw examples as this one. compare and contrast what you find in that repo vs what you created here
+
+---
+
+Yes, apply both
+
+---
+
+how does it compare to https://raw.githubusercontent.com/githubnext/agentics/ae8d551f07c7ed7619f8c58c7bb4c3ac89395d38/workflows/ci-doctor.md and https://raw.githubusercontent.com/githubnext/agentics/ae8d551f07c7ed7619f8c58c7bb4c3ac89395d38/workflows/ci-coach.md
+
+---
+
+Not now
+
+---
+
+No COPILOT_GITHUB_TOKEN, I'm using BYOK. But for it to work I need that workflow on my tailnet to reach my gateway. The openwiki workflow does this and has the pattern. Also have to set some config settings; need a providers.json with:
+
+<pasted_content id="c9d5">
+{
+  "providers": [
+    {
+      "name": "lab-proxy",
+      "type": "anthropic",
+      "baseUrl": "https://anthropic-oauth-proxy.tailfb3ea.ts.net",
+      "apiKey": "-"
+    }
+  ],
+  "models": [
+    {
+      "id": "claude-opus-5-5",
+      "provider": "lab-proxy",
+      "maxContextWindowTokens": 1000000,
+      "maxPromptTokens": 872000,
+      "maxOutputTokens": 128000
+    }
+  ]
+}
+</pasted_content id="c9d5">
+
+Also need models[].capabilities.supports.vision set to true, 
+models[].capabilities.supports.adaptive_thinking set to required,
+models[].capabilities.supports.reasoning_effort set to ["low", "medium", "high"]
+
+By default, this file is located at ~/.copilot/providers.json. Override its location with the COPILOT_PROVIDERS_CONFIG environment variable. That file does not exist on my host so add it to the repo instead. You can add all this just don't commit yet. I have a few more things after this
+
+---
+
+https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference#providersjson
+
+---
+
+Ok lets add another byok provider as fall back or second option. provider name: aperture-anthropic, baseURL: http://agent everything else is same for opus
+
+---
+
+In `.github/workflows/ci-failure-triage.md` at line 35:
+```markdown
+    COPILOT_PROVIDER_BASE_URL: https://anthropic-oauth-proxy.tailfb3ea.ts.net
+```
+this is already set in providers.json, same with COPILOT_PROVIDER_TYPE
+
+
+also some info on endpoints, firewall etc https://github.github.com/gh-aw/reference/engines/?utm_source=agentic-workflow-docs-gh-aw-engines-reference&utm_medium=docs&utm_campaign=universe-2026#custom-api-endpoints-via-environment-variables
+
+---
+
+ah found it https://github.github.com/gh-aw/reference/engines/copilot/#copilot-bring-your-own-key-byok-mode don't think we need to change anything yet but wanted to point out the docs here I found
+
+---
+
+<pasted_content id="c9d5">
+Model aliases
+Note
+Copilot catalogs vary by organization and can lag seat offerings, so another workflow’s model inventory does not prove availability here. An exact Copilot ID missing from a complete live catalog is not offered to this workflow; prefer `opus` or `sonnet`. Run `gh aw audit <run-url> --models` for run-specific catalog and routing details. Incomplete discovery does not confirm absence.
+Copilot, Claude, Codex, Pi, and Agy resolve aliases against the configured provider’s live AWF `/reflect` catalog before execution:
+
+* Built-in aliases (such as `opus`/`small`), workflow-defined `models:`, and their globs select the newest live match. Globs skip models AWF marks as not automatically selectable, such as a Decisions-only evaluation model; alias entries without `*`, such as `evals`, are unaffected.
+* A `provider/` prefix restricts the lookup; otherwise the engine’s configured provider applies.
+* Exact live IDs take precedence over same-named aliases, and unrecognized IDs are not rewritten. Pi checks exact IDs before launch; Copilot, Claude, and Codex fail on the first unavailable-model request.
+* `auto` keeps its engine-specific meaning. In Copilot CLI mode, `?effort=low`, `?effort=medium`, and `?effort=high` on a model ID or alias become `--reasoning-effort` after alias resolution. The CLI receives the model ID without the suffix. An explicit `--reasoning-effort` in `engine.args` takes precedence.
+* Missing matches fail with `model_unavailable`; incomplete discovery fails with `catalog_unavailable`.
+
+Set `engine.model-catalog: false` (default `true`) for BYOK providers without a `/models` route, such as Azure AI Gateway. The configured model is then passed to the engine verbatim: aliases are not resolved, and a model ID that matches a built-in alias (such as `gpt-5-mini`) no longer fails with `catalog_unavailable`. Model routing also needs the catalogue, so the implicit routing default is not applied and `model: router` fails compilation. Threat detection inherits the workflow `model`; when none is set, it uses the engine’s main-agent default instead of the `detection` alias.
+`engine.copilot-sdk: true` also needs the catalogue, so combining it with `model-catalog: false` fails compilation; use Copilot CLI mode instead.
+Sub-agent models are also passed verbatim, without catalogue or endpoint checks; a Claude or Codex sub-agent model whose `provider/` prefix names a different provider still fails.
+Workflow-defined `models:` aliases are not resolved either: naming one passes the alias name to the engine as a literal model ID and logs a warning, so set a concrete model ID instead.
+
+```
+engine:
+```
+
+`id: copilot`
+`model: gpt-5-mini`
+`model-catalog: false`
+Gemini and declarative engines pass model names through unchanged and warn about gh-aw aliases. AWF can independently rewrite unrecognized models on non-Copilot providers; disable `sandbox.agent.model-fallback` when exact routing is required.
+Resolution produces `model.resolution` evidence in `usage/aw_session.jsonl`. See [Model Aliases](https://github.github.com/gh-aw/reference/model-tables/) for the catalog and [Model Routing](https://github.github.com/gh-aw/reference/model-routing/) for experimental per-run model/effort selection on Copilot-backed Copilot, Claude, Codex, and Pi, chosen with `model: router` (or `router/economy`, `router/balanced`, `router/robust`). Router values are not model names: `router` and `router/*` are reserved and can’t be used as aliases.
+</pasted_content id="c9d5">
+
+---
+
+Does anthropic-oauth-proxy have a model list? nope so we need to upgrade. also for evals I found: 
+
+<pasted_content id="c9d5">
+Evals (`evals:`)
+An experimental frontmatter section that defines binary (YES/NO) evaluation questions to run after safe-outputs and before the conclusion job. Each question has an `id` and a `question` string; the runtime evaluates each with an LLM and records results in an `evals.jsonl` artifact. Supports a shorthand form (plain array of question objects) and an extended form with a top-level `model` override and optional `runs-on` configuration. Use `gh aw audit --evals` or `gh aw logs --evals` to filter results to runs that contain evals output. See [Frontmatter Reference](https://github.github.com/gh-aw/reference/frontmatter/).
+
+```
+evals:
+```
+
+`- id: issue-resolved`
+`question: "Was the reported issue fully resolved?"`
+`- id: tests-added`
+`question: "Were new tests added for the changed code?"`
+</pasted_content id="c9d5">
+
+---
+
+I can add a openai key, whats the cli cmd to add it to git secrets?
+
+---
+
+yes, switch evals to openai/gpt-6-luna. 
+
+<pasted_content id="c9d5">
+basher8383@BrentsMacStudio basher83-expert-carnival % gh secret list --repo basher83/tailnet-microservices
+NAME                UPDATED
+OPENAI_API_KEY      less than a minute ago
+TS_AUDIENCE         about 2 days ago
+TS_OAUTH_CLIENT_ID  about 2 days ago
+</pasted_content id="c9d5">
+
+---
+
+heres an answer: 
+
+<pasted_content id="c9d5">
+basher8383@BrentsMacStudio basher83-expert-carnival % curl https://api.openai.com/v1/decisions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+    "model": "gpt-6-luna",
+    "input": "The package arrived with a broken screen.",
+    "questions": [
+      {
+        "type": "predicate",
+        "name": "damaged",
+        "instructions": "Does the customer report a damaged item?"
+      }
+    ]
+  }'
+
+{"model":"gpt-6-luna","answers":[{"type":"predicate","name":"damaged","probability":1.0}],"usage":{"input_tokens":164,"input_tokens_details":{"cached_tokens":0,"cache_write_tokens":0},"output_tokens":0,"output_tokens_details":{"reasoning_tokens":0},"total_tokens":164}}%                                                                                                  basher8383@BrentsMacStudio basher83-expert-carnival %
+</pasted_content id="c9d5">
+
+lets fire it off and monitor
