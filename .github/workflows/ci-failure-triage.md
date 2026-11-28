@@ -18,36 +18,60 @@ permissions:
   # Tailscale's workload-identity login (oauth-client-id + audience) mints a
   # GitHub OIDC token. Same pattern as openwiki-update.yml.
   id-token: write
-# BYOK: inference goes to gateways on the tailnet, not GitHub Copilot.
-# .github/aw/providers.json is what the Copilot CLI uses: both providers, the
-# model capabilities, and the wire type. Models are selected as
-# <provider>/<model-id>:
-#   lab-proxy          -> anthropic-oauth-proxy (this repo's service), in use
-#   aperture-anthropic -> Aperture on agents.tailfb3ea.ts.net; switch `model:`
-#                         to aperture-anthropic/claude-opus-5-5 to use it
+# BYOK: inference goes to anthropic-oauth-proxy on the tailnet, not GitHub
+# Copilot. Configuration is environment variables only, the path AWF supports:
+# outside the sandbox COPILOT_PROVIDER_BASE_URL is the real gateway, held by
+# AWF's API-proxy sidecar; inside the sandbox AWF rewrites it to the sidecar, so
+# the agent never dials the gateway itself. The literal URL also makes gh-aw
+# compile the run as BYOK (no COPILOT_GITHUB_TOKEN check) and allowlists the
+# gateway host. To use Aperture instead, set COPILOT_PROVIDER_BASE_URL to
+# http://agents.tailfb3ea.ts.net.
 #
-# COPILOT_PROVIDER_BASE_URL duplicates the lab-proxy baseUrl on purpose. gh-aw
-# never reads providers.json; this variable is how the compiler knows the run is
-# BYOK. Without it, the compiled workflow adds a required COPILOT_GITHUB_TOKEN
-# check, drops the gateway from the firewall allowlist, and sets no API-proxy
-# target. COPILOT_PROVIDER_TYPE is not needed: providers.json sets the type.
+# No providers.json: its models can only be selected as <provider>/<model-id>,
+# while the CLI reports the bare model id, so gh-aw's runtime guard kills the
+# agent as a "model substitution" (run 46143362287). It also overrode AWF's
+# sidecar address. Without it, adaptive thinking and the reasoning-effort list
+# come from the CLI's built-in defaults for COPILOT_PROVIDER_MODEL_ID; no
+# variables exist for them. Pick an effort per run with `model: ...?effort=high`.
 #
-# No fallback-models: gh-aw's fallback retries the same provider with another
-# model name, and cross-provider chains are not supported
-# (https://github.github.com/gh-aw/reference/engines/#ordered-model-fallback-fallback-models).
+# COPILOT_PROVIDER_API_KEY is a placeholder: the sidecar refuses keyless
+# upstreams (503), and the gateway strips client auth headers in OAuth mode, so
+# the value never matters. Avoid a bare "-": gh-aw emits it unquoted and the
+# generated YAML breaks.
 #
-# model-catalog: false passes the model through verbatim. Neither gateway serves
-# /models, so gh-aw's default pre-run catalogue lookup would stop the run with
-# catalog_unavailable. Needs gh-aw v1.4.0 or later.
+# model-catalog: false passes the model through verbatim. The gateway has no
+# /models route, so gh-aw's pre-run catalogue lookup would stop the run with
+# catalog_unavailable. Needs gh-aw v1.4.0 or later. No fallback-models: gh-aw's
+# fallback only retries the same provider with another model name.
 engine:
   id: copilot
-  model: lab-proxy/claude-opus-5-5
+  model: claude-opus-5-5
   model-catalog: false
   env:
     COPILOT_PROVIDER_BASE_URL: https://anthropic-oauth-proxy.tailfb3ea.ts.net
-    COPILOT_PROVIDERS_CONFIG: ${{ github.workspace }}/.github/aw/providers.json
-# Both gateways are reachable only on the tailnet, so every job that calls the
+    COPILOT_PROVIDER_TYPE: anthropic
+    COPILOT_PROVIDER_API_KEY: unused-gateway-strips-auth
+    COPILOT_PROVIDER_MODEL_ID: claude-opus-5-5
+    COPILOT_PROVIDER_VISION: "true"
+    COPILOT_PROVIDER_MAX_PROMPT_TOKENS: "872000"
+    COPILOT_PROVIDER_MAX_OUTPUT_TOKENS: "128000"
+# The gateway is reachable only on the tailnet, so every job that calls the
 # model joins it first: the agent and the threat-detection job.
+#
+# DNS: the AWF egress proxy (Squid) resolves every outbound host itself, using
+# the servers AWF reads from /run/systemd/resolve/resolv.conf when it starts.
+# On the runner that file lists only Azure's resolver, so *.ts.net names failed
+# with ERR_DNS_FAIL (run 46142756888). The second setup step makes MagicDNS
+# (100.100.100.100) a global systemd-resolved server, which lists it ahead of
+# Azure's resolver and, unlike a per-interface `resolvectl dns` setting,
+# survives the runner reconfiguring its interface (that reset it before AWF
+# started in run 46144142336). It fails early if MagicDNS can't resolve the
+# gateway, and pre-agent-steps re-checks the list right before AWF starts.
+# AWF's --dns-servers flag would be simpler, but strict mode rejects
+# sandbox.agent.args.
+#
+# The detection job needs id-token: write for the Tailscale OIDC login; gh-aw
+# grants it only contents: read by default.
 jobs:
   agent:
     setup-steps:
@@ -57,7 +81,23 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           audience: ${{ secrets.TS_AUDIENCE }}
           tags: tag:ci
+      - name: Put MagicDNS first for the AWF egress proxy
+        run: |
+          set -euo pipefail
+          sudo mkdir -p /etc/systemd/resolved.conf.d
+          printf '[Resolve]\nDNS=100.100.100.100\n' | sudo tee /etc/systemd/resolved.conf.d/10-magicdns.conf >/dev/null
+          sudo systemctl restart systemd-resolved
+          echo "AWF will read:"; grep '^nameserver' /run/systemd/resolve/resolv.conf
+          [ "$(awk '/^nameserver/{print $2; exit}' /run/systemd/resolve/resolv.conf)" = 100.100.100.100 ] \
+            || { echo "::error::MagicDNS is not the first resolver in /run/systemd/resolve/resolv.conf"; exit 1; }
+          dig +short @100.100.100.100 anthropic-oauth-proxy.tailfb3ea.ts.net | grep -q . \
+            || { echo "::error::MagicDNS did not resolve anthropic-oauth-proxy.tailfb3ea.ts.net"; exit 1; }
+          dig +short @100.100.100.100 api.github.com | grep -q . \
+            || echo "::warning::MagicDNS did not resolve a public name; Squid will fall back to the next resolver"
   detection:
+    permissions:
+      contents: read
+      id-token: write
     setup-steps:
       - name: Connect to tailnet
         uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
@@ -65,11 +105,23 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           audience: ${{ secrets.TS_AUDIENCE }}
           tags: tag:ci
+      - name: Put MagicDNS first for the AWF egress proxy
+        run: |
+          set -euo pipefail
+          sudo mkdir -p /etc/systemd/resolved.conf.d
+          printf '[Resolve]\nDNS=100.100.100.100\n' | sudo tee /etc/systemd/resolved.conf.d/10-magicdns.conf >/dev/null
+          sudo systemctl restart systemd-resolved
+          echo "AWF will read:"; grep '^nameserver' /run/systemd/resolve/resolv.conf
+          [ "$(awk '/^nameserver/{print $2; exit}' /run/systemd/resolve/resolv.conf)" = 100.100.100.100 ] \
+            || { echo "::error::MagicDNS is not the first resolver in /run/systemd/resolve/resolv.conf"; exit 1; }
+          dig +short @100.100.100.100 anthropic-oauth-proxy.tailfb3ea.ts.net | grep -q . \
+            || { echo "::error::MagicDNS did not resolve anthropic-oauth-proxy.tailfb3ea.ts.net"; exit 1; }
+          dig +short @100.100.100.100 api.github.com | grep -q . \
+            || echo "::warning::MagicDNS did not resolve a public name; Squid will fall back to the next resolver"
 strict: true
 network:
-  # The primary gateway host is added automatically from
-  # COPILOT_PROVIDER_BASE_URL; the fallback gateway must be listed here.
-  allowed: [defaults, github, agents.tailfb3ea.ts.net]
+  # The gateway host is added automatically from COPILOT_PROVIDER_BASE_URL.
+  allowed: [defaults, github]
 tools:
   github:
     mode: gh-proxy
@@ -77,6 +129,12 @@ tools:
   cache-memory:
     key: ci-failure-triage-state
     allowed-extensions: [".json"]
+pre-agent-steps:
+  - name: Check MagicDNS is still the first resolver for AWF
+    run: |
+      grep '^nameserver' /run/systemd/resolve/resolv.conf
+      [ "$(awk '/^nameserver/{print $2; exit}' /run/systemd/resolve/resolv.conf)" = 100.100.100.100 ] \
+        || { echo "::error::MagicDNS is no longer the first resolver; AWF's egress proxy would fail to resolve *.ts.net"; exit 1; }
 steps:
   - name: Collect non-success CI runs from the past 7 days
     env:
@@ -103,6 +161,48 @@ steps:
         failing: [ .[] | select(.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "startup_failure") ]
       }' "$out/runs.jsonl" > "$out/runs-summary.json"
       jq '{total, by_conclusion, failing_count: (.failing | length)}' "$out/runs-summary.json"
+  # gh-aw's GitHub read proxy refuses job logs to the agent on public repos
+  # ("DIFC policy violation: response requires resource access", run
+  # 46144684726), so the agent could not quote log evidence. Download the
+  # failed steps here, outside the sandbox, and hand the agent trimmed files.
+  # Log text is untrusted data; the prompt says so and the agent can only write
+  # through create-issue.
+  - name: Download failed-step logs for the agent
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    run: |
+      set -uo pipefail
+      out=/tmp/gh-aw/agent/logs
+      mkdir -p "$out"
+      echo '[]' > "$out/index.json"
+      jq -r '.failing[].databaseId' /tmp/gh-aw/agent/runs-summary.json | head -n 40 | while read -r id; do
+        raw="$out/$id.raw"
+        : > "$out/$id.log"
+        if gh run view "$id" --repo "$REPO" --log-failed > "$raw" 2>/dev/null && [ -s "$raw" ]; then
+          status=ok
+          # Each line is "job<TAB>step<TAB>timestamp text". Drop byte-order
+          # marks and color codes (gh prints escapes as a literal "^["), then
+          # keep the last 120 lines of each failed job without timestamps.
+          sed -i.bak -e $'s/\xef\xbb\xbf//g' -e $'s/\x1b\\[[0-9;]*[A-Za-z]//g' \
+            -e 's/\^\[\[[0-9;]*[A-Za-z]//g' "$raw" && rm -f "$raw.bak"
+          cut -f1 "$raw" | sort -u | while read -r job; do
+            awk -F'\t' -v job="$job" '$1 == job {
+                rest = substr($0, length($1) + length($2) + 3)
+                sub(/^[0-9-]+T[0-9:.]+Z ?/, "", rest)
+                print $1 " | " $2 " | " rest }' "$raw" | tail -n 120 >> "$out/$id.log"
+          done
+          jobs="$(cut -f1 "$raw" | sort -u | paste -sd, -)"
+        else
+          status=unavailable; jobs=""
+        fi
+        rm -f "$raw"
+        jq --arg id "$id" --arg jobs "$jobs" --arg status "$status" \
+          '. + [{run_id: ($id | tonumber), file: ("logs/" + $id + ".log"), status: $status,
+                 failed_jobs: ($jobs | split(",") | map(select(. != "")))}]' \
+          "$out/index.json" > "$out/index.tmp" && mv "$out/index.tmp" "$out/index.json"
+      done
+      jq -c 'group_by(.status) | map({status: .[0].status, runs: length})' "$out/index.json"
 safe-outputs:
   create-issue:
     max: 5
@@ -178,6 +278,14 @@ remediation steps, so nobody has to open the Actions logs to understand it. Sile
   - `/tmp/gh-aw/agent/runs.jsonl`: one JSON object per run.
   - `/tmp/gh-aw/agent/runs-summary.json`: totals by conclusion and the `failing`
     array. Start from this file; do not re-list runs unless it is missing.
+  - `/tmp/gh-aw/agent/logs/index.json`: one entry per failing run (up to 40)
+    with `run_id`, `file`, `status` (`ok` or `unavailable`) and `failed_jobs`.
+  - `/tmp/gh-aw/agent/logs/<run_id>.log`: the last 120 lines of each failed job
+    in that run, as `job | step | text`.
+- **Read logs only from these files.** The GitHub job-log API is blocked inside
+  this sandbox (HTTP 403, DIFC policy), so do not call it.
+- **Don't build or install anything.** The network allows only GitHub, so
+  `cargo` cannot reach crates.io; reason from the logs and `Cargo.lock` instead.
 
 ## Repository context for diagnosis
 
@@ -250,9 +358,11 @@ For each run in `failing`:
 
 ### 3. Diagnose and derive a stable failure key
 
-For each remaining run, use the `actions` toolset to list its jobs and fetch the
-failed job's log. Identify the first error that caused the failure, not the
-cascade after it. Then derive a key **before writing anything**:
+For each remaining run, read its file from `/tmp/gh-aw/agent/logs/`. Identify
+the first error that caused the failure, not the cascade after it. Quote the
+decisive lines from that file in the issue's Evidence section. If a run's log
+`status` is `unavailable`, use the `actions` toolset for its jobs and
+annotations only, and label any root cause for it as inferred. Then derive a key **before writing anything**:
 
 ```text
 ci-triage:<workflow>:<job>:<step>:<error-signature>
