@@ -1,0 +1,27 @@
+Background (from the session that started this one):
+This repo is a Rust workspace producing the `anthropic-oauth-proxy` binary (see `AGENTS.md` for crate ownership and the `mise` task interface). A new agentic workflow, `ci-failure-triage`, just ran successfully and filed issue #65 diagnosing why `CI / Audit` is red: two new RustSec advisories against transitively locked `url` and `quinn-udp`, with no repo change, because `cargo-audit` is pinned to `latest` and always pulls the current advisory DB. The diagnosis was verified against the actual job log. The fix is expected to be a lockfile-only dependency bump. Renovate PRs are failing for the same reason and should pass after a rebase once `main` is green.
+
+Task:
+Get the `CI` workflow's `Audit` job green again in basher83/tailnet-microservices. It has failed on every run since 2026-11-26, which also blocks `Docker` and `Update K8s Tag` on `main`.
+
+Confirmed cause (from the real Audit job log of run 46142196770): `cargo audit` reports 2 vulnerabilities, `RUSTSEC-2026-0538` (`quinn-udp` 0.5.14, patched in `>= 0.5.16, < 0.6.0` or `>= 0.6.3`) and `RUSTSEC-2026-0592` (`url` 2.5.8, patched in `>= 2.5.9`). Both come in transitively via `reqwest 0.13.3` (`quinn 0.11.9` → `quinn-udp`). Issue #65 has the full triage.
+
+Do:
+1. On a new branch off `main`, run `cargo update -p url -p quinn-udp` and confirm `Cargo.lock` now has `url >= 2.5.9` and `quinn-udp >= 0.5.16`.
+2. Optionally also `cargo update -p tokio -p rustix -p anyhow` to clear the informational `unsound` warnings, only if it stays a lockfile-only change.
+3. Run `mise run audit`, then `mise run ci` (lockfile changes need the full CI gate per AGENTS.md).
+4. Open a PR that references issue #65 and says which advisories it clears. Do not push to `main` directly. Do not use a `.cargo/audit.toml` ignore unless a semver-compatible bump is impossible, and say so if you do.
+
+Done = a PR with only `Cargo.lock` changes (plus `Cargo.toml` only if unavoidable), `mise run ci` passing locally, and its CI Audit job green.
+
+Shared notes folder for this group of sessions (outside the repo; read siblings' notes there, leave hand-over notes or large findings there instead of pasting them into messages): /Users/basher8383/Library/Application Support/Claude/side-session-notes/local_c3aece86-6129-4bc4-ac78-2305f7725173
+
+---
+
+<task-notification>
+<task-id>bs2cpbvxt</task-id>
+<tool-use-id>toolu_01K2xJUrbvhi7JwwmLAfRpoa</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-basher8383-3I-forge-tailnet-microservices--claude-worktrees-infallible-benz-56d8aa/8467c29e-f537-47e7-97ed-62b328f3d329/tasks/bs2cpbvxt.output</output-file>
+<status>completed</status>
+<summary>Background command "mise run ci &gt; /private/tmp/claude-501/-Users-basher8383-3I-forge-tailnet-microservices--claude-worktrees-infallible-benz-56d8aa/8467c29e-f537-47e7-97ed-62b328f3d329/scratchpad/ci.log 2&gt;&amp;1; echo EXIT=$?" completed (exit code 0)</summary>
+</task-notification>
