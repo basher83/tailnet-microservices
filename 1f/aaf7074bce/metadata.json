@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.13.4",
+  "checkpoint_id": "1faaf7074bce",
+  "strategy": "manual-commit",
+  "branch": "claude/ci-triage-sidecar-endpoint",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/aw/providers.json",
+    ".github/workflows/ci-failure-triage.lock.yml",
+    ".github/workflows/ci-failure-triage.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/1f/aaf7074bce/0/metadata.json",
+      "transcript": "/1f/aaf7074bce/0/full.jsonl",
+      "compact_transcript": "/1f/aaf7074bce/0/transcript.jsonl",
+      "content_hash": "/1f/aaf7074bce/0/content_hash.txt",
+      "prompt": "/1f/aaf7074bce/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 46,
+    "cache_creation_tokens": 31875,
+    "cache_read_tokens": 8156185,
+    "output_tokens": 17627,
+    "api_call_count": 22
+  },
+  "redaction": {
+    "replacements": 67,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 8,
+      "credentialed_uri": 0,
+      "entropy": 43,
+      "key_context": 16,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}
