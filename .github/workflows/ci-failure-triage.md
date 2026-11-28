@@ -60,6 +60,14 @@ engine:
     COPILOT_PROVIDERS_CONFIG: ${{ github.workspace }}/.github/aw/providers.json
 # Both gateways are reachable only on the tailnet, so every job that calls the
 # model joins it first: the agent and the threat-detection job.
+#
+# DNS: the AWF egress proxy (Squid) resolves every outbound host itself, using
+# the servers AWF reads from /run/systemd/resolve/resolv.conf when it starts.
+# On the runner that file lists only Azure's resolver, so *.ts.net names failed
+# with ERR_DNS_FAIL (run 46142756888). The second setup step puts MagicDNS
+# (100.100.100.100) first on the default interface, ahead of Azure's resolver,
+# and fails early if MagicDNS can't resolve the gateway. AWF's --dns-servers
+# flag would do the same, but strict mode rejects sandbox.agent.args.
 jobs:
   agent:
     setup-steps:
@@ -69,6 +77,17 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           audience: ${{ secrets.TS_AUDIENCE }}
           tags: tag:ci
+      - name: Put MagicDNS first for the AWF egress proxy
+        run: |
+          set -euo pipefail
+          iface="$(ip route show default | awk '{print $5; exit}')"
+          upstream="$(resolvectl dns "$iface" | sed 's/^[^:]*://')"
+          sudo resolvectl dns "$iface" 100.100.100.100 $upstream
+          echo "AWF will read:"; grep '^nameserver' /run/systemd/resolve/resolv.conf
+          dig +short @100.100.100.100 anthropic-oauth-proxy.tailfb3ea.ts.net | grep -q . \
+            || { echo "::error::MagicDNS did not resolve anthropic-oauth-proxy.tailfb3ea.ts.net"; exit 1; }
+          dig +short @100.100.100.100 api.github.com | grep -q . \
+            || echo "::warning::MagicDNS did not resolve a public name; Squid will fall back to $upstream"
   detection:
     setup-steps:
       - name: Connect to tailnet
@@ -77,6 +96,17 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           audience: ${{ secrets.TS_AUDIENCE }}
           tags: tag:ci
+      - name: Put MagicDNS first for the AWF egress proxy
+        run: |
+          set -euo pipefail
+          iface="$(ip route show default | awk '{print $5; exit}')"
+          upstream="$(resolvectl dns "$iface" | sed 's/^[^:]*://')"
+          sudo resolvectl dns "$iface" 100.100.100.100 $upstream
+          echo "AWF will read:"; grep '^nameserver' /run/systemd/resolve/resolv.conf
+          dig +short @100.100.100.100 anthropic-oauth-proxy.tailfb3ea.ts.net | grep -q . \
+            || { echo "::error::MagicDNS did not resolve anthropic-oauth-proxy.tailfb3ea.ts.net"; exit 1; }
+          dig +short @100.100.100.100 api.github.com | grep -q . \
+            || echo "::warning::MagicDNS did not resolve a public name; Squid will fall back to $upstream"
 strict: true
 network:
   # The primary gateway host is added automatically from
