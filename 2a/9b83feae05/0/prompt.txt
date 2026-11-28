@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>bgfy4p358</task-id>
+<tool-use-id>toolu_01PctYpRbHJKFrezPV3JWDnG</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-basher8383-3I-forge-tailnet-microservices--claude-worktrees-agentic-ci-failure-triage-613dcc/5a47701a-e83e-46cb-ac11-a03edf24a630/tasks/bgfy4p358.output</output-file>
+<status>completed</status>
+<summary>Background command "Watch the triage run until it finishes" completed (exit code 0)</summary>
+</task-notification>
