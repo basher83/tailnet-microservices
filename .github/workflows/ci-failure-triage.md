@@ -18,47 +18,44 @@ permissions:
   # Tailscale's workload-identity login (oauth-client-id + audience) mints a
   # GitHub OIDC token. Same pattern as openwiki-update.yml.
   id-token: write
-# BYOK: inference goes to gateways on the tailnet, not GitHub Copilot.
-# .github/aw/providers.json is what the Copilot CLI uses: both providers, the
-# model capabilities, and the wire type. Models are selected as
-# <provider>/<model-id>:
-#   lab-proxy          -> AWF API-proxy sidecar -> anthropic-oauth-proxy, in use
-#   aperture-anthropic -> Aperture on agents.tailfb3ea.ts.net; switch `model:`
-#                         to aperture-anthropic/claude-opus-5-5 to use it
+# BYOK: inference goes to anthropic-oauth-proxy on the tailnet, not GitHub
+# Copilot. Configuration is environment variables only, the path AWF supports:
+# outside the sandbox COPILOT_PROVIDER_BASE_URL is the real gateway, held by
+# AWF's API-proxy sidecar; inside the sandbox AWF rewrites it to the sidecar, so
+# the agent never dials the gateway itself. The literal URL also makes gh-aw
+# compile the run as BYOK (no COPILOT_GITHUB_TOKEN check) and allowlists the
+# gateway host. To use Aperture instead, set COPILOT_PROVIDER_BASE_URL to
+# http://agents.tailfb3ea.ts.net.
 #
-# Request path for lab-proxy: the agent never dials the gateway itself. AWF
-# keeps the real upstream in its API-proxy sidecar, and inside the sandbox the
-# Copilot listener is http://172.30.0.30:10002 (what AWF sets
-# COPILOT_PROVIDER_BASE_URL to there). providers.json overrides that variable,
-# so lab-proxy's baseUrl must be the sidecar address itself; pointing it at the
-# gateway's https URL bypasses the sidecar and fails with a TLS "wrong version
-# number" error (run 46142203840).
+# No providers.json: its models can only be selected as <provider>/<model-id>,
+# while the CLI reports the bare model id, so gh-aw's runtime guard kills the
+# agent as a "model substitution" (run 46143362287). It also overrode AWF's
+# sidecar address. Without it, adaptive thinking and the reasoning-effort list
+# come from the CLI's built-in defaults for COPILOT_PROVIDER_MODEL_ID; no
+# variables exist for them. Pick an effort per run with `model: ...?effort=high`.
 #
-# COPILOT_PROVIDER_BASE_URL (outside the sandbox) is the sidecar's upstream: the
-# real gateway. It also makes gh-aw compile the run as BYOK (no
-# COPILOT_GITHUB_TOKEN check) and allowlists the gateway host.
 # COPILOT_PROVIDER_API_KEY is a placeholder: the sidecar refuses keyless
 # upstreams (503), and the gateway strips client auth headers in OAuth mode, so
 # the value never matters. Avoid a bare "-": gh-aw emits it unquoted and the
-# generated YAML breaks. COPILOT_PROVIDER_TYPE is not needed: providers.json
-# sets the type.
+# generated YAML breaks.
 #
-# No fallback-models: gh-aw's fallback retries the same provider with another
-# model name, and cross-provider chains are not supported
-# (https://github.github.com/gh-aw/reference/engines/#ordered-model-fallback-fallback-models).
-#
-# model-catalog: false passes the model through verbatim. Neither gateway serves
-# /models, so gh-aw's default pre-run catalogue lookup would stop the run with
-# catalog_unavailable. Needs gh-aw v1.4.0 or later.
+# model-catalog: false passes the model through verbatim. The gateway has no
+# /models route, so gh-aw's pre-run catalogue lookup would stop the run with
+# catalog_unavailable. Needs gh-aw v1.4.0 or later. No fallback-models: gh-aw's
+# fallback only retries the same provider with another model name.
 engine:
   id: copilot
-  model: lab-proxy/claude-opus-5-5
+  model: claude-opus-5-5
   model-catalog: false
   env:
     COPILOT_PROVIDER_BASE_URL: https://anthropic-oauth-proxy.tailfb3ea.ts.net
+    COPILOT_PROVIDER_TYPE: anthropic
     COPILOT_PROVIDER_API_KEY: unused-gateway-strips-auth
-    COPILOT_PROVIDERS_CONFIG: ${{ github.workspace }}/.github/aw/providers.json
-# Both gateways are reachable only on the tailnet, so every job that calls the
+    COPILOT_PROVIDER_MODEL_ID: claude-opus-5-5
+    COPILOT_PROVIDER_VISION: "true"
+    COPILOT_PROVIDER_MAX_PROMPT_TOKENS: "872000"
+    COPILOT_PROVIDER_MAX_OUTPUT_TOKENS: "128000"
+# The gateway is reachable only on the tailnet, so every job that calls the
 # model joins it first: the agent and the threat-detection job.
 #
 # DNS: the AWF egress proxy (Squid) resolves every outbound host itself, using
@@ -109,9 +106,8 @@ jobs:
             || echo "::warning::MagicDNS did not resolve a public name; Squid will fall back to $upstream"
 strict: true
 network:
-  # The primary gateway host is added automatically from
-  # COPILOT_PROVIDER_BASE_URL; the fallback gateway must be listed here.
-  allowed: [defaults, github, agents.tailfb3ea.ts.net]
+  # The gateway host is added automatically from COPILOT_PROVIDER_BASE_URL.
+  allowed: [defaults, github]
 tools:
   github:
     mode: gh-proxy
