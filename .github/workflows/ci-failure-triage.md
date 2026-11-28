@@ -161,6 +161,48 @@ steps:
         failing: [ .[] | select(.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "startup_failure") ]
       }' "$out/runs.jsonl" > "$out/runs-summary.json"
       jq '{total, by_conclusion, failing_count: (.failing | length)}' "$out/runs-summary.json"
+  # gh-aw's GitHub read proxy refuses job logs to the agent on public repos
+  # ("DIFC policy violation: response requires resource access", run
+  # 46144684726), so the agent could not quote log evidence. Download the
+  # failed steps here, outside the sandbox, and hand the agent trimmed files.
+  # Log text is untrusted data; the prompt says so and the agent can only write
+  # through create-issue.
+  - name: Download failed-step logs for the agent
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    run: |
+      set -uo pipefail
+      out=/tmp/gh-aw/agent/logs
+      mkdir -p "$out"
+      echo '[]' > "$out/index.json"
+      jq -r '.failing[].databaseId' /tmp/gh-aw/agent/runs-summary.json | head -n 40 | while read -r id; do
+        raw="$out/$id.raw"
+        : > "$out/$id.log"
+        if gh run view "$id" --repo "$REPO" --log-failed > "$raw" 2>/dev/null && [ -s "$raw" ]; then
+          status=ok
+          # Each line is "job<TAB>step<TAB>timestamp text". Drop byte-order
+          # marks and color codes (gh prints escapes as a literal "^["), then
+          # keep the last 120 lines of each failed job without timestamps.
+          sed -i.bak -e $'s/\xef\xbb\xbf//g' -e $'s/\x1b\\[[0-9;]*[A-Za-z]//g' \
+            -e 's/\^\[\[[0-9;]*[A-Za-z]//g' "$raw" && rm -f "$raw.bak"
+          cut -f1 "$raw" | sort -u | while read -r job; do
+            awk -F'\t' -v job="$job" '$1 == job {
+                rest = substr($0, length($1) + length($2) + 3)
+                sub(/^[0-9-]+T[0-9:.]+Z ?/, "", rest)
+                print $1 " | " $2 " | " rest }' "$raw" | tail -n 120 >> "$out/$id.log"
+          done
+          jobs="$(cut -f1 "$raw" | sort -u | paste -sd, -)"
+        else
+          status=unavailable; jobs=""
+        fi
+        rm -f "$raw"
+        jq --arg id "$id" --arg jobs "$jobs" --arg status "$status" \
+          '. + [{run_id: ($id | tonumber), file: ("logs/" + $id + ".log"), status: $status,
+                 failed_jobs: ($jobs | split(",") | map(select(. != "")))}]' \
+          "$out/index.json" > "$out/index.tmp" && mv "$out/index.tmp" "$out/index.json"
+      done
+      jq -c 'group_by(.status) | map({status: .[0].status, runs: length})' "$out/index.json"
 safe-outputs:
   create-issue:
     max: 5
@@ -236,6 +278,14 @@ remediation steps, so nobody has to open the Actions logs to understand it. Sile
   - `/tmp/gh-aw/agent/runs.jsonl`: one JSON object per run.
   - `/tmp/gh-aw/agent/runs-summary.json`: totals by conclusion and the `failing`
     array. Start from this file; do not re-list runs unless it is missing.
+  - `/tmp/gh-aw/agent/logs/index.json`: one entry per failing run (up to 40)
+    with `run_id`, `file`, `status` (`ok` or `unavailable`) and `failed_jobs`.
+  - `/tmp/gh-aw/agent/logs/<run_id>.log`: the last 120 lines of each failed job
+    in that run, as `job | step | text`.
+- **Read logs only from these files.** The GitHub job-log API is blocked inside
+  this sandbox (HTTP 403, DIFC policy), so do not call it.
+- **Don't build or install anything.** The network allows only GitHub, so
+  `cargo` cannot reach crates.io; reason from the logs and `Cargo.lock` instead.
 
 ## Repository context for diagnosis
 
@@ -308,9 +358,11 @@ For each run in `failing`:
 
 ### 3. Diagnose and derive a stable failure key
 
-For each remaining run, use the `actions` toolset to list its jobs and fetch the
-failed job's log. Identify the first error that caused the failure, not the
-cascade after it. Then derive a key **before writing anything**:
+For each remaining run, read its file from `/tmp/gh-aw/agent/logs/`. Identify
+the first error that caused the failure, not the cascade after it. Quote the
+decisive lines from that file in the issue's Evidence section. If a run's log
+`status` is `unavailable`, use the `actions` toolset for its jobs and
+annotations only, and label any root cause for it as inferred. Then derive a key **before writing anything**:
 
 ```text
 ci-triage:<workflow>:<job>:<step>:<error-signature>
