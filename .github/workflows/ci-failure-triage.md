@@ -10,14 +10,6 @@ on:
   schedule:
     - cron: weekly on friday around 9:00
     - cron: weekly on tuesday around 9:00
-  # TEMPORARY: lets the workflow run from the PR branch before it exists on
-  # main (workflow_dispatch requires the file on the default branch). Remove
-  # before merging.
-  pull_request:
-    paths:
-      - .github/workflows/ci-failure-triage.md
-      - .github/workflows/ci-failure-triage.lock.yml
-      - .github/aw/providers.json
 permissions:
   actions: read
   contents: read
