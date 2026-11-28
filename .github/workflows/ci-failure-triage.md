@@ -10,15 +10,74 @@ on:
   schedule:
     - cron: weekly on friday around 9:00
     - cron: weekly on tuesday around 9:00
+  # TEMPORARY: lets the workflow run from the PR branch before it exists on
+  # main (workflow_dispatch requires the file on the default branch). Remove
+  # before merging.
+  pull_request:
+    paths:
+      - .github/workflows/ci-failure-triage.md
+      - .github/workflows/ci-failure-triage.lock.yml
+      - .github/aw/providers.json
 permissions:
   actions: read
   contents: read
   issues: read
   pull-requests: read
-engine: copilot
+  # Tailscale's workload-identity login (oauth-client-id + audience) mints a
+  # GitHub OIDC token. Same pattern as openwiki-update.yml.
+  id-token: write
+# BYOK: inference goes to gateways on the tailnet, not GitHub Copilot.
+# .github/aw/providers.json is what the Copilot CLI uses: both providers, the
+# model capabilities, and the wire type. Models are selected as
+# <provider>/<model-id>:
+#   lab-proxy          -> anthropic-oauth-proxy (this repo's service), in use
+#   aperture-anthropic -> Aperture on agents.tailfb3ea.ts.net; switch `model:`
+#                         to aperture-anthropic/claude-opus-5-5 to use it
+#
+# COPILOT_PROVIDER_BASE_URL duplicates the lab-proxy baseUrl on purpose. gh-aw
+# never reads providers.json; this variable is how the compiler knows the run is
+# BYOK. Without it, the compiled workflow adds a required COPILOT_GITHUB_TOKEN
+# check, drops the gateway from the firewall allowlist, and sets no API-proxy
+# target. COPILOT_PROVIDER_TYPE is not needed: providers.json sets the type.
+#
+# No fallback-models: gh-aw's fallback retries the same provider with another
+# model name, and cross-provider chains are not supported
+# (https://github.github.com/gh-aw/reference/engines/#ordered-model-fallback-fallback-models).
+#
+# model-catalog: false passes the model through verbatim. Neither gateway serves
+# /models, so gh-aw's default pre-run catalogue lookup would stop the run with
+# catalog_unavailable. Needs gh-aw v1.4.0 or later.
+engine:
+  id: copilot
+  model: lab-proxy/claude-opus-5-5
+  model-catalog: false
+  env:
+    COPILOT_PROVIDER_BASE_URL: https://anthropic-oauth-proxy.tailfb3ea.ts.net
+    COPILOT_PROVIDERS_CONFIG: ${{ github.workspace }}/.github/aw/providers.json
+# Both gateways are reachable only on the tailnet, so every job that calls the
+# model joins it first: the agent and the threat-detection job.
+jobs:
+  agent:
+    setup-steps:
+      - name: Connect to tailnet
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:ci
+  detection:
+    setup-steps:
+      - name: Connect to tailnet
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:ci
 strict: true
 network:
-  allowed: [defaults, github]
+  # The primary gateway host is added automatically from
+  # COPILOT_PROVIDER_BASE_URL; the fallback gateway must be listed here.
+  allowed: [defaults, github, agents.tailfb3ea.ts.net]
 tools:
   github:
     mode: gh-proxy
@@ -59,16 +118,21 @@ safe-outputs:
     labels: [bug, github-actions]
 timeout-minutes: 30
 evals:
-  - id: operational_value
-    question: Does the agent output show that every new, unrecovered CI failure from the past week was delivered as a single issue that names a root cause and gives remediation steps, so no maintainer has to read the Actions logs to diagnose it?
-  - id: log_evidence_cited
-    question: Does each issue in the agent output quote a specific failing log line or error message as evidence for its root cause?
-  - id: local_repro_command
-    question: Does each issue in the agent output give at least one mise task or cargo command for reproducing or verifying the fix locally?
-  - id: no_duplicate_incident
-    question: Does the agent output avoid creating an issue for any failure key that it reports as already having an open issue?
-  - id: trend_reported
-    question: Does the agent output state the failing-run count for this week alongside the count for the previous week?
+  # The judge runs outside the agent sandbox and calls OpenAI's /v1/decisions
+  # with the OPENAI_API_KEY repository secret. The BYOK gateways can't serve it:
+  # gh-aw hard-codes the judge URL to api.openai.com or api.githubcopilot.com.
+  questions:
+    - id: operational_value
+      question: Does the agent output show that every new, unrecovered CI failure from the past week was delivered as a single issue that names a root cause and gives remediation steps, so no maintainer has to read the Actions logs to diagnose it?
+    - id: log_evidence_cited
+      question: Does each issue in the agent output quote a specific failing log line or error message as evidence for its root cause?
+    - id: local_repro_command
+      question: Does each issue in the agent output give at least one mise task or cargo command for reproducing or verifying the fix locally?
+    - id: no_duplicate_incident
+      question: Does the agent output avoid creating an issue for any failure key that it reports as already having an open issue?
+    - id: trend_reported
+      question: Does the agent output state the failing-run count for this week alongside the count for the previous week?
+  model: openai/gpt-6-luna
 ---
 
 # CI Failure Triage
@@ -134,7 +198,7 @@ defined in `mise.toml`. Map a failing job to its local reproduction:
 | CI / Audit | `cargo audit` (`cargo-audit` pinned to `latest`), RustSec advisories against `Cargo.lock` | `mise run audit` |
 | CI / Test | `cargo test --workspace` | `mise run test`, or `cargo test -p <crate> <test_name>` |
 | CI / Build | release build plus a 15 MB binary-size gate | `mise run build:release` |
-| CI / Docker | buildx image build; pushes to GHCR only on `main` or `v*` tags | `docker build .` |
+| CI / Docker | buildx image build; pushes to GHCR only on `main` or `v*` tags | maintainer builds the `Dockerfile` locally (the agent cannot run containers) |
 | CI / Update K8s Tag | rewrites `k8s/kustomization.yaml` and `git push`es to `main` | not reproducible locally; inspect push/race errors |
 | Kubernetes Manifests / Validate K8s Manifests | `kubectl kustomize k8s/` then `kubeconform` (`latest`) | `mise run k8s:validate` |
 
