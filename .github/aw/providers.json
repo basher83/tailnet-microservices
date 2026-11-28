@@ -3,7 +3,7 @@
     {
       "name": "lab-proxy",
       "type": "anthropic",
-      "baseUrl": "https://anthropic-oauth-proxy.tailfb3ea.ts.net",
+      "baseUrl": "http://172.30.0.30:10002",
       "apiKey": "-"
     },
     {

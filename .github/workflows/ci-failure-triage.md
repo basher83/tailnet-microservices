@@ -22,15 +22,26 @@ permissions:
 # .github/aw/providers.json is what the Copilot CLI uses: both providers, the
 # model capabilities, and the wire type. Models are selected as
 # <provider>/<model-id>:
-#   lab-proxy          -> anthropic-oauth-proxy (this repo's service), in use
+#   lab-proxy          -> AWF API-proxy sidecar -> anthropic-oauth-proxy, in use
 #   aperture-anthropic -> Aperture on agents.tailfb3ea.ts.net; switch `model:`
 #                         to aperture-anthropic/claude-opus-5-5 to use it
 #
-# COPILOT_PROVIDER_BASE_URL duplicates the lab-proxy baseUrl on purpose. gh-aw
-# never reads providers.json; this variable is how the compiler knows the run is
-# BYOK. Without it, the compiled workflow adds a required COPILOT_GITHUB_TOKEN
-# check, drops the gateway from the firewall allowlist, and sets no API-proxy
-# target. COPILOT_PROVIDER_TYPE is not needed: providers.json sets the type.
+# Request path for lab-proxy: the agent never dials the gateway itself. AWF
+# keeps the real upstream in its API-proxy sidecar, and inside the sandbox the
+# Copilot listener is http://172.30.0.30:10002 (what AWF sets
+# COPILOT_PROVIDER_BASE_URL to there). providers.json overrides that variable,
+# so lab-proxy's baseUrl must be the sidecar address itself; pointing it at the
+# gateway's https URL bypasses the sidecar and fails with a TLS "wrong version
+# number" error (run 46142203840).
+#
+# COPILOT_PROVIDER_BASE_URL (outside the sandbox) is the sidecar's upstream: the
+# real gateway. It also makes gh-aw compile the run as BYOK (no
+# COPILOT_GITHUB_TOKEN check) and allowlists the gateway host.
+# COPILOT_PROVIDER_API_KEY is a placeholder: the sidecar refuses keyless
+# upstreams (503), and the gateway strips client auth headers in OAuth mode, so
+# the value never matters. Avoid a bare "-": gh-aw emits it unquoted and the
+# generated YAML breaks. COPILOT_PROVIDER_TYPE is not needed: providers.json
+# sets the type.
 #
 # No fallback-models: gh-aw's fallback retries the same provider with another
 # model name, and cross-provider chains are not supported
@@ -45,6 +56,7 @@ engine:
   model-catalog: false
   env:
     COPILOT_PROVIDER_BASE_URL: https://anthropic-oauth-proxy.tailfb3ea.ts.net
+    COPILOT_PROVIDER_API_KEY: unused-gateway-strips-auth
     COPILOT_PROVIDERS_CONFIG: ${{ github.workspace }}/.github/aw/providers.json
 # Both gateways are reachable only on the tailnet, so every job that calls the
 # model joins it first: the agent and the threat-detection job.
