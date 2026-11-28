@@ -1,0 +1,50 @@
+{
+  "cli_version": "0.13.4",
+  "checkpoint_id": "3f5c24bacda7",
+  "session_id": "5a47701a-e83e-46cb-ac11-a03edf24a630",
+  "strategy": "manual-commit",
+  "created_at": "2026-11-28T12:10:39.699821Z",
+  "branch": "claude/ci-triage-sidecar-endpoint",
+  "checkpoints_count": 4,
+  "files_touched": [
+    ".github/workflows/ci-failure-triage.lock.yml",
+    ".github/workflows/ci-failure-triage.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "9a58a5ca2a22",
+  "checkpoint_transcript_start": 1749,
+  "transcript_lines_at_start": 1749,
+  "compact_transcript_start": 241,
+  "token_usage": {
+    "input_tokens": 66,
+    "cache_creation_tokens": 46530,
+    "cache_read_tokens": 11860422,
+    "output_tokens": 19187,
+    "api_call_count": 29
+  },
+  "session_token_usage": {
+    "input_tokens": 424,
+    "cache_creation_tokens": 652422,
+    "cache_read_tokens": 54604130,
+    "output_tokens": 142058,
+    "api_call_count": 190
+  },
+  "redaction": {
+    "replacements": 78,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 8,
+      "credentialed_uri": 0,
+      "entropy": 51,
+      "key_context": 19,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  },
+  "session_metrics": {
+    "turn_count": 21
+  }
+}
